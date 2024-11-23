@@ -22,11 +22,11 @@
   },
   "scripts": {
     "prebuild": "npm run clean",
-    "build": "rollup --config rollup.config.ts --configPlugin @rollup/plugin-typescript",
+    "build": "rollup --config rollup.config.ts --configPlugin @rollup/plugin-typescript --bundleConfigAsCjs",
     "postbuild": "npm run lint:userscripts",
     "clean": "rimraf dist",
     "predev": "npm run clean",
-    "dev": "rollup --config rollup.config.ts --configPlugin typescript --watch",
+    "dev": "rollup --config rollup.config.ts --configPlugin typescript --bundleConfigAsCjs --watch",
     "lint": "eslint '**/*.{js,ts}'",
     "lint:userscripts": "eslint --no-eslintrc --config .eslintrc.userscripts.js 'dist/**/*.js'",
     "test": "jest --passWithNoTests"
