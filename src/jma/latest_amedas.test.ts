@@ -34,7 +34,7 @@ describe('latest_amedas', () => {
 
     it('不正な形式の文字列でエラーを投げること', () => {
       const input = '不正な形式'
-      expect(() => latestTimeToAmedasDateTime(input)).toThrow('Invalid latest_time')
+      expect(() => latestTimeToAmedasDateTime(input)).toThrow('Invalid latestTime: 不正な形式')
     })
   })
 

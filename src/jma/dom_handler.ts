@@ -20,8 +20,15 @@ interface SeriestableRow {
 }
 
 function appendColumnToSeriestable (seriestable: HTMLTableElement, row: SeriestableRow): void {
-  const simpleTableHiddenTr = generateSimpleTableHiddenTr(row.values.length)
   const old = seriestable.querySelector('.simple-table-hidden-tr')
+  let length = 0
+  if (old === null) {
+    length = row.values.length
+  } else {
+    length = old.children.length - 2 // 「日時」を除く
+  }
+
+  const simpleTableHiddenTr = generateSimpleTableHiddenTr(length)
   if (old !== null) {
     old.remove()
   }
