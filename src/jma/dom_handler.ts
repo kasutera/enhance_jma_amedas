@@ -46,6 +46,7 @@ function appendColumnToSeriestable (seriestable: HTMLTableElement, row: Seriesta
     trContentsHeader2nd.append(generate2ndContentsHeaderElement(row.class, row.headerUnit))
   }
 
+  // TODO: 10分おきの場合にうまくいかない
   const amdTableTrOnTheDots: HTMLTableRowElement[] = Array.from(seriestable.querySelectorAll('.amd-table-tr-onthedot'))
   let i = 0
   amdTableTrOnTheDots.forEach(tr => {

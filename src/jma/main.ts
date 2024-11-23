@@ -21,6 +21,7 @@ const code = getAmdnoFromUrl(window.location.href)
 // await init()
 
 // dom が更新された時に以下を実行する
+// TODO: 表示形式を切り替えた後に上書きしてくれない
 const observer = new MutationObserver(() =>
   getSeriestables().forEach(seriestable => {
     // stop observer
