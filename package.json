@@ -27,7 +27,7 @@
     "clean": "rimraf dist",
     "predev": "npm run clean",
     "dev": "rollup --config rollup.config.ts --configPlugin typescript --bundleConfigAsCjs --watch",
-    "lint": "eslint '**/*.{js,ts}'",
+    "lint": "eslint '**/*.{js,ts}' --fix",
     "lint:userscripts": "eslint --no-eslintrc --config .eslintrc.userscripts.js 'dist/**/*.js'",
     "test": "jest --passWithNoTests"
   }

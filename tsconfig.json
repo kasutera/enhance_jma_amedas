@@ -8,5 +8,11 @@
         "module": "ES2022",
         "moduleResolution": "Node"
     },
-    "include": ["src/**/*", "rollup.config.ts"]
+    "include": [
+        "src/**/*",
+        "rollup.config.ts",
+        "jest.config.ts",
+        ".eslintrc.js",
+        ".eslintrc.userscripts.js"
+    ]
 }
