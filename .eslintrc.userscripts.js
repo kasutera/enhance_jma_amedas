@@ -1,8 +1,8 @@
 module.exports = {
-    extends: [
-      'plugin:userscripts/recommended'
-    ],
-    parserOptions: {
-      ecmaVersion: 'latest'
-    }
+  extends: [
+    'plugin:userscripts/recommended'
+  ],
+  parserOptions: {
+    ecmaVersion: 'latest'
   }
+}
