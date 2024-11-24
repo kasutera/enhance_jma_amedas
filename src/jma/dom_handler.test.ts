@@ -37,11 +37,19 @@ describe('DOM操作関連の関数のテスト', () => {
   })
 })
 
+// HTMLの正規化関数 (比較用)
+const normalizeHTML = (html: string): string => {
+  return html
+    .replaceAll(/>\s+</g, '><') // タグ間の空白を削除
+    .replaceAll(/\s+/g, ' ') // 連続する空白を1つに
+    .trim() // 前後の空白を削除
+}
+
 describe('Seriestable の行を追加する関数のテスト', () => {
   describe('appendColumnToSeriestable()', () => {
     test('列を追加することができる', () => {
-      const src_path = __dirname + '/testcases/dom_handler/column_to_be_added.html'
-      document.body.innerHTML = fs.readFileSync(src_path, { encoding: 'utf-8' })
+      const srcPath = __dirname + '/testcases/dom_handler/column_to_be_added.html'
+      document.body.innerHTML = fs.readFileSync(srcPath, { encoding: 'utf8' })
 
       const row: SeriestableRow = {
         class: 'new-class',
@@ -52,18 +60,10 @@ describe('Seriestable の行を追加する関数のテスト', () => {
 
       const seriestable = getSeriestables()[0]
       appendColumnToSeriestable(seriestable, row)
-      const dst_path = __dirname + '/testcases/dom_handler/column_added.html'
-
-      // HTMLの正規化関数
-      const normalizeHTML = (html: string): string => {
-        return html
-          .replaceAll(/>\s+</g, '><') // タグ間の空白を削除
-          .replaceAll(/\s+/g, ' ') // 連続する空白を1つに
-          .trim() // 前後の空白を削除
-      }
+      const dstPath = __dirname + '/testcases/dom_handler/column_added.html'
 
       expect(normalizeHTML(seriestable.outerHTML))
-        .toBe(normalizeHTML(fs.readFileSync(dst_path, { encoding: 'utf-8' })))
+        .toBe(normalizeHTML(fs.readFileSync(dstPath, { encoding: 'utf8' })))
     })
   })
 })

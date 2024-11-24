@@ -1,6 +1,15 @@
 // 観測値の表のためのDOM要素を生成する関数群
 // DOMの変更は行わない
 
+function generateTd (widthRatio: number, minWidth: number): Element {
+  const td = document.createElement('td')
+  td.style.width = `${widthRatio * 100}%`
+  td.style.minWidth = `${minWidth}px`
+  td.style.padding = '0px'
+  td.style.borderBottom = 'hidden'
+  return td
+}
+
 function generateSimpleTableHiddenTr (elementCount: number): Element {
   /**
      * 要素数に対応する <tr class="simple-table-hidden-tr"> を生成する
@@ -18,14 +27,6 @@ function generateSimpleTableHiddenTr (elementCount: number): Element {
   const secondCellWidthRatio = 16 / (9 + 16) * headerCellWidthRatio
   const otherCellsWidthRatio = (1 - headerCellWidthRatio) / elementCount
 
-  function generateTd (widthRatio: number, minWidth: number): Element {
-    const td = document.createElement('td')
-    td.style.width = `${widthRatio * 100}%`
-    td.style.minWidth = `${minWidth}px`
-    td.style.padding = '0px'
-    td.style.borderBottom = 'hidden'
-    return td
-  }
   tr.append(generateTd(firstCellWidthRatio, 20))
   tr.append(generateTd(secondCellWidthRatio, 35))
   for (let i = 0; i < elementCount; i++) {
@@ -73,11 +74,12 @@ function generate2ndContentsHeaderElement (className: string, headerUnit: string
 }
 
 function generateAmdTableTdElement (className: string, value: string): HTMLTableCellElement {
-  /** amd-table-tr-onthedot, amd-table-tr-notonthedot (観測値を表す td 要素) に使用できる下記を生成する
-     *  <td class={className}>{value}</td>
-     * @param className - 追加する <td> 要素の class 属性値
-     * @param value - 値
-     */
+  /** 次に示す "観測値を表す td 要素" に使用できる下記を生成する
+   *  - 対象: amd-table-tr-onthedot (1時間おきのデータ), amd-table-tr-notonthedot (それ以外の10分おきのデータ)
+   *  - 構造: <td class={className}>{value}</td>
+   * @param className - 追加する <td> 要素の class 属性値
+   * @param value - 値
+   */
   const td = document.createElement('td')
   td.classList.add(className)
   td.textContent = value
