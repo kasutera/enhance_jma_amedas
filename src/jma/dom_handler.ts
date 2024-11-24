@@ -4,7 +4,7 @@
 import {
   generate1stContentsHeaderElement,
   generate2ndContentsHeaderElement,
-  generateAmdTableTdOnTheDotElement,
+  generateAmdTableTdElement,
   generateSimpleTableHiddenTr
 } from './dom_generators'
 
@@ -25,7 +25,7 @@ function appendColumnToSeriestable (seriestable: HTMLTableElement, row: Seriesta
   if (old === null) {
     length = row.values.length
   } else {
-    length = old.children.length - 2 // 「日時」を除く
+    length = old.children.length - 1 // 「日時」を除くが、そこに新しく追加されるので -2 + 1 = -1
   }
 
   const simpleTableHiddenTr = generateSimpleTableHiddenTr(length)
@@ -46,11 +46,10 @@ function appendColumnToSeriestable (seriestable: HTMLTableElement, row: Seriesta
     trContentsHeader2nd.append(generate2ndContentsHeaderElement(row.class, row.headerUnit))
   }
 
-  // TODO: 10分おきの場合にうまくいかない
-  const amdTableTrOnTheDots: HTMLTableRowElement[] = Array.from(seriestable.querySelectorAll('.amd-table-tr-onthedot'))
+  const amdTableTrs: HTMLTableRowElement[] = Array.from(seriestable.querySelectorAll('.amd-table-tr-onthedot, .amd-table-tr-notonthedot'))
   let i = 0
-  amdTableTrOnTheDots.forEach(tr => {
-    tr.append(generateAmdTableTdOnTheDotElement(row.class, row.values[i]))
+  amdTableTrs.forEach(tr => {
+    tr.append(generateAmdTableTdElement(row.class, row.values[i]))
     i++
   })
 }

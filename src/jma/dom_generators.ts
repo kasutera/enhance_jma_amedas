@@ -72,8 +72,8 @@ function generate2ndContentsHeaderElement (className: string, headerUnit: string
   return th
 }
 
-function generateAmdTableTdOnTheDotElement (className: string, value: string): HTMLTableCellElement {
-  /** amd-table-tr-onthedot (観測値を表す td 要素) に使用できる下記を生成する
+function generateAmdTableTdElement (className: string, value: string): HTMLTableCellElement {
+  /** amd-table-tr-onthedot, amd-table-tr-notonthedot (観測値を表す td 要素) に使用できる下記を生成する
      *  <td class={className}>{value}</td>
      * @param className - 追加する <td> 要素の class 属性値
      * @param value - 値
@@ -84,4 +84,4 @@ function generateAmdTableTdOnTheDotElement (className: string, value: string): H
   return td
 }
 
-export { generateSimpleTableHiddenTr, generate1stContentsHeaderElement, generate2ndContentsHeaderElement, generateAmdTableTdOnTheDotElement }
+export { generateSimpleTableHiddenTr, generate1stContentsHeaderElement, generate2ndContentsHeaderElement, generateAmdTableTdElement }

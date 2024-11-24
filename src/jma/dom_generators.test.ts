@@ -2,7 +2,7 @@ import {
   generateSimpleTableHiddenTr,
   generate1stContentsHeaderElement,
   generate2ndContentsHeaderElement,
-  generateAmdTableTdOnTheDotElement
+  generateAmdTableTdElement
 } from './dom_generators'
 
 describe('DOM操作関連の関数のテスト', () => {
@@ -59,12 +59,12 @@ describe('DOM操作関連の関数のテスト', () => {
     })
   })
 
-  describe('generateAmdTableTdOnTheDotElement()', () => {
+  describe('generateAmdTableTdElement()', () => {
     test('正しい構造のtd要素が生成される', () => {
       const className = 'td-wind'
       const value = '3.2'
 
-      expect(generateAmdTableTdOnTheDotElement(className, value).outerHTML).toBe(
+      expect(generateAmdTableTdElement(className, value).outerHTML).toBe(
         '<td class="td-wind">3.2</td>'
       )
     })
