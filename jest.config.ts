@@ -6,7 +6,9 @@ const config: Config = {
   collectCoverage: true,
   collectCoverageFrom: [
     'src/**/*.ts'
-  ]
+  ],
+  transformIgnorePatterns: ['/node_modules']
+  // setupFiles: ['./jest.setup.js']
 }
 
 export default config
