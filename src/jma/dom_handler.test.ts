@@ -2,8 +2,12 @@ import * as fs from 'node:fs'
 import {
   getSeriestables,
   type SeriestableRow,
-  appendColumnToSeriestable
+  appendColumnToSeriestable,
+  getLatestDateFromDay,
+  getTimeSeries
 } from './dom_handler'
+
+// TODO: column_to_be_added.html は 1時間おきのデータであるため、10分おきのケースを追加する
 
 describe('DOM操作関連の関数のテスト', () => {
   beforeEach(() => {
@@ -37,6 +41,23 @@ describe('DOM操作関連の関数のテスト', () => {
   })
 })
 
+describe('getLatestDateFromDay()', () => {
+  test('最後の日付を取得できる', () => {
+    const testCases = [
+      // Month は 0-11 の範囲で指定する
+      { dayOfMonth: 23, now: new Date(2024, 11, 24), expected: new Date(2024, 11, 23) },
+      { dayOfMonth: 24, now: new Date(2024, 11, 24), expected: new Date(2024, 11, 24) },
+      { dayOfMonth: 25, now: new Date(2024, 11, 24), expected: new Date(2024, 10, 25) },
+      { dayOfMonth: 1, now: new Date(2024, 2, 1), expected: new Date(2024, 2, 1) },
+      { dayOfMonth: 29, now: new Date(2024, 2, 1), expected: new Date(2024, 1, 29) } // 閏年
+    ]
+    testCases.forEach(({ dayOfMonth, now, expected }) => {
+      const date = getLatestDateFromDay(dayOfMonth, now)
+      expect(date).toEqual(expected)
+    })
+  })
+})
+
 // HTMLの正規化関数 (比較用)
 const normalizeHTML = (html: string): string => {
   return html
@@ -44,6 +65,25 @@ const normalizeHTML = (html: string): string => {
     .replaceAll(/\s+/g, ' ') // 連続する空白を1つに
     .trim() // 前後の空白を削除
 }
+
+describe('getTimeSeries()', () => {
+  test('時系列を取得できる', () => {
+    const srcPath = __dirname + '/testcases/dom_handler/column_added.html'
+    document.body.innerHTML = fs.readFileSync(srcPath, { encoding: 'utf8' })
+
+    const seriestable = getSeriestables()[0]
+    const timeSeries = getTimeSeries(seriestable)
+    const answerTimeSeries = []
+    for (let i = 18; i >= 0; i--) {
+      answerTimeSeries.push(new Date(2024, 10, 23, i, 0))
+    }
+    for (let i = 23; i >= 1; i--) {
+      answerTimeSeries.push(new Date(2024, 10, 22, i, 0))
+    }
+
+    expect(timeSeries).toEqual(answerTimeSeries)
+  })
+})
 
 describe('Seriestable の行を追加する関数のテスト', () => {
   describe('appendColumnToSeriestable()', () => {

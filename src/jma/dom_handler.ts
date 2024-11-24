@@ -12,6 +12,39 @@ function getSeriestables (): HTMLTableElement[] {
   return Array.from(document.querySelectorAll('.amd-table-seriestable'))
 }
 
+function getLatestDateFromDay (dateOfMonth: number, now: Date | undefined = undefined): Date {
+  const date = now ?? new Date()
+  return date.getDate() < dateOfMonth
+    ? new Date(date.getFullYear(), date.getMonth() - 1, dateOfMonth)
+    : new Date(date.getFullYear(), date.getMonth(), dateOfMonth)
+}
+
+function getTimeSeries (seriestable: HTMLTableElement): Date[] {
+  const amdTableTrs: HTMLTableRowElement[] = Array.from(seriestable.querySelectorAll('.amd-table-tr-onthedot, .amd-table-tr-notonthedot'))
+  const timeSeries: Date[] = []
+  let date: Date | undefined
+  for (const tr of amdTableTrs) {
+    const dayTd = tr.querySelector('td[rowspan]')
+    if (dayTd !== null) {
+      const dayOfMonth = dayTd.textContent?.match(/\d{1,2}日/)?.[0]
+      if (dayOfMonth !== undefined) {
+        date = getLatestDateFromDay(Number.parseInt(dayOfMonth))
+      }
+    }
+    const timeTd = tr.querySelector('td:not([rowspan])')
+    if (timeTd !== null && date !== undefined) {
+      const time = timeTd.textContent?.match(/(\d{2}):(\d{2})/)?.map(Number)
+      if (time === undefined) {
+        throw new Error(`時刻の取得に失敗しました: ${timeTd.textContent}`)
+      }
+      const [, hh, mm] = time
+      const datetime = new Date(date.getFullYear(), date.getMonth(), date.getDate(), hh, mm)
+      timeSeries.push(datetime)
+    }
+  }
+  return timeSeries
+}
+
 interface SeriestableRow {
   class: string
   headerValue: string
@@ -49,4 +82,4 @@ function appendColumnToSeriestable (seriestable: HTMLTableElement, row: Seriesta
   })
 }
 
-export { getSeriestables, appendColumnToSeriestable, type SeriestableRow }
+export { getSeriestables, appendColumnToSeriestable, type SeriestableRow, getLatestDateFromDay, getTimeSeries }
