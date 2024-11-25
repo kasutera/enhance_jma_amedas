@@ -9,4 +9,8 @@ describe('HumidCalculator', () => {
     const humidCalculator = new HumidCalculator(20, 57, 1000)
     expect(humidCalculator.volumetricHumidity).toBeCloseTo(9.8652, 4)
   })
+  it('calcDewPoint', () => {
+    const humidCalculator = new HumidCalculator(20, 57, 1000)
+    expect(humidCalculator.dewPoint).toBeCloseTo(11.22858, 4)
+  })
 })
