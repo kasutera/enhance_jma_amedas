@@ -8,14 +8,14 @@ import { latestTimeToAmedasDateTime } from './latest_amedas'
 // FIXME: fetch 系のテストが失敗する (ReferenceError: fetch is not defined)
 
 describe('latest_amedas', () => {
-  // describe('fetch_latest_time', () => {
+  // describe('fetchLatestTime', () => {
   //   it('最新時刻を取得できること', async () => {
   //     const latestTime = await fetchLatestTime()
   //     expect(latestTime).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\+09:00$/)
   //   })
   // })
 
-  describe('latest_time_to_amedas_date_time', () => {
+  describe('latestTimeToAmedasDateTime', () => {
     it('正しい形式の日時文字列を変換できること', () => {
       const testCases = [
         '2024-03-21T15:00:00+09:00',
