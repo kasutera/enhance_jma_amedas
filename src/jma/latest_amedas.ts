@@ -2,7 +2,7 @@
 // import { fetch } from "undici"
 import {
   latestTimeUrl,
-  getLatestAmedasUrl
+  getAmedasUrl
 } from './jma_urls'
 
 async function fetchLatestTime (): Promise<string> {
@@ -33,7 +33,7 @@ function latestTimeToAmedasDateTime (latestTime: string): [string, string] {
 async function fetchLatestAmedasData (code: string): Promise<unknown> {
   const latestTime = await fetchLatestTime()
   const [yyyymmdd, hh] = latestTimeToAmedasDateTime(latestTime)
-  const url = getLatestAmedasUrl(code, yyyymmdd, hh)
+  const url = getAmedasUrl(code, yyyymmdd, hh)
 
   const response = await fetch(url)
   return await response.json()

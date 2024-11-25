@@ -7,9 +7,9 @@ const latestTimeUrl = 'https://www.jma.go.jp/bosai/amedas/data/latest_time.txt'
  * @param code - アメダスコード
  * @param yyyymmdd - yyyymmdd
  * @param hh - 00, 03, 06, 09, 12, 15, 18, 21 (3時間刻み)
- * @returns 最新アメダスデータのURL
+ * @returns アメダスデータのURL
  */
-function getLatestAmedasUrl (code: string, yyyymmdd: string, hh: string): string {
+function getAmedasUrl (code: string, yyyymmdd: string, hh: string): string {
   // assert(hh === '00' || hh === '03' || hh === '06' || hh === '09' || hh === '12' || hh === '15' || hh === '18' || hh === '21')
   return `https://www.jma.go.jp/bosai/amedas/data/point/${code}/${yyyymmdd}_${hh}.json`
 }
@@ -29,4 +29,4 @@ function getAmdnoFromUrl (url: string): string {
   return matched[1]
 }
 
-export { latestTimeUrl, getLatestAmedasUrl, getAmdnoFromUrl }
+export { latestTimeUrl, getAmedasUrl, getAmdnoFromUrl }
