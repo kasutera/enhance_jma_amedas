@@ -4,40 +4,41 @@
 // 3. 算出したデータを、DOM操作によってテーブルに挿入する
 import {
   getSeriestables,
-  type SeriestableRow,
-  appendColumnToSeriestable
+  appendColumnToSeriestable,
+  getTimeSeries
 } from './dom_handler'
+import {
+  type AmedasData,
+  AmedasFetcher
+} from './jma_amedas_fetcher'
 import { getAmdnoFromUrl } from './jma_urls'
-import { fetchLatestAmedasData } from './latest_amedas'
-
-const code = getAmdnoFromUrl(window.location.href)
-
-// トップレベルのawaitを関数内に移動
-// async function init (): Promise<void> {
-//   const data = await fetchLatestAmedasData(code)
-//   console.log(data)
-// }
-
-// await init()
+import { convertAmedasDataToSeriestableRow } from './presentation'
 
 // dom が更新された時に以下を実行する
-// TODO: 表示形式を切り替えた後に上書きしてくれない
-const observer = new MutationObserver(() =>
-  getSeriestables().forEach(seriestable => {
-    // stop observer
-    observer.disconnect()
+// FIXME: 表示形式を切り替えた後に上書きしてくれない
+// FIXME: ウィンドウをリサイズすると行がどんどん増えていく
+async function render (seriestable: HTMLTableElement): Promise<void> {
+  const code = getAmdnoFromUrl(window.location.href)
+  const timeseries = getTimeSeries(seriestable)
+  const amedasDatas: AmedasData[] = []
+  for (const date of timeseries) {
+    const fetcher = new AmedasFetcher()
+    const data = await fetcher.fetchAmedasData(code, date)
+    amedasDatas.push(data)
+  }
+  const [volumetricHumidityRow, dewPointRow] = convertAmedasDataToSeriestableRow(amedasDatas)
+  appendColumnToSeriestable(seriestable, volumetricHumidityRow)
+  appendColumnToSeriestable(seriestable, dewPointRow)
+}
 
-    const str: SeriestableRow = {
-      class: 'new-class',
-      headerValue: 'headerValue',
-      headerUnit: 'headerUnit',
-      values: ['value1', 'value2']
+const observer = new MutationObserver(() => {
+  void (async () => {
+    for (const seriestable of getSeriestables()) {
+      observer.disconnect()
+      await render(seriestable)
+      observer.observe(seriestable, observeOptions)
     }
-    appendColumnToSeriestable(seriestable, str)
-
-    // start observer
-    observer.observe(seriestable, observeOptions)
-  })
-)
+  })()
+})
 const observeOptions = { attributes: true, childList: true, subtree: true }
 observer.observe(document.documentElement, observeOptions)
