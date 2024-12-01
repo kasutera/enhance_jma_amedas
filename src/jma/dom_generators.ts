@@ -10,7 +10,7 @@ function generateTd (widthRatio: number, minWidth: number): Element {
   return td
 }
 
-function generateSimpleTableHiddenTr (elementCount: number): Element {
+export function generateSimpleTableHiddenTr (elementCount: number): Element {
   /**
      * 要素数に対応する <tr class="simple-table-hidden-tr"> を生成する
      * ルール:
@@ -35,7 +35,7 @@ function generateSimpleTableHiddenTr (elementCount: number): Element {
   return tr
 }
 
-function generate1stContentsHeaderElement (className: string, headerValue: string): HTMLTableCellElement {
+export function generate1stContentsHeaderElement (className: string, headerValue: string): HTMLTableCellElement {
   /** contents-header の1段目 (観測要素の名称) に使用できる下記を生成する
         * <th class="{className}">
         *    <div>
@@ -56,7 +56,7 @@ function generate1stContentsHeaderElement (className: string, headerValue: strin
   return th
 }
 
-function generate2ndContentsHeaderElement (className: string, headerUnit: string): HTMLTableCellElement {
+export function generate2ndContentsHeaderElement (className: string, headerUnit: string): HTMLTableCellElement {
   /** contents-header の2段目 (観測要素の単位) に使用できる下記を生成する
      * <th class="{className}">
      *    <div>
@@ -73,7 +73,7 @@ function generate2ndContentsHeaderElement (className: string, headerUnit: string
   return th
 }
 
-function generateAmdTableTdElement (className: string, value: string): HTMLTableCellElement {
+export function generateAmdTableTdElement (className: string, value: string): HTMLTableCellElement {
   /** 次に示す "観測値を表す td 要素" に使用できる下記を生成する
    *  - 対象: amd-table-tr-onthedot (1時間おきのデータ), amd-table-tr-notonthedot (それ以外の10分おきのデータ)
    *  - 構造: <td class={className}>{value}</td>
@@ -86,4 +86,30 @@ function generateAmdTableTdElement (className: string, value: string): HTMLTable
   return td
 }
 
-export { generateSimpleTableHiddenTr, generate1stContentsHeaderElement, generate2ndContentsHeaderElement, generateAmdTableTdElement }
+export function generateCheckboxElement (id: string, name: string, value: string, headerValue: string): HTMLDivElement {
+  /** 次に示す "観測要素の選択ボックス" に使用できる下記を生成する
+   * <div class="amd-selector-div-block-item">
+   *   <input type="checkbox" id="{id}" name="{name}" value="{value}" class="amd-selector-input-button">
+   *   <label for="{id}" class="amd-selector-label-button">{headerValue}</label>
+   * </div>
+   * @param id - 追加する <input> 要素の id 属性値
+   * @param name - 追加する <input> 要素の name 属性値
+   * @param value - 追加する <input> 要素の value 属性値
+   * @param headerValue - 追加する <label> 要素のテキスト
+   */
+  const div = document.createElement('div')
+  div.classList.add('amd-selector-div-block-item')
+  const input = document.createElement('input')
+  input.type = 'checkbox'
+  input.id = id
+  input.name = name
+  input.value = value
+  input.classList.add('amd-selector-input-button')
+  div.append(input)
+  const label = document.createElement('label')
+  label.htmlFor = id
+  label.classList.add('amd-selector-label-button')
+  label.textContent = headerValue
+  div.append(label)
+  return div
+}
