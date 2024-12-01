@@ -93,7 +93,6 @@ export function toAmedasData (fetched: FetchedAmedasData, date: Date): AmedasDat
 
 export class AmedasFetcher {
   private readonly cache = new Map<string, FetchedAmedasData>()
-  private readonly NUM_OF_FETCHED_AMEDAS_DATA = 18
 
   async fetchAmedasData (code: string, date: Date): Promise<AmedasData> {
     /**
@@ -112,10 +111,7 @@ export class AmedasFetcher {
       throw new Error(`Failed to fetch data from ${url}`)
     }
     const json: FetchedAmedasData = await response.json()
-    if (Object.keys(json).length === this.NUM_OF_FETCHED_AMEDAS_DATA) {
-      // 18個未満の場合はデータが不足しているため、キャッシュしない
-      this.cache.set(url, json)
-    }
+    this.cache.set(url, json)
     return toAmedasData(json, date)
   }
 }
