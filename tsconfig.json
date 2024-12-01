@@ -14,8 +14,6 @@
         "src/**/*",
         "rollup.config.ts",
         "jest.config.ts",
-        "jest.setup.js",
-        ".eslintrc.js",
-        ".eslintrc.userscripts.js"
+        "jest.setup.js"
     ]
 }
