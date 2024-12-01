@@ -4,6 +4,7 @@ import { HumidCalculator } from './math'
 
 const VOLUMETRIC_HUMIDITY_CLASS = 'td-volumetric-humidity'
 const DEW_POINT_CLASS = 'td-dew-point'
+const STANDARD_PRESSURE = 1013.25
 
 const VALUES_PRECISION = 2
 
@@ -12,7 +13,7 @@ export function convertAmedasDataToSeriestableRow (amedasDatas: AmedasData[]): [
   const volumetricHumidityValues: number[] = []
   const dewPointValues: number[] = []
   for (const amedasData of amedasDatas) {
-    const pressure = amedasData.pressure ?? 1013.25
+    const pressure = amedasData.pressure ?? STANDARD_PRESSURE
     const humidCalculator = new HumidCalculator(amedasData.temperature, amedasData.humidity, pressure)
     volumetricHumidityValues.push(humidCalculator.volumetricHumidity)
     dewPointValues.push(humidCalculator.dewPoint)
