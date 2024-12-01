@@ -1,13 +1,15 @@
 import { getAmedasUrl } from './jma_urls'
 
-function dateToAmedasUrl (code: string, date: Date): string {
+export function dateToAmedasUrl (code: string, date: Date): string {
   /**
    * アメダスデータの URL を生成する
    * @param code - 観測所コード
    * @param date - データを取得した日時 (10分単位)
    * @returns アメダスデータの URL
    */
-  const yyyymmdd = date.toISOString().slice(0, 10).replaceAll('-', '')
+  const yyyymmdd = `${date.getFullYear()}` +
+    `${(date.getMonth() + 1).toString().padStart(2, '0')}` +
+    `${date.getDate().toString().padStart(2, '0')}`
   const hh = date.getHours()
   // アメダスデータは3時間単位でデータがあるため、3時間単位の時間を取得する
   const hh3 = Math.floor(hh / 3) * 3
@@ -75,7 +77,9 @@ export function toAmedasData (fetched: FetchedAmedasData, date: Date): AmedasDat
   if (date.getMinutes() % 10 !== 0) {
     throw new Error(`date must be 10 minutes unit: ${date.toISOString()}`)
   }
-  const yyyymmdd = date.toISOString().slice(0, 10).replaceAll('-', '')
+  const yyyymmdd = `${date.getFullYear()}` +
+    `${(date.getMonth() + 1).toString().padStart(2, '0')}` +
+    `${date.getDate().toString().padStart(2, '0')}`
   const hhmmss = date.getHours().toString().padStart(2, '0') + date.getMinutes().toString().padStart(2, '0') + '00'
   const timestamp: Timestamp = `${yyyymmdd}${hhmmss}`
   const timePoint = fetched[timestamp]
