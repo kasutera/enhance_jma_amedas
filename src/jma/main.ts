@@ -13,13 +13,14 @@ import {
 import { getAmdnoFromUrl } from './jma_urls'
 import { convertAmedasDataToSeriestableRow } from './presentation'
 
+const fetcher = new AmedasFetcher()
+
 // dom が更新された時に以下を実行する
 async function render (seriestable: HTMLTableElement): Promise<void> {
   const code = getAmdnoFromUrl(window.location.href)
   const timeseries = getTimeSeries(seriestable)
   const amedasDatas: AmedasData[] = []
   for (const date of timeseries) {
-    const fetcher = new AmedasFetcher()
     const data = await fetcher.fetchAmedasData(code, date)
     amedasDatas.push(data)
   }
@@ -38,6 +39,10 @@ const observer = new MutationObserver((mutationList: MutationRecord[]) => {
     for (const mutation of mutationList) {
       for (const addedNode of mutation.addedNodes) {
         if (addedNode instanceof HTMLElement && addedNode.classList.contains('amd-table-seriestable')) {
+          if (addedNode.parentElement?.style.display === 'none') {
+            // 親要素である contents-wide-table-* が非表示の場合は skip
+            continue
+          }
           observer.disconnect()
           await render(addedNode as HTMLTableElement)
           observer.observe(observationTarget, observeOptions)
