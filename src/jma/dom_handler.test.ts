@@ -49,7 +49,8 @@ describe('getLatestDateFromDay()', () => {
       { dayOfMonth: 24, now: new Date(2024, 11, 24), expected: new Date(2024, 11, 24) },
       { dayOfMonth: 25, now: new Date(2024, 11, 24), expected: new Date(2024, 10, 25) },
       { dayOfMonth: 1, now: new Date(2024, 2, 1), expected: new Date(2024, 2, 1) },
-      { dayOfMonth: 29, now: new Date(2024, 2, 1), expected: new Date(2024, 1, 29) } // 閏年
+      { dayOfMonth: 29, now: new Date(2024, 2, 1), expected: new Date(2024, 1, 29) }, // 閏年
+      { dayOfMonth: 31, now: new Date(2024, 0, 1), expected: new Date(2023, 11, 31) } // 年跨ぎ
     ]
     testCases.forEach(({ dayOfMonth, now, expected }) => {
       const date = getLatestDateFromDay(dayOfMonth, now)
