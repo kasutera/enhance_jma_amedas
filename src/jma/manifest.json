@@ -6,8 +6,8 @@
     "author": "https://github.com/kasutera",
     "homepage": "https://github.com/kasutera/enhance_jma_amedas",
     "homepageURL": "https://github.com/kasutera/enhance_jma_amedas",
-    "updateURL": "https://github.com/kasutera/enhance_jma_amedas/raw/master/dist/jma.user.js",
-    "downloadURL": "https://github.com/kasutera/enhance_jma_amedas/raw/master/dist/jma.user.js",
+    "updateURL": "https://github.com/kasutera/enhance_jma_amedas/raw/refs/heads/main/dist/jma.user.js",
+    "downloadURL": "https://github.com/kasutera/enhance_jma_amedas/raw/refs/heads/main/dist/jma.user.js",
     "supportURL": "https://github.com/kasutera/enhance_jma_amedas/issues",
     "match": "*://www.jma.go.jp/bosai/amedas/*",
     "grant": "none"
