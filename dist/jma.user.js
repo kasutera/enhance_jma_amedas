@@ -221,7 +221,7 @@
     const VOLUMETRIC_HUMIDITY_CLASS = 'td-volumetric-humidity';
     const DEW_POINT_CLASS = 'td-dew-point';
     const STANDARD_PRESSURE = 1013.25;
-    const VALUES_PRECISION = 2;
+    const VALUES_PRECISION = 1;
     function convertAmedasDataToSeriestableRow(amedasDatas) {
         const volumetricHumidityValues = [];
         const dewPointValues = [];
