@@ -5,7 +5,7 @@ import {
   appendColumnToSeriestable,
   getLatestDateFromDay,
   getTimeSeries
-} from './dom_handler'
+} from './dom_seriestable_handler'
 
 // TODO: column_to_be_added.html は 1時間おきのデータであるため、10分おきのケースを追加する
 

@@ -1,4 +1,4 @@
-import { type SeriestableRow } from './dom_handler'
+import { type SeriestableRow } from './dom_seriestable_handler'
 import { type AmedasData } from './jma_amedas_fetcher'
 import { HumidCalculator } from './math'
 

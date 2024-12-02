@@ -5,7 +5,7 @@
 import {
   appendColumnToSeriestable,
   getTimeSeries
-} from './dom_handler'
+} from './dom_seriestable_handler'
 import {
   type AmedasData,
   AmedasFetcher
