@@ -50,7 +50,6 @@ describe('DOM操作関連の関数のテスト', () => {
       }
       const checkboxItem: CheckboxItem = {
         id: 'test-id',
-        name: 'test-name',
         value: 'test-value',
         headerValue: 'テストラベル'
       }

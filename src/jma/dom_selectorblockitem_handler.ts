@@ -14,10 +14,6 @@ export interface CheckboxItem {
    */
   id: string
   /**
-   * チェックボックスの name 属性値
-   */
-  name: string
-  /**
    * チェックボックスの value 属性値
    */
   value: string
@@ -33,6 +29,6 @@ export function appendBlockItemToSelectorBlockItems (checkboxItem: CheckboxItem,
    * @param checkboxItem - チェックボックスの情報
    * @param blockItems - チェックボックスを格納する div 要素
    */
-  const checkboxElement = generateCheckboxElement(checkboxItem.id, checkboxItem.name, checkboxItem.value, checkboxItem.headerValue)
+  const checkboxElement = generateCheckboxElement(checkboxItem.id, checkboxItem.value, checkboxItem.headerValue)
   blockItems.append(checkboxElement)
 }

@@ -98,17 +98,16 @@ export function generateAmdTableTdElement (className: string, value: string): HT
   return td
 }
 
-export function generateCheckboxElement (id: string, name: string, value: string, headerValue: string): HTMLDivElement {
+export function generateCheckboxElement (id: string, value: string, headerValue: string): HTMLDivElement {
   /** 次に示す "観測要素の選択ボックス" に使用できる下記を生成する
    * @example
    * ```html
    * <div class="amd-selector-div-block-item">
-   *   <input type="checkbox" id="{id}" name="{name}" value="{value}" class="amd-selector-input-button">
+   *   <input type="checkbox" id="{id}" name="table-elem" value="{value}" class="amd-selector-input-button">
    *   <label for="{id}" class="amd-selector-label-button">{headerValue}</label>
    * </div>
    * ```
    * @param id - 追加する <input> 要素の id 属性値
-   * @param name - 追加する <input> 要素の name 属性値
    * @param value - 追加する <input> 要素の value 属性値
    * @param headerValue - 追加する <label> 要素のテキスト
    */
@@ -117,7 +116,7 @@ export function generateCheckboxElement (id: string, name: string, value: string
   const input = document.createElement('input')
   input.type = 'checkbox'
   input.id = id
-  input.name = name
+  input.name = 'table-elem'
   input.value = value
   input.classList.add('amd-selector-input-button')
   div.append(input)

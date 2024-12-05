@@ -74,11 +74,10 @@ describe('DOM操作関連の関数のテスト', () => {
   describe('generateCheckboxElement()', () => {
     test('正しい構造のdiv要素が生成される', () => {
       const id = 'table-elem-normalPressure'
-      const name = 'table-elem'
       const value = 'normalPressure'
       const headerValue = '海面気圧'
 
-      expect(generateCheckboxElement(id, name, value, headerValue).outerHTML).toBe(
+      expect(generateCheckboxElement(id, value, headerValue).outerHTML).toBe(
         '<div class="amd-selector-div-block-item"><input type="checkbox" id="table-elem-normalPressure" name="table-elem" value="normalPressure" class="amd-selector-input-button"><label for="table-elem-normalPressure" class="amd-selector-label-button">海面気圧</label></div>'
       )
     })
