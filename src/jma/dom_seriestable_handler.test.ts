@@ -68,39 +68,54 @@ const normalizeHTML = (html: string): string => {
 }
 
 describe('getTimeSeries()', () => {
-  test('時系列を取得できる', () => {
+  test('時系列を取得できる（同月のデータ）', () => {
+    // given
+    // 22日1時から23日18時までのデータ
     const srcPath = __dirname + '/testcases/dom_handler/column_added.html'
     document.body.innerHTML = fs.readFileSync(srcPath, { encoding: 'utf8' })
 
+    // when
     const seriestable = getSeriestables()[0]
-    const timeSeries = getTimeSeries(seriestable)
-    const answerTimeSeries = []
-    for (let i = 18; i >= 0; i--) {
-      answerTimeSeries.push(new Date(2024, 11 - 1, 23, i, 0))
-    }
-    for (let i = 23; i >= 1; i--) {
-      answerTimeSeries.push(new Date(2024, 11 - 1, 22, i, 0))
-    }
-    expect(timeSeries).toEqual(answerTimeSeries)
+    const now = new Date(2024, 10, 27, 0, 0)
+    const timeSeries = getTimeSeries(seriestable, now)
+
+    // then
+    const start = new Date(2024, 10, 23, 18, 0)
+    const answerTimeSeries = Array.from({ length: 24 + 18 }, (_, i) => new Date(start.getTime() - i * 60 * 60 * 1000))
+    expect(timeSeries).toEqual(answerTimeSeries);
+  })
+
+  test('時系列を取得できる（先月のデータ）', () => {
+    // given
+    // 22日1時から23日18時までのデータ
+    const srcPath = __dirname + '/testcases/dom_handler/column_added.html'
+    document.body.innerHTML = fs.readFileSync(srcPath, { encoding: 'utf8' })
+
+    // when
+    const seriestable = getSeriestables()[0]
+    const now = new Date(2024, 11, 2, 0, 0)
+    const timeSeries = getTimeSeries(seriestable, now)
+
+    // then
+    const start = new Date(2024, 10, 23, 18, 0)
+    const answerTimeSeries = Array.from({ length: 24 + 18 }, (_, i) => new Date(start.getTime() - i * 60 * 60 * 1000))
+    expect(timeSeries).toEqual(answerTimeSeries);
   })
 
   test('月またぎのデータを取得できる', () => {
+    // given
+    // 29日15時から30日をまたいで1日14時までのデータ
     const srcPath = __dirname + '/testcases/dom_handler/timeseries_case1.html'
     document.body.innerHTML = fs.readFileSync(srcPath, { encoding: 'utf8' })
 
+    // when
     const seriestable = getSeriestables()[0]
-    const timeSeries = getTimeSeries(seriestable)
-    const answerTimeSeries = []
-    for (let i = 14; i >= 0; i--) {
-      answerTimeSeries.push(new Date(2024, 12 - 1, 1, i, 0))
-    }
-    for (let i = 23; i >= 0; i--) {
-      answerTimeSeries.push(new Date(2024, 11 - 1, 30, i, 0))
-    }
-    for (let i = 23; i >= 15; i--) {
-      answerTimeSeries.push(new Date(2024, 11 - 1, 29, i, 0))
-    }
+    const now = new Date(2024, 11, 2, 0, 0)
+    const timeSeries = getTimeSeries(seriestable, now)
 
+    // then
+    const start = new Date(2024, 11, 1, 14, 0)
+    const answerTimeSeries = Array.from({ length: 9 + 24 + 15 }, (_, i) => new Date(start.getTime() - i * 60 * 60 * 1000))
     expect(timeSeries).toEqual(answerTimeSeries)
   })
 })

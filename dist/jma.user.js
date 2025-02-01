@@ -71,7 +71,7 @@
             ? new Date(date.getFullYear(), date.getMonth() - 1, dateOfMonth)
             : new Date(date.getFullYear(), date.getMonth(), dateOfMonth);
     }
-    function getTimeSeries(seriestable) {
+    function getTimeSeries(seriestable, now = undefined) {
         const amdTableTrs = Array.from(seriestable.querySelectorAll('.amd-table-tr-onthedot, .amd-table-tr-notonthedot'));
         const timeSeries = [];
         let date;
@@ -80,7 +80,7 @@
             if (dayTd !== null) {
                 const dayOfMonth = dayTd.textContent?.match(/\d{1,2}日/)?.[0];
                 if (dayOfMonth !== undefined) {
-                    date = getLatestDateFromDay(Number.parseInt(dayOfMonth));
+                    date = getLatestDateFromDay(Number.parseInt(dayOfMonth), now);
                 }
             }
             const timeTd = tr.querySelector('td:not([rowspan])');
