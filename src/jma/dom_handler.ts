@@ -19,7 +19,7 @@ function getLatestDateFromDay (dateOfMonth: number, now: Date | undefined = unde
     : new Date(date.getFullYear(), date.getMonth(), dateOfMonth)
 }
 
-function getTimeSeries (seriestable: HTMLTableElement): Date[] {
+function getTimeSeries (seriestable: HTMLTableElement, now: Date | undefined = undefined): Date[] {
   const amdTableTrs: HTMLTableRowElement[] = Array.from(seriestable.querySelectorAll('.amd-table-tr-onthedot, .amd-table-tr-notonthedot'))
   const timeSeries: Date[] = []
   let date: Date | undefined
@@ -28,7 +28,7 @@ function getTimeSeries (seriestable: HTMLTableElement): Date[] {
     if (dayTd !== null) {
       const dayOfMonth = dayTd.textContent?.match(/\d{1,2}日/)?.[0]
       if (dayOfMonth !== undefined) {
-        date = getLatestDateFromDay(Number.parseInt(dayOfMonth))
+        date = getLatestDateFromDay(Number.parseInt(dayOfMonth), now)
       }
     }
     const timeTd = tr.querySelector('td:not([rowspan])')
