@@ -35,6 +35,6 @@
     "test": "jest --passWithNoTests"
   },
   "dependencies": {
-    "undici": "^6.21.1"
+    "undici": "^6.21.2"
   }
 }
