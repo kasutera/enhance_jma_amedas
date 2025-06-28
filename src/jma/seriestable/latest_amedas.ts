@@ -1,8 +1,8 @@
 // 適切な最新のアメダスデータ https://www.jma.go.jp/bosai/amedas/data/point/{code}/{yyyymmdd}_{hh}.json を取得する
 // import { fetch } from "undici"
 
+import { latestTimeUrl } from '../jma_urls'
 import { getAmedasUrl } from './jma_amedas_fetcher'
-import { latestTimeUrl } from './jma_urls'
 
 async function fetchLatestTime(): Promise<string> {
   /**

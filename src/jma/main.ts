@@ -2,9 +2,9 @@
 // 2. 取得したデータから、絶対湿度 (enhance-abs-humidity), 露点温度 (enhance-dew-point) を算出する
 // 3. 算出したデータを、DOM操作によってテーブルに挿入する
 
+import { getAmdnoFromUrl } from './jma_urls'
 import { appendColumnToSeriestable, getTimeSeries } from './seriestable/dom_handler'
 import { type AmedasData, AmedasFetcher } from './seriestable/jma_amedas_fetcher'
-import { getAmdnoFromUrl } from './seriestable/jma_urls'
 import { convertAmedasDataToSeriestableRow } from './seriestable/presentation'
 
 const fetcher = new AmedasFetcher()
