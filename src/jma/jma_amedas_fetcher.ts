@@ -1,13 +1,14 @@
 import { getAmedasUrl } from './jma_urls'
 
-export function dateToAmedasUrl (code: string, date: Date): string {
+export function dateToAmedasUrl(code: string, date: Date): string {
   /**
    * アメダスデータの URL を生成する
    * @param code - 観測所コード
    * @param date - データを取得した日時 (10分単位)
    * @returns アメダスデータの URL
    */
-  const yyyymmdd = `${date.getFullYear()}` +
+  const yyyymmdd =
+    `${date.getFullYear()}` +
     `${(date.getMonth() + 1).toString().padStart(2, '0')}` +
     `${date.getDate().toString().padStart(2, '0')}`
   const hh = date.getHours()
@@ -67,7 +68,7 @@ export interface AmedasData {
   date: Date
 }
 
-export function toAmedasData (fetched: FetchedAmedasData, date: Date): AmedasData {
+export function toAmedasData(fetched: FetchedAmedasData, date: Date): AmedasData {
   /**
    * fetch したアメダスデータを使いやすい形式に変換する
    * @param fetched - アメダスデータ
@@ -77,24 +78,28 @@ export function toAmedasData (fetched: FetchedAmedasData, date: Date): AmedasDat
   if (date.getMinutes() % 10 !== 0) {
     throw new Error(`date must be 10 minutes unit: ${date.toISOString()}`)
   }
-  const yyyymmdd = `${date.getFullYear()}` +
+  const yyyymmdd =
+    `${date.getFullYear()}` +
     `${(date.getMonth() + 1).toString().padStart(2, '0')}` +
     `${date.getDate().toString().padStart(2, '0')}`
-  const hhmmss = date.getHours().toString().padStart(2, '0') + date.getMinutes().toString().padStart(2, '0') + '00'
+  const hhmmss =
+    date.getHours().toString().padStart(2, '0') +
+    date.getMinutes().toString().padStart(2, '0') +
+    '00'
   const timestamp: Timestamp = `${yyyymmdd}${hhmmss}`
   const timePoint = fetched[timestamp]
   return {
     pressure: timePoint.pressure?.[0],
     temperature: timePoint.temp[0],
     humidity: timePoint.humidity[0],
-    date
+    date,
   }
 }
 
 export class AmedasFetcher {
   private readonly cache = new Map<string, FetchedAmedasData>()
 
-  async fetchAmedasData (code: string, date: Date): Promise<AmedasData> {
+  async fetchAmedasData(code: string, date: Date): Promise<AmedasData> {
     /**
      * アメダスデータを取得する
      * @param code - 観測所コード

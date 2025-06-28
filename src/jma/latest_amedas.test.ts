@@ -1,7 +1,4 @@
-import {
-  describe,
-  expect
-} from '@jest/globals'
+import { describe, expect } from '@jest/globals'
 import { getAmedasUrl } from './jma_urls'
 import { latestTimeToAmedasDateTime } from './latest_amedas'
 
@@ -21,7 +18,7 @@ describe('latest_amedas', () => {
         '2024-03-21T15:00:00+09:00',
         '2024-03-21T15:10:00+09:00',
         '2024-03-21T15:20:00+09:00',
-        '2024-03-21T16:20:00+09:00'
+        '2024-03-21T16:20:00+09:00',
       ]
       for (const input of testCases) {
         const [yyyymmdd, hh] = latestTimeToAmedasDateTime(input)
