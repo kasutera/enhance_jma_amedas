@@ -5,22 +5,24 @@ import {
   generate1stContentsHeaderElement,
   generate2ndContentsHeaderElement,
   generateAmdTableTdElement,
-  generateSimpleTableHiddenTr
+  generateSimpleTableHiddenTr,
 } from './dom_generators'
 
-function getSeriestables (): HTMLTableElement[] {
+function getSeriestables(): HTMLTableElement[] {
   return Array.from(document.querySelectorAll('.amd-table-seriestable'))
 }
 
-function getLatestDateFromDay (dateOfMonth: number, now: Date | undefined = undefined): Date {
+function getLatestDateFromDay(dateOfMonth: number, now: Date | undefined = undefined): Date {
   const date = now ?? new Date()
   return date.getDate() < dateOfMonth
     ? new Date(date.getFullYear(), date.getMonth() - 1, dateOfMonth)
     : new Date(date.getFullYear(), date.getMonth(), dateOfMonth)
 }
 
-function getTimeSeries (seriestable: HTMLTableElement, now: Date | undefined = undefined): Date[] {
-  const amdTableTrs: HTMLTableRowElement[] = Array.from(seriestable.querySelectorAll('.amd-table-tr-onthedot, .amd-table-tr-notonthedot'))
+function getTimeSeries(seriestable: HTMLTableElement, now: Date | undefined = undefined): Date[] {
+  const amdTableTrs: HTMLTableRowElement[] = Array.from(
+    seriestable.querySelectorAll('.amd-table-tr-onthedot, .amd-table-tr-notonthedot'),
+  )
   const timeSeries: Date[] = []
   let date: Date | undefined
   for (const tr of amdTableTrs) {
@@ -52,7 +54,7 @@ interface SeriestableRow {
   values: string[]
 }
 
-function appendColumnToSeriestable (seriestable: HTMLTableElement, row: SeriestableRow): void {
+function appendColumnToSeriestable(seriestable: HTMLTableElement, row: SeriestableRow): void {
   const old = seriestable.querySelector('.simple-table-hidden-tr')
   const length = old === null ? row.values.length : old.children.length - 1 // 「日時」を除くが、そこに新しく追加されるので -2 + 1 = -1
 
@@ -62,7 +64,9 @@ function appendColumnToSeriestable (seriestable: HTMLTableElement, row: Seriesta
   }
   seriestable.prepend(simpleTableHiddenTr)
 
-  const trContentsHeaders: HTMLTableRowElement[] = Array.from(seriestable.querySelectorAll('.contents-header'))
+  const trContentsHeaders: HTMLTableRowElement[] = Array.from(
+    seriestable.querySelectorAll('.contents-header'),
+  )
   if (trContentsHeaders.length % 2 !== 0) {
     throw new Error(`contents-headerの数が不正です: ${trContentsHeaders.length}`)
   }
@@ -74,12 +78,20 @@ function appendColumnToSeriestable (seriestable: HTMLTableElement, row: Seriesta
     trContentsHeader2nd.append(generate2ndContentsHeaderElement(row.class, row.headerUnit))
   }
 
-  const amdTableTrs: HTMLTableRowElement[] = Array.from(seriestable.querySelectorAll('.amd-table-tr-onthedot, .amd-table-tr-notonthedot'))
+  const amdTableTrs: HTMLTableRowElement[] = Array.from(
+    seriestable.querySelectorAll('.amd-table-tr-onthedot, .amd-table-tr-notonthedot'),
+  )
   let i = 0
-  amdTableTrs.forEach(tr => {
+  amdTableTrs.forEach((tr) => {
     tr.append(generateAmdTableTdElement(row.class, row.values[i]))
     i++
   })
 }
 
-export { getSeriestables, appendColumnToSeriestable, type SeriestableRow, getLatestDateFromDay, getTimeSeries }
+export {
+  getSeriestables,
+  appendColumnToSeriestable,
+  type SeriestableRow,
+  getLatestDateFromDay,
+  getTimeSeries,
+}

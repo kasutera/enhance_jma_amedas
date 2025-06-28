@@ -1,8 +1,8 @@
 import {
-  generateSimpleTableHiddenTr,
   generate1stContentsHeaderElement,
   generate2ndContentsHeaderElement,
-  generateAmdTableTdElement
+  generateAmdTableTdElement,
+  generateSimpleTableHiddenTr,
 } from './dom_generators'
 
 describe('DOM操作関連の関数のテスト', () => {
@@ -18,7 +18,7 @@ describe('DOM操作関連の関数のテスト', () => {
       expect(tr.childNodes.length).toBe(elementCount + 2)
 
       // 全ての子要素がtd要素であることを確認
-      Array.from(tr.childNodes).forEach(node => {
+      Array.from(tr.childNodes).forEach((node) => {
         expect(node.nodeName.toLowerCase()).toBe('td')
         expect((node as HTMLTableCellElement).style.borderBottom).toBe('hidden')
         expect((node as HTMLTableCellElement).style.padding).toBe('0px')
@@ -30,7 +30,7 @@ describe('DOM操作関連の関数のテスト', () => {
       const tr = generateSimpleTableHiddenTr(elementCount)
 
       const totalWidth = Array.from(tr.childNodes)
-        .map(node => Number.parseFloat((node as HTMLTableCellElement).style.width))
+        .map((node) => Number.parseFloat((node as HTMLTableCellElement).style.width))
         .reduce((sum, width) => sum + width, 0)
 
       expect(Math.round(totalWidth)).toBe(100)
@@ -43,7 +43,7 @@ describe('DOM操作関連の関数のテスト', () => {
       const headerValue = '風速'
 
       expect(generate1stContentsHeaderElement(className, headerValue).outerHTML).toBe(
-        '<th class="td-wind"><div><div class="amd-table-div-elemname amd-table-elemname-resize-responsive">風速</div></div></th>'
+        '<th class="td-wind"><div><div class="amd-table-div-elemname amd-table-elemname-resize-responsive">風速</div></div></th>',
       )
     })
   })
@@ -54,7 +54,7 @@ describe('DOM操作関連の関数のテスト', () => {
       const headerUnit = 'm/s'
 
       expect(generate2ndContentsHeaderElement(className, headerUnit).outerHTML).toBe(
-        '<th class="td-wind"><div class="amd-table-elemunit-resize-responsive">m/s</div></th>'
+        '<th class="td-wind"><div class="amd-table-elemunit-resize-responsive">m/s</div></th>',
       )
     })
   })
@@ -65,7 +65,7 @@ describe('DOM操作関連の関数のテスト', () => {
       const value = '3.2'
 
       expect(generateAmdTableTdElement(className, value).outerHTML).toBe(
-        '<td class="td-wind">3.2</td>'
+        '<td class="td-wind">3.2</td>',
       )
     })
   })
