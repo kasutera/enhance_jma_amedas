@@ -31,8 +31,8 @@
     "clean": "rimraf dist",
     "predev": "npm run clean",
     "dev": "rollup --config rollup.config.ts --configPlugin typescript --bundleConfigAsCjs --watch",
-    "format": "@biomejs/biome check --write ./src",
-    "format:userscripts": "@biomejs/biome check --write 'dist/**/*.js'",
+    "format": "npx @biomejs/biome check --write",
+    "format:userscripts": "npx @biomejs/biome check --write dist/jma.user.js",
     "test": "jest --passWithNoTests"
   },
   "dependencies": {
