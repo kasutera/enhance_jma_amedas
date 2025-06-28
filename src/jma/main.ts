@@ -1,10 +1,11 @@
 // 1. 最新のアメダスデータ https://www.jma.go.jp/bosai/amedas/data/point/{code}/{yyyymmdd}_{hh}.json を取得する
 // 2. 取得したデータから、絶対湿度 (enhance-abs-humidity), 露点温度 (enhance-dew-point) を算出する
 // 3. 算出したデータを、DOM操作によってテーブルに挿入する
-import { appendColumnToSeriestable, getTimeSeries } from './dom_handler'
-import { type AmedasData, AmedasFetcher } from './jma_amedas_fetcher'
-import { getAmdnoFromUrl } from './jma_urls'
-import { convertAmedasDataToSeriestableRow } from './presentation'
+
+import { appendColumnToSeriestable, getTimeSeries } from './seriestable/dom_handler'
+import { type AmedasData, AmedasFetcher } from './seriestable/jma_amedas_fetcher'
+import { getAmdnoFromUrl } from './seriestable/jma_urls'
+import { convertAmedasDataToSeriestableRow } from './seriestable/presentation'
 
 const fetcher = new AmedasFetcher()
 
