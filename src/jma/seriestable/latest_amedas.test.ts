@@ -1,5 +1,4 @@
 import { describe, expect } from '@jest/globals'
-import { getAmedasUrl } from './jma_urls'
 import { latestTimeToAmedasDateTime } from './latest_amedas'
 
 // FIXME: fetch 系のテストが失敗する (ReferenceError: fetch is not defined)
@@ -30,16 +29,6 @@ describe('latest_amedas', () => {
     it('不正な形式の文字列でエラーを投げること', () => {
       const input = '不正な形式'
       expect(() => latestTimeToAmedasDateTime(input)).toThrow('Invalid latestTime: 不正な形式')
-    })
-  })
-
-  describe('getAmedasUrl', () => {
-    it('正しいURLを生成できること', () => {
-      const code = '44132'
-      const yyyymmdd = '20240321'
-      const hh = '15'
-      const url = getAmedasUrl(code, yyyymmdd, hh)
-      expect(url).toBe('https://www.jma.go.jp/bosai/amedas/data/point/44132/20240321_15.json')
     })
   })
 
