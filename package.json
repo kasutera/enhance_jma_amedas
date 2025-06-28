@@ -1,5 +1,6 @@
 {
   "devDependencies": {
+    "@biomejs/biome": "2.0.6",
     "@jest/globals": "^29.7.0",
     "@munierujp/eslint-config-typescript": "^47.1.1",
     "@rollup/plugin-typescript": "^12.1.1",
@@ -26,12 +27,12 @@
   "scripts": {
     "prebuild": "npm run clean",
     "build": "rollup --config rollup.config.ts --configPlugin @rollup/plugin-typescript --bundleConfigAsCjs",
-    "postbuild": "npm run lint:userscripts",
+    "postbuild": "npm run format:userscripts",
     "clean": "rimraf dist",
     "predev": "npm run clean",
     "dev": "rollup --config rollup.config.ts --configPlugin typescript --bundleConfigAsCjs --watch",
-    "lint": "eslint '**/*.{js,ts}' --fix",
-    "lint:userscripts": "eslint --no-eslintrc --config .eslintrc.userscripts.js 'dist/**/*.js'",
+    "format": "@biomejs/biome check --write ./src",
+    "format:userscripts": "@biomejs/biome check --write 'dist/**/*.js'",
     "test": "jest --passWithNoTests"
   },
   "dependencies": {
