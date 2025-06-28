@@ -3,6 +3,12 @@
   "files": {
     "includes": ["**/src/**", "**/tests/**", "dist/**"]
   },
+  "vcs": {
+    "enabled": true,
+    "clientKind": "git",
+    // gitignore を使用する
+    "useIgnoreFile": true
+  },
   "assist": { "actions": { "source": { "organizeImports": "on" } } },
   "linter": {
     "enabled": true,
