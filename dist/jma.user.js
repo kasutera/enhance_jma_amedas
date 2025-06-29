@@ -14,6 +14,15 @@
 // ==/UserScript==
 
 ;(() => {
+  function getAmdnoFromUrl(url) {
+    const pattern = /[#&]amdno=(\d+)/
+    const matched = url.match(pattern)
+    if (matched === null) {
+      throw new Error(`amdno not found in URL: ${url}`)
+    }
+    return matched[1]
+  }
+
   function generateTd(widthRatio, minWidth) {
     const td = document.createElement('td')
     td.style.width = `${widthRatio * 100}%`
@@ -127,15 +136,6 @@
   function getAmedasUrl(code, yyyymmdd, hh) {
     return `https://www.jma.go.jp/bosai/amedas/data/point/${code}/${yyyymmdd}_${hh}.json`
   }
-  function getAmdnoFromUrl(url) {
-    const pattern = /[#&]amdno=(\d+)/
-    const matched = url.match(pattern)
-    if (matched === null) {
-      throw new Error(`amdno not found in URL: ${url}`)
-    }
-    return matched[1]
-  }
-
   function dateToAmedasUrl(code, date) {
     const yyyymmdd =
       `${date.getFullYear()}` +

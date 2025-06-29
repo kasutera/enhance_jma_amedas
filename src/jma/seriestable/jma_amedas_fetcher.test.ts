@@ -1,22 +1,7 @@
-import {
-  dateToAmedasUrl,
-  type FetchedAmedasData,
-  getAmedasUrl,
-  toAmedasData,
-} from './jma_amedas_fetcher'
+import { dateToAmedasUrl, type FetchedAmedasData, toAmedasData } from './jma_amedas_fetcher'
 import amedasDataJson from './testcases/jma_amedas_fetcher/amedas_data.json'
 
 describe('jma_amedas_fetcher', () => {
-  describe('getAmedasUrl', () => {
-    it('正しいURLを生成できること', () => {
-      const code = '44132'
-      const yyyymmdd = '20240101'
-      const hh = '03'
-      const expected = 'https://www.jma.go.jp/bosai/amedas/data/point/44132/20240101_03.json'
-      expect(getAmedasUrl(code, yyyymmdd, hh)).toBe(expected)
-    })
-  })
-
   it('dateToAmedasUrl', () => {
     const code = '44132'
     const testCases = [
