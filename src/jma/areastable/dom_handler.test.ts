@@ -1,5 +1,10 @@
 import * as fs from 'node:fs'
-import { type AreastableColumn, appendColumnToAreastable, getAreastables } from './dom_handler'
+import {
+  _getAmdnos,
+  type AreastableColumn,
+  appendColumnToAreastable,
+  getAreastables,
+} from './dom_handler'
 
 // HTMLの正規化関数 (比較用)
 const normalizeHTML = (html: string): string => {
@@ -50,5 +55,25 @@ describe('Areastable の行を追加する関数のテスト', () => {
         normalizeHTML(fs.readFileSync(dstPath, { encoding: 'utf8' })),
       )
     })
+  })
+})
+
+describe('_getAmdnos', () => {
+  test('amd-areastable-a-pointlink の href から amdno を取得できる', () => {
+    const a = document.createElement('a')
+    a.className = 'amd-areastable-a-pointlink'
+    a.href = '#amdno=12345'
+    a.title = 'テスト'
+    a.textContent = 'テスト地点'
+    expect(_getAmdnos(a)).toBe('12345')
+  })
+
+  test('amdno が含まれない場合はエラー', () => {
+    const a = document.createElement('a')
+    a.className = 'amd-areastable-a-pointlink'
+    a.href = '#foo=12345'
+    a.title = 'テスト'
+    a.textContent = 'テスト地点'
+    expect(() => _getAmdnos(a)).toThrow()
   })
 })

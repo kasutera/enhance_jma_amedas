@@ -59,7 +59,7 @@ interface AmedasTimePoint {
   wind?: MeasurementValue
 }
 
-type Ameid = string // 観測所コード (例: "44132")
+export type Ameid = string // 観測所コード (例: "44132")
 
 // ameid to AmedasTimePoint
 export type FetchedAmedasData = Record<Ameid, AmedasTimePoint>
@@ -67,14 +67,15 @@ export type FetchedAmedasData = Record<Ameid, AmedasTimePoint>
 export interface AmedasData {
   /**
    * このプログラムで使用するためのアメダスデータのデータ形式
+   * temperature, humidity が無い場合、本プログラムの性質上不要なため表現しない
    * @param pressure: 気圧 (hPa)
    * @param temperature: 気温 (℃)
    * @param humidity: 湿度 (%)
    * @param date: データを取得した日時 (10分単位)
    */
   pressure?: number
-  temperature?: number
-  humidity?: number
+  temperature: number
+  humidity: number
   date: Date
 }
 
@@ -87,10 +88,15 @@ export function toAmedasData(fetched: FetchedAmedasData, date: Date): Record<Ame
    */
   const record: Record<Ameid, AmedasData> = {}
   for (const ameid in fetched) {
+    const point = fetched[ameid]
+    if (!point.temp || !point.humidity) {
+      // 気温または湿度がない場合は無視する
+      continue
+    }
     record[ameid] = {
-      pressure: fetched[ameid].pressure?.[0],
-      temperature: fetched[ameid].temp?.[0],
-      humidity: fetched[ameid].humidity?.[0],
+      pressure: point.pressure?.[0],
+      temperature: point.temp[0],
+      humidity: point.humidity[0],
       date,
     }
   }
