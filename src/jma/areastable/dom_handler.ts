@@ -21,7 +21,10 @@ export function appendColumnToAreastable(
   column: AreastableColumn,
 ): void {
   const old = areastable.querySelector('.simple-table-hidden-tr')
-  const length = old === null ? column.values.length : old.children.length // 「地点名」を除くが、そこに新しく追加されるので -1 + 1 = 0
+  if (old === null) {
+    throw new Error('.simple-table-hidden-tr does not exist')
+  }
+  const length = old.children.length + 1
 
   const simpleTableHiddenTr = generateSimpleTableHiddenTr(length)
   if (old !== null) {
@@ -38,13 +41,13 @@ export function appendColumnToAreastable(
   for (let i = 0; i < trContentsHeaders.length; i += 2) {
     // contents-header はデータの途中にペアで挟まれていることがあるため、その全てに対して処理を行う
     const trContentsHeader1st = trContentsHeaders[i]
-    trContentsHeader1st.append(generate1stContentsHeaderElement(column.class, column.headerValue))
+    trContentsHeader1st.append(generate1stContentsHeaderElement(column.headerValue))
     const trContentsHeader2nd = trContentsHeaders[i + 1]
-    trContentsHeader2nd.append(generate2ndContentsHeaderElement(column.class, column.headerUnit))
+    trContentsHeader2nd.append(generate2ndContentsHeaderElement(column.headerUnit))
   }
 
   const amdTableTrs: HTMLTableRowElement[] = Array.from(
-    areastable.querySelectorAll('.amd-table-tr-onthedot, .amd-table-tr-notonthedot'),
+    areastable.querySelectorAll('.amd-areastable-tr-pointdata'),
   )
   let i = 0
   amdTableTrs.forEach((tr) => {

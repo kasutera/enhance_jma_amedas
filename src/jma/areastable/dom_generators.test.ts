@@ -39,22 +39,20 @@ describe('DOM操作関連の関数のテスト', () => {
 
   describe('generate1stContentsHeaderElement()', () => {
     test('正しい構造のth要素が生成される', () => {
-      const className = 'td-wind'
       const headerValue = '風速'
 
-      expect(generate1stContentsHeaderElement(className, headerValue).outerHTML).toBe(
-        '<th class="td-wind"><div><div class="amd-table-div-elemname amd-table-elemname-resize-responsive">風速</div></div></th>',
+      expect(generate1stContentsHeaderElement(headerValue).outerHTML).toBe(
+        '<th><div><div class="amd-table-div-elemname amd-table-elemname-resize-responsive">風速</div></div></th>',
       )
     })
   })
 
   describe('generate2ndContentsHeaderElement()', () => {
     test('正しい構造のth要素が生成される', () => {
-      const className = 'td-wind'
       const headerUnit = 'm/s'
 
-      expect(generate2ndContentsHeaderElement(className, headerUnit).outerHTML).toBe(
-        '<th class="td-wind"><div class="amd-table-elemunit-resize-responsive">m/s</div></th>',
+      expect(generate2ndContentsHeaderElement(headerUnit).outerHTML).toBe(
+        '<th><div class="amd-table-elemunit-resize-responsive">m/s</div></th>',
       )
     })
   })

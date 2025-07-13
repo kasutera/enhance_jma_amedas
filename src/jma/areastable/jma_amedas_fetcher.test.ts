@@ -27,7 +27,7 @@ describe('jma_amedas_fetcher', () => {
     const fetched = amedasDataJson as FetchedAmedasData
     const date = new Date('2024-11-23T18:00:00')
     const amedasData = toAmedasData(fetched, date)
-    expect(amedasData["44132"]).toEqual({
+    expect(amedasData['44132']).toEqual({
       pressure: 1003.6,
       temperature: 29.1,
       humidity: 56,

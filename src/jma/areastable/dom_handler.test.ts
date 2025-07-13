@@ -4,8 +4,14 @@ import { type AreastableColumn, appendColumnToAreastable, getAreastables } from 
 // HTMLの正規化関数 (比較用)
 const normalizeHTML = (html: string): string => {
   return html
-    .replaceAll(/>\s+</g, '><') // タグ間の空白を削除
+    .replaceAll(/>\s+/g, '>') // タグ間の空白を削除
+    .replaceAll(/\s+</g, '<') // タグ間の空白を削除
     .replaceAll(/\s+/g, ' ') // 連続する空白を1つに
+    .replaceAll(/;\s+/g, ';')
+    .replaceAll('/>', '>')
+    .replaceAll('" >', '">')
+    .replaceAll('</a >', '</a>')
+    .replaceAll('=" ', '="')
     .trim() // 前後の空白を削除
 }
 
@@ -29,16 +35,17 @@ describe('Areastable の行を追加する関数のテスト', () => {
       document.body.innerHTML = fs.readFileSync(srcPath, { encoding: 'utf8' })
 
       const column: AreastableColumn = {
-        class: 'new-class',
+        class: 'td-new-class',
         headerValue: 'headerValue',
         headerUnit: 'headerUnit',
-        values: ['value1', 'value2'],
+        values: ['value1', 'value2', 'value3', 'value4', 'value5'],
       }
 
       const seriestable = getAreastables()[0]
       appendColumnToAreastable(seriestable, column)
       const dstPath = `${__dirname}/testcases/dom_handler/column_added.html`
 
+      console.log(normalizeHTML(seriestable.outerHTML))
       expect(normalizeHTML(seriestable.outerHTML)).toBe(
         normalizeHTML(fs.readFileSync(dstPath, { encoding: 'utf8' })),
       )
