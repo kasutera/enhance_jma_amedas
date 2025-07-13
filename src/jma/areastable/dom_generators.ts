@@ -31,12 +31,9 @@ export function generateSimpleTableHiddenTr(elementCount: number): Element {
   return tr
 }
 
-export function generate1stContentsHeaderElement(
-  className: string,
-  headerValue: string,
-): HTMLTableCellElement {
+export function generate1stContentsHeaderElement(headerValue: string): HTMLTableCellElement {
   /** contents-header の1段目 (観測要素の名称) に使用できる下記を生成する
-   * <th class="{className}">
+   * <th>
    *    <div>
    *        <div class="amd-table-div-elemname amd-table-elemname-resize-responsive">{headerValue}</div>
    *    </div>
@@ -45,7 +42,6 @@ export function generate1stContentsHeaderElement(
    * @param headerValue - ヘッダの値
    */
   const th = document.createElement('th')
-  th.classList.add(className)
   const div1 = document.createElement('div')
   const div2 = document.createElement('div')
   div2.classList.add('amd-table-div-elemname', 'amd-table-elemname-resize-responsive')
@@ -55,19 +51,15 @@ export function generate1stContentsHeaderElement(
   return th
 }
 
-export function generate2ndContentsHeaderElement(
-  className: string,
-  headerUnit: string,
-): HTMLTableCellElement {
+export function generate2ndContentsHeaderElement(headerUnit: string): HTMLTableCellElement {
   /** contents-header の2段目 (観測要素の単位) に使用できる下記を生成する
-   * <th class="{className}">
+   * <th>
    *    <div>
    *        <div class="amd-table-elemunit-resize-responsive">{headerUnit}</div>
    *    </div>
    * </th>
    */
   const th = document.createElement('th')
-  th.classList.add(className)
   const div = document.createElement('div')
   div.classList.add('amd-table-elemunit-resize-responsive')
   div.textContent = headerUnit
@@ -87,4 +79,3 @@ export function generateAmdTableTdElement(className: string, value: string): HTM
   td.textContent = value
   return td
 }
-
