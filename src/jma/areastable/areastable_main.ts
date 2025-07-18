@@ -22,8 +22,10 @@ export function areastable_main() {
     appendColumnToAreastable(areastable, dewPointRow)
     appendColumnToAreastable(areastable, temperatureHumidityIndexRow)
 
-    // カラースケールを適用（容積絶対湿度列のみ）
+    // カラースケールを適用（全ての対象列）
     globalColorScaleManager.applyColorScaleToColumn(areastable, 'td-volumetric-humidity')
+    globalColorScaleManager.applyColorScaleToColumn(areastable, 'td-dew-point')
+    globalColorScaleManager.applyColorScaleToColumn(areastable, 'td-temperature-humidity-index')
   }
 
   const observationTarget = document.querySelector('#amd-table')

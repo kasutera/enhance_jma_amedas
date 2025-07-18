@@ -12,13 +12,19 @@ export class ColorScaleCalculator {
     if (colorScheme.type === 'gradient' && colorScheme.colors.length >= 2) {
       // 範囲外の値は最小値・最大値にクランプする
       const clampedValue = Math.max(min, Math.min(max, value))
-      return this.interpolateColor(
-        clampedValue,
-        min,
-        max,
-        colorScheme.colors[0],
-        colorScheme.colors[1],
-      )
+
+      if (colorScheme.colors.length === 2) {
+        // 2色のグラデーション
+        return this.interpolateColor(
+          clampedValue,
+          min,
+          max,
+          colorScheme.colors[0],
+          colorScheme.colors[1],
+        )
+      }
+      // 3色以上のマルチカラーグラデーション
+      return this.interpolateMultiColor(clampedValue, min, max, colorScheme.colors)
     }
 
     return 'transparent'
@@ -43,7 +49,7 @@ export class ColorScaleCalculator {
   }
 
   /**
-   * 線形補間によるカラー計算
+   * 線形補間によるカラー計算（2色）
    */
   private interpolateColor(
     value: number,
@@ -63,6 +69,39 @@ export class ColorScaleCalculator {
     const r = Math.round(startRgb.r + (endRgb.r - startRgb.r) * ratio)
     const g = Math.round(startRgb.g + (endRgb.g - startRgb.g) * ratio)
     const b = Math.round(startRgb.b + (endRgb.b - startRgb.b) * ratio)
+
+    return `rgb(${r}, ${g}, ${b})`
+  }
+
+  /**
+   * マルチカラーグラデーション計算（3色以上）
+   */
+  private interpolateMultiColor(value: number, min: number, max: number, colors: string[]): string {
+    if (colors.length < 2) {
+      return 'transparent'
+    }
+
+    const ratio = (value - min) / (max - min)
+    const segmentCount = colors.length - 1
+    const segmentSize = 1 / segmentCount
+
+    // どのセグメント（色の区間）にいるかを計算
+    const segmentIndex = Math.min(Math.floor(ratio / segmentSize), segmentCount - 1)
+    const segmentRatio = (ratio - segmentIndex * segmentSize) / segmentSize
+
+    const startColor = colors[segmentIndex]
+    const endColor = colors[segmentIndex + 1]
+
+    const startRgb = this.hexToRgb(startColor)
+    const endRgb = this.hexToRgb(endColor)
+
+    if (!startRgb || !endRgb) {
+      return 'transparent'
+    }
+
+    const r = Math.round(startRgb.r + (endRgb.r - startRgb.r) * segmentRatio)
+    const g = Math.round(startRgb.g + (endRgb.g - startRgb.g) * segmentRatio)
+    const b = Math.round(startRgb.b + (endRgb.b - startRgb.b) * segmentRatio)
 
     return `rgb(${r}, ${g}, ${b})`
   }

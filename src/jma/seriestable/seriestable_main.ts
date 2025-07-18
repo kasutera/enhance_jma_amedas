@@ -26,8 +26,10 @@ export function seriestable_main() {
     appendColumnToSeriestable(seriestable, dewPointRow)
     appendColumnToSeriestable(seriestable, temperatureHumidityIndexRow)
 
-    // カラースケールを適用（容積絶対湿度列のみ）
+    // カラースケールを適用（全ての対象列）
     globalColorScaleManager.applyColorScaleToColumn(seriestable, 'td-volumetric-humidity')
+    globalColorScaleManager.applyColorScaleToColumn(seriestable, 'td-dew-point')
+    globalColorScaleManager.applyColorScaleToColumn(seriestable, 'td-temperature-humidity-index')
   }
 
   const observationTarget = document.querySelector('#amd-table')

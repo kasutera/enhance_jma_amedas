@@ -56,22 +56,24 @@ describe('ColorScaleUI', () => {
 
     const checkbox = document.getElementById('color-scale-toggle') as HTMLInputElement
 
-    // 初期状態は有効
-    expect(manager.getEnabled()).toBe(true)
+    // 初期状態を確認（設定永続化により変動する可能性がある）
+    const initialState = manager.getEnabled()
+    expect(checkbox.checked).toBe(initialState)
 
-    // チェックボックスをオフにする
-    checkbox.checked = false
+    // チェックボックスの状態を反転させる
+    const newState = !initialState
+    checkbox.checked = newState
     checkbox.dispatchEvent(new Event('change'))
 
-    // マネージャーが無効になっていることを確認
-    expect(manager.getEnabled()).toBe(false)
+    // マネージャーの状態が変更されていることを確認
+    expect(manager.getEnabled()).toBe(newState)
 
-    // チェックボックスをオンにする
-    checkbox.checked = true
+    // チェックボックスを元の状態に戻す
+    checkbox.checked = initialState
     checkbox.dispatchEvent(new Event('change'))
 
-    // マネージャーが有効になっていることを確認
-    expect(manager.getEnabled()).toBe(true)
+    // マネージャーが元の状態に戻っていることを確認
+    expect(manager.getEnabled()).toBe(initialState)
   })
 
   test('destroy()でUIが削除される', () => {
