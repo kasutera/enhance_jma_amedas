@@ -15,9 +15,11 @@ export function areastable_main() {
     // 最新時刻を推定（テーブル内のtrから取得する実装が必要だが、ここでは現在時刻を仮定）
     const latestTime = await fetchLatestTime()
     const fetched = await fetcher.fetchAmedasData(latestTime)
-    const [volumetricHumidityRow, dewPointRow] = convertAmedasDataToAreastableRow(amdnos, fetched)
+    const [volumetricHumidityRow, dewPointRow, temperatureHumidityIndexRow] =
+      convertAmedasDataToAreastableRow(amdnos, fetched)
     appendColumnToAreastable(areastable, volumetricHumidityRow)
     appendColumnToAreastable(areastable, dewPointRow)
+    appendColumnToAreastable(areastable, temperatureHumidityIndexRow)
   }
 
   const observationTarget = document.querySelector('#amd-table')

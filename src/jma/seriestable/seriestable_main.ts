@@ -19,9 +19,11 @@ export function seriestable_main() {
       const data = await fetcher.fetchAmedasData(code, date)
       amedasDatas.push(data)
     }
-    const [volumetricHumidityRow, dewPointRow] = convertAmedasDataToSeriestableRow(amedasDatas)
+    const [volumetricHumidityRow, dewPointRow, temperatureHumidityIndexRow] =
+      convertAmedasDataToSeriestableRow(amedasDatas)
     appendColumnToSeriestable(seriestable, volumetricHumidityRow)
     appendColumnToSeriestable(seriestable, dewPointRow)
+    appendColumnToSeriestable(seriestable, temperatureHumidityIndexRow)
   }
 
   const observationTarget = document.querySelector('#amd-table')

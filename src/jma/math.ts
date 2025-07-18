@@ -13,6 +13,7 @@ export class HumidCalculator {
   readonly saturatedWaterVaporAmount: number
   readonly volumetricHumidity: number
   readonly dewPoint: number
+  readonly temperatureHumidityIndex: number
   constructor(temperature: number, relativeHumidity: number, pressure: number) {
     // input
     this.temperature = temperature
@@ -31,6 +32,7 @@ export class HumidCalculator {
       this.relativeHumidity,
     )
     this.dewPoint = this.calcDewPoint(this.waterVaporPressure)
+    this.temperatureHumidityIndex = this.calcTemperatureHumidityIndex(temperature, relativeHumidity)
   }
 
   calcSaturatedWaterVaporPressure(temperature: number): number {
@@ -80,5 +82,15 @@ export class HumidCalculator {
      */
     const a = Math.log10(waterVaporPressure / 6.1078)
     return (237.3 * a) / (7.5 - a)
+  }
+
+  calcTemperatureHumidityIndex(temperature: number, relativeHumidity: number): number {
+    /**
+     * 不快指数の計算
+     * @param temperature - 温度 (℃)
+     * @param relativeHumidity - 相対湿度 (%, 0-100)
+     * @returns 不快指数
+     */
+    return 0.81 * temperature + 0.01 * relativeHumidity * (0.99 * temperature - 14.3) + 46.3
   }
 }
