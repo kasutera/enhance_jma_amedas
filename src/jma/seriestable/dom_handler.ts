@@ -1,6 +1,3 @@
-/**
- *
- *  */
 import {
   generate1stContentsHeaderElement,
   generate2ndContentsHeaderElement,

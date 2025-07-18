@@ -1,16 +1,6 @@
-import { getAmdnoFromUrl, getAmedasUrl } from './jma_urls'
+import { getAmdnoFromUrl } from './jma_urls'
 
 describe('jma_urls', () => {
-  describe('getAmedasUrl', () => {
-    it('正しいURLを生成できること', () => {
-      const code = '44132'
-      const yyyymmdd = '20240101'
-      const hh = '03'
-      const expected = 'https://www.jma.go.jp/bosai/amedas/data/point/44132/20240101_03.json'
-      expect(getAmedasUrl(code, yyyymmdd, hh)).toBe(expected)
-    })
-  })
-
   describe('getAmdnoFromUrl', () => {
     it('URLの中からamdnoを取得できること', () => {
       expect(getAmdnoFromUrl('https://www.jma.go.jp/bosai/amedas/#amdno=44132')).toBe('44132')

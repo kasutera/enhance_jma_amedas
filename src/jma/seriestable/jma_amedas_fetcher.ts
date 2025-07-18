@@ -1,4 +1,13 @@
-import { getAmedasUrl } from './jma_urls'
+/**
+ * @param code - 観測所コード
+ * @param yyyymmdd - yyyymmdd
+ * @param hh - 00, 03, 06, 09, 12, 15, 18, 21 (3時間刻み)
+ * @returns アメダスデータのURL
+ */
+function getAmedasUrl(code: string, yyyymmdd: string, hh: string): string {
+  // assert(hh === '00' || hh === '03' || hh === '06' || hh === '09' || hh === '12' || hh === '15' || hh === '18' || hh === '21')
+  return `https://www.jma.go.jp/bosai/amedas/data/point/${code}/${yyyymmdd}_${hh}.json`
+}
 
 export function dateToAmedasUrl(code: string, date: Date): string {
   /**

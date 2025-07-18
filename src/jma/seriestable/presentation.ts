@@ -1,6 +1,6 @@
+import { HumidCalculator } from '../math'
 import type { SeriestableRow } from './dom_handler'
 import type { AmedasData } from './jma_amedas_fetcher'
-import { HumidCalculator } from './math'
 
 const VOLUMETRIC_HUMIDITY_CLASS = 'td-volumetric-humidity'
 const DEW_POINT_CLASS = 'td-dew-point'
