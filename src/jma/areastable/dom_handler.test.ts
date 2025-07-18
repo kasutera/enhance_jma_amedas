@@ -50,7 +50,6 @@ describe('Areastable の行を追加する関数のテスト', () => {
       appendColumnToAreastable(seriestable, column)
       const dstPath = `${__dirname}/testcases/dom_handler/column_added.html`
 
-      console.log(normalizeHTML(seriestable.outerHTML))
       expect(normalizeHTML(seriestable.outerHTML)).toBe(
         normalizeHTML(fs.readFileSync(dstPath, { encoding: 'utf8' })),
       )
