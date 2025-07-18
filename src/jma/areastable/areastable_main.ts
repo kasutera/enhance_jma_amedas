@@ -1,5 +1,6 @@
 // areastable 用の監視・編集処理
 
+import { ColorScaleManager } from '../color_scale/color_scale_manager'
 import { fetchLatestTime } from '../latest_amedas_date'
 import { appendColumnToAreastable, getAmdnos } from './dom_handler'
 import { AmedasFetcher } from './jma_amedas_fetcher'
@@ -7,6 +8,7 @@ import { convertAmedasDataToSeriestableRow as convertAmedasDataToAreastableRow }
 
 export function areastable_main() {
   const fetcher = new AmedasFetcher()
+  const colorScaleManager = new ColorScaleManager()
 
   async function renderAreastable(areastable: HTMLTableElement): Promise<void> {
     // areastableは全観測所分を一度に表示するため、時系列は1つ（最新時刻）で良い
@@ -20,6 +22,9 @@ export function areastable_main() {
     appendColumnToAreastable(areastable, volumetricHumidityRow)
     appendColumnToAreastable(areastable, dewPointRow)
     appendColumnToAreastable(areastable, temperatureHumidityIndexRow)
+
+    // カラースケールを適用（容積絶対湿度列のみ）
+    colorScaleManager.applyColorScaleToColumn(areastable, 'td-volumetric-humidity')
   }
 
   const observationTarget = document.querySelector('#amd-table')
