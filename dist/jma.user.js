@@ -185,6 +185,7 @@
     saturatedWaterVaporAmount
     volumetricHumidity
     dewPoint
+    temperatureHumidityIndex
     constructor(temperature, relativeHumidity, pressure) {
       this.temperature = temperature
       this.relativeHumidity = relativeHumidity
@@ -200,6 +201,10 @@
         this.relativeHumidity,
       )
       this.dewPoint = this.calcDewPoint(this.waterVaporPressure)
+      this.temperatureHumidityIndex = this.calcTemperatureHumidityIndex(
+        temperature,
+        relativeHumidity,
+      )
     }
     calcSaturatedWaterVaporPressure(temperature) {
       const a = 6.1078
@@ -220,20 +225,30 @@
       const a = Math.log10(waterVaporPressure / 6.1078)
       return (237.3 * a) / (7.5 - a)
     }
+    calcTemperatureHumidityIndex(temperature, relativeHumidity) {
+      return 0.81 * temperature + 0.01 * relativeHumidity * (0.99 * temperature - 14.3) + 46.3
+    }
   }
 
   const VOLUMETRIC_HUMIDITY_CLASS$1 = 'td-volumetric-humidity'
   const DEW_POINT_CLASS$1 = 'td-dew-point'
+  const TEMPERATURE_HUMIDITY_INDEX_CLASS$1 = 'td-temperature-humidity-index'
   const STANDARD_PRESSURE$1 = 1013.25
   const VALUES_PRECISION$1 = 1
   function convertAmedasDataToSeriestableRow$1(amdnos, amedasDatas) {
     const volumetricHumidityValues = []
     const dewPointValues = []
+    const temperatureHumidityIndexValues = []
     for (const amdno of amdnos) {
       const amedasData = amedasDatas[amdno]
-      if (amedasData === undefined || amedasData.humidity === undefined) {
+      if (
+        amedasData === undefined ||
+        amedasData.temperature === undefined ||
+        amedasData.humidity === undefined
+      ) {
         volumetricHumidityValues.push(null)
         dewPointValues.push(null)
+        temperatureHumidityIndexValues.push(null)
         continue
       }
       const pressure = amedasData.pressure ?? STANDARD_PRESSURE$1
@@ -244,20 +259,29 @@
       )
       volumetricHumidityValues.push(humidCalculator.volumetricHumidity)
       dewPointValues.push(humidCalculator.dewPoint)
+      temperatureHumidityIndexValues.push(humidCalculator.temperatureHumidityIndex)
     }
     const volumetricHumidityRow = {
       class: VOLUMETRIC_HUMIDITY_CLASS$1,
       headerValue: '容積絶対湿度',
       headerUnit: 'g/㎥',
-      values: volumetricHumidityValues.map((value) => value?.toFixed(VALUES_PRECISION$1) || ''),
+      values: volumetricHumidityValues.map((value) => value?.toFixed(VALUES_PRECISION$1) || '---'),
     }
     const dewPointRow = {
       class: DEW_POINT_CLASS$1,
       headerValue: '露点温度',
       headerUnit: '℃',
-      values: dewPointValues.map((value) => value?.toFixed(VALUES_PRECISION$1) || ''),
+      values: dewPointValues.map((value) => value?.toFixed(VALUES_PRECISION$1) || '---'),
     }
-    return [volumetricHumidityRow, dewPointRow]
+    const temperatureHumidityIndexRow = {
+      class: TEMPERATURE_HUMIDITY_INDEX_CLASS$1,
+      headerValue: '不快指数',
+      headerUnit: '',
+      values: temperatureHumidityIndexValues.map(
+        (value) => value?.toFixed(VALUES_PRECISION$1) || '---',
+      ),
+    }
+    return [volumetricHumidityRow, dewPointRow, temperatureHumidityIndexRow]
   }
 
   function areastable_main() {
@@ -266,12 +290,11 @@
       const amdnos = getAmdnos()
       const latestTime = await fetchLatestTime()
       const fetched = await fetcher.fetchAmedasData(latestTime)
-      const [volumetricHumidityRow, dewPointRow] = convertAmedasDataToSeriestableRow$1(
-        amdnos,
-        fetched,
-      )
+      const [volumetricHumidityRow, dewPointRow, temperatureHumidityIndexRow] =
+        convertAmedasDataToSeriestableRow$1(amdnos, fetched)
       appendColumnToAreastable(areastable, volumetricHumidityRow)
       appendColumnToAreastable(areastable, dewPointRow)
+      appendColumnToAreastable(areastable, temperatureHumidityIndexRow)
     }
     const observationTarget = document.querySelector('#amd-table')
     if (observationTarget !== null) {
@@ -464,12 +487,20 @@
 
   const VOLUMETRIC_HUMIDITY_CLASS = 'td-volumetric-humidity'
   const DEW_POINT_CLASS = 'td-dew-point'
+  const TEMPERATURE_HUMIDITY_INDEX_CLASS = 'td-temperature-humidity-index'
   const STANDARD_PRESSURE = 1013.25
   const VALUES_PRECISION = 1
   function convertAmedasDataToSeriestableRow(amedasDatas) {
     const volumetricHumidityValues = []
     const dewPointValues = []
+    const temperatureHumidityIndexValues = []
     for (const amedasData of amedasDatas) {
+      if (amedasData.temperature === undefined || amedasData.humidity === undefined) {
+        volumetricHumidityValues.push(null)
+        dewPointValues.push(null)
+        temperatureHumidityIndexValues.push(null)
+        continue
+      }
       const pressure = amedasData.pressure ?? STANDARD_PRESSURE
       const humidCalculator = new HumidCalculator(
         amedasData.temperature,
@@ -478,20 +509,29 @@
       )
       volumetricHumidityValues.push(humidCalculator.volumetricHumidity)
       dewPointValues.push(humidCalculator.dewPoint)
+      temperatureHumidityIndexValues.push(humidCalculator.temperatureHumidityIndex)
     }
     const volumetricHumidityRow = {
       class: VOLUMETRIC_HUMIDITY_CLASS,
       headerValue: '容積絶対湿度',
       headerUnit: 'g/㎥',
-      values: volumetricHumidityValues.map((value) => value.toFixed(VALUES_PRECISION)),
+      values: volumetricHumidityValues.map((value) => value?.toFixed(VALUES_PRECISION) || '---'),
     }
     const dewPointRow = {
       class: DEW_POINT_CLASS,
       headerValue: '露点温度',
       headerUnit: '℃',
-      values: dewPointValues.map((value) => value.toFixed(VALUES_PRECISION)),
+      values: dewPointValues.map((value) => value?.toFixed(VALUES_PRECISION) || '---'),
     }
-    return [volumetricHumidityRow, dewPointRow]
+    const temperatureHumidityIndexRow = {
+      class: TEMPERATURE_HUMIDITY_INDEX_CLASS,
+      headerValue: '不快指数',
+      headerUnit: '',
+      values: temperatureHumidityIndexValues.map(
+        (value) => value?.toFixed(VALUES_PRECISION) || '---',
+      ),
+    }
+    return [volumetricHumidityRow, dewPointRow, temperatureHumidityIndexRow]
   }
 
   function seriestable_main() {
@@ -504,9 +544,11 @@
         const data = await fetcher.fetchAmedasData(code, date)
         amedasDatas.push(data)
       }
-      const [volumetricHumidityRow, dewPointRow] = convertAmedasDataToSeriestableRow(amedasDatas)
+      const [volumetricHumidityRow, dewPointRow, temperatureHumidityIndexRow] =
+        convertAmedasDataToSeriestableRow(amedasDatas)
       appendColumnToSeriestable(seriestable, volumetricHumidityRow)
       appendColumnToSeriestable(seriestable, dewPointRow)
+      appendColumnToSeriestable(seriestable, temperatureHumidityIndexRow)
     }
     const observationTarget = document.querySelector('#amd-table')
     if (observationTarget === null) {
