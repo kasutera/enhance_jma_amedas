@@ -20,7 +20,7 @@
   - 負の値でも正常に計算を行う処理を実装
   - _要件: 1.1, 2.3, 3.1_
 
-- [ ] 4. 時系列テーブル用presentation.tsを拡張
+- [x] 4. 時系列テーブル用presentation.tsを拡張
   - `convertAmedasDataToSeriestableRow`関数の戻り値を3つの行に変更
   - 不快指数行の定数定義を追加
   - 気温・湿度欠損時の"---"表示処理を実装
