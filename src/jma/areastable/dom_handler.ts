@@ -33,8 +33,8 @@ function getAmdAreastableLinks(): HTMLAmdAreastableAPointLink[] {
     if (!(obj instanceof HTMLAnchorElement)) {
       throw new Error('amd-areastable-a-pointlink is not an HTMLAnchorElement')
     }
-    if (!obj.href.startsWith('#amdno=')) {
-      throw new Error('amd-areastable-a-pointlink href does not start with #amdno=')
+    if (!obj.href.includes('#amdno=')) {
+      throw new Error(`amd-areastable-a-pointlink href does not include #amdno= ${obj}`)
     }
   }
   return objs as HTMLAmdAreastableAPointLink[]
@@ -67,11 +67,14 @@ export function appendColumnToAreastable(
   areastable: HTMLTableElement,
   column: AreastableColumn,
 ): void {
+  if (!areastable.classList.contains('amd-areastable')) {
+    throw new Error('areastable is not class of amd-areastable')
+  }
   const old = areastable.querySelector('.simple-table-hidden-tr')
   if (old === null) {
     throw new Error('.simple-table-hidden-tr does not exist')
   }
-  const length = old.children.length + 1
+  const length = old.children.length
 
   const simpleTableHiddenTr = generateSimpleTableHiddenTr(length)
   if (old !== null) {
@@ -96,9 +99,7 @@ export function appendColumnToAreastable(
   const amdTableTrs: HTMLTableRowElement[] = Array.from(
     areastable.querySelectorAll('.amd-areastable-tr-pointdata'),
   )
-  let i = 0
-  amdTableTrs.forEach((tr) => {
-    tr.append(generateAmdTableTdElement(column.class, column.values[i]))
-    i++
+  amdTableTrs.forEach((tr, index) => {
+    tr.append(generateAmdTableTdElement(column.class, column.values[index]))
   })
 }

@@ -17,8 +17,8 @@ export function convertAmedasDataToSeriestableRow(
   const dewPointValues: Array<number | null> = []
   for (const amdno of amdnos) {
     const amedasData = amedasDatas[amdno]
-    if (!amedasData.humidity) {
-      // 湿度がない場合は計算しない
+    if (amedasData === undefined || amedasData.humidity === undefined) {
+      // 計算しない
       volumetricHumidityValues.push(null)
       dewPointValues.push(null)
       continue
