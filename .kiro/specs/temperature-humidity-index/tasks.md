@@ -13,7 +13,7 @@
   - 計算精度（小数点以下1桁）のテスト
   - _要件: 2.1, 2.2, 2.3_
 
-- [ ] 3. エリアテーブル用presentation.tsを拡張
+- [x] 3. エリアテーブル用presentation.tsを拡張
   - `convertAmedasDataToSeriestableRow`関数の戻り値を3つの列に変更
   - 不快指数列の定数定義（`TEMPERATURE_HUMIDITY_INDEX_CLASS`等）を追加
   - 気温・湿度欠損時の"---"表示処理を実装
