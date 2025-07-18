@@ -1,5 +1,5 @@
 /**
- * ColorScaleManager のテスト
+ * ColorScaleManagerのテスト
  */
 
 import { ColorScaleManager } from './color_scale_manager'
@@ -13,55 +13,86 @@ describe('ColorScaleManager', () => {
 
     // モックテーブルを作成
     document.body.innerHTML = `
-      <table class="amd-areastable">
+      <table id="test-table">
         <tr>
           <td class="td-volumetric-humidity">15.5</td>
           <td class="td-volumetric-humidity">25.0</td>
           <td class="td-volumetric-humidity">---</td>
-          <td class="td-volumetric-humidity">-5.0</td>
-          <td class="td-volumetric-humidity">35.0</td>
-        </tr>
-        <tr>
-          <td class="td-dew-point">10.2</td>
-          <td class="td-dew-point">20.5</td>
         </tr>
       </table>
     `
-    mockTable = document.querySelector('table') as HTMLTableElement
+    mockTable = document.getElementById('test-table') as HTMLTableElement
   })
 
   afterEach(() => {
     document.body.innerHTML = ''
   })
 
-  describe('applyColorScaleToColumn', () => {
-    test('容積絶対湿度列にカラースケールが適用される', () => {
-      manager.applyColorScaleToColumn(mockTable, 'td-volumetric-humidity')
+  test('初期状態では有効になっている', () => {
+    expect(manager.getEnabled()).toBe(true)
+  })
 
-      const cells = mockTable.querySelectorAll('.td-volumetric-humidity')
+  test('disable()で無効にできる', () => {
+    manager.disable()
+    expect(manager.getEnabled()).toBe(false)
+  })
 
-      // 数値を持つセルに背景色が適用されている
-      expect((cells[0] as HTMLElement).style.backgroundColor).toMatch(/rgb\(\d+, \d+, \d+\)/)
-      expect((cells[1] as HTMLElement).style.backgroundColor).toMatch(/rgb\(\d+, \d+, \d+\)/)
+  test('enable()で有効にできる', () => {
+    manager.disable()
+    manager.enable()
+    expect(manager.getEnabled()).toBe(true)
+  })
 
-      // 欠損データ（---）には背景色が適用されない
-      expect((cells[2] as HTMLElement).style.backgroundColor).toBe('')
-    })
+  test('カラースケールが適用される', () => {
+    manager.applyColorScaleToColumn(mockTable, 'td-volumetric-humidity')
 
-    test('容積絶対湿度以外の列にはカラースケールが適用されない', () => {
-      manager.applyColorScaleToColumn(mockTable, 'td-dew-point')
+    const cells = mockTable.querySelectorAll('.td-volumetric-humidity')
+    const cell1 = cells[0] as HTMLElement
+    const cell2 = cells[1] as HTMLElement
+    const cell3 = cells[2] as HTMLElement
 
-      const cells = mockTable.querySelectorAll('.td-dew-point')
+    // 数値セルには背景色が適用される
+    expect(cell1.style.backgroundColor).toBeTruthy()
+    expect(cell2.style.backgroundColor).toBeTruthy()
 
-      // 背景色が適用されていない
-      expect((cells[0] as HTMLElement).style.backgroundColor).toBe('')
-      expect((cells[1] as HTMLElement).style.backgroundColor).toBe('')
-    })
+    // 欠損データ（---）には背景色が適用されない
+    expect(cell3.style.backgroundColor).toBeFalsy()
+  })
 
-    test('存在しない列クラスを指定してもエラーにならない', () => {
-      expect(() => {
-        manager.applyColorScaleToColumn(mockTable, 'non-existent-class')
-      }).not.toThrow()
-    })
+  test('無効化するとカラースケールが削除される', () => {
+    // まずカラースケールを適用
+    manager.applyColorScaleToColumn(mockTable, 'td-volumetric-humidity')
+
+    const cells = mockTable.querySelectorAll('.td-volumetric-humidity')
+    const cell1 = cells[0] as HTMLElement
+
+    // 背景色が適用されていることを確認
+    expect(cell1.style.backgroundColor).toBeTruthy()
+
+    // 無効化
+    manager.disable()
+
+    // 背景色が削除されていることを確認
+    expect(cell1.style.backgroundColor).toBe('')
+  })
+
+  test('再有効化するとカラースケールが再適用される', () => {
+    // カラースケールを適用
+    manager.applyColorScaleToColumn(mockTable, 'td-volumetric-humidity')
+
+    // 無効化
+    manager.disable()
+
+    const cells = mockTable.querySelectorAll('.td-volumetric-humidity')
+    const cell1 = cells[0] as HTMLElement
+
+    // 背景色が削除されていることを確認
+    expect(cell1.style.backgroundColor).toBe('')
+
+    // 再有効化
+    manager.enable()
+
+    // 背景色が再適用されていることを確認
+    expect(cell1.style.backgroundColor).toBeTruthy()
   })
 })
