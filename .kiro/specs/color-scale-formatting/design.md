@@ -2,7 +2,7 @@
 
 ## 概要
 
-JMAアメダスサイトの気象データテーブルに条件付き書式（カラースケール）機能を追加します。この機能は既存のテーブル拡張機能に統合され、ユーザーが数値データの大小を視覚的に把握できるようにします。
+JMAアメダスサイトの気象データテーブルに条件付き書式（カラースケール）機能を追加します。この機能は既存のテーブル拡張機能に統合され、ユーザーが数値データの大小を視覚的に把握できるようにします。機能はシンプルなオン・オフ切り替えのみで、カラースケールの配色カスタマイズや凡例表示は行いません。
 
 ## アーキテクチャ
 
@@ -11,11 +11,11 @@ JMAアメダスサイトの気象データテーブルに条件付き書式（�
 ```text
 src/jma/
 ├── color_scale/
-│   ├── color_scale_manager.ts      # カラースケール管理の中心クラス
-│   ├── color_scale_calculator.ts   # カラー計算ロジック
-│   ├── color_scale_ui.ts          # UI制御とイベント処理
-│   ├── color_scale_storage.ts     # ローカルストレージ管理
-│   └── color_scale_types.ts       # 型定義
+│   ├── color_scale_manager.ts      # カラースケール管理の中心クラス（実装済み）
+│   ├── color_scale_calculator.ts   # カラー計算ロジック（実装済み）
+│   ├── color_scale_ui.ts          # UI制御とイベント処理（実装済み）
+│   ├── color_scale_global.ts      # グローバル設定管理（実装済み）
+│   └── jma_official_colors.ts     # JMA公式カラーパレット（実装済み）
 ├── areastable/
 │   ├── areastable_main.ts         # カラースケール機能統合
 │   └── dom_handler.ts             # カラースケール適用機能追加
@@ -28,9 +28,9 @@ src/jma/
 ### 設計原則
 
 1. **既存機能との分離**: カラースケール機能は独立したモジュールとして実装し、既存機能に影響を与えない
-2. **拡張性**: 新しい項目や異なるカラースケールタイプを容易に追加できる設計
+2. **シンプルさ**: オン・オフ切り替えのみのシンプルな機能設計
 3. **パフォーマンス**: テーブル更新時の再計算を最小限に抑制
-4. **ユーザビリティ**: 直感的なUI設計とリアルタイムプレビュー
+4. **ユーザビリティ**: 最小限のUIで直感的な操作を提供
 
 ## コンポーネントと インターフェース
 
@@ -41,7 +41,6 @@ src/jma/
 ```typescript
 class ColorScaleManager {
   private isEnabled: boolean
-  private columnConfigs: Map<string, ColorScaleConfig>
   private storage: ColorScaleStorage
   private calculator: ColorScaleCalculator
   
@@ -50,7 +49,7 @@ class ColorScaleManager {
   disable(): void
   applyColorScale(table: HTMLTableElement, columnClass: string): void
   removeColorScale(table: HTMLTableElement, columnClass: string): void
-  updateColumnConfig(columnClass: string, config: ColorScaleConfig): void
+  isColorScaleEnabled(): boolean
 }
 ```
 
@@ -60,15 +59,16 @@ class ColorScaleManager {
 
 ```typescript
 class ColorScaleCalculator {
-  calculateColor(value: number, min: number, max: number, colorScheme: ColorScheme): string
+  calculateColor(value: number, min: number, max: number, columnClass: string): string
   parseNumericValue(cellText: string): number | null
-  getColorScheme(columnClass: string): ColorScheme
+  getDefaultColorScheme(columnClass: string): { startColor: string, endColor: string }
+  getDefaultRange(columnClass: string): { min: number, max: number }
 }
 ```
 
 ### ColorScaleUI
 
-ユーザーインターフェースの制御を行うクラス。
+ユーザーインターフェースの制御を行うクラス。シンプルなオン・オフ切り替えのみを提供します。
 
 ```typescript
 class ColorScaleUI {
@@ -78,20 +78,18 @@ class ColorScaleUI {
   constructor(manager: ColorScaleManager)
   render(): void
   createToggleCheckbox(): HTMLElement
-  createColumnConfigPanel(columnClass: string, config: ColorScaleConfig): HTMLElement
-  updatePreview(columnClass: string): void
+  handleToggleChange(enabled: boolean): void
 }
 ```
 
 ### ColorScaleStorage
 
-設定の永続化を管理するクラス。
+設定の永続化を管理するクラス。オン・オフ状態のみを保存します。
 
 ```typescript
 class ColorScaleStorage {
-  saveConfig(config: ColorScaleGlobalConfig): void
-  loadConfig(): ColorScaleGlobalConfig
-  getDefaultConfig(): ColorScaleGlobalConfig
+  saveEnabled(enabled: boolean): void
+  loadEnabled(): boolean
 }
 ```
 
@@ -100,54 +98,49 @@ class ColorScaleStorage {
 ### 型定義
 
 ```typescript
-interface ColorScaleConfig {
-  enabled: boolean
-  colorScheme: ColorScheme
-  minValue: number
-  maxValue: number
-}
-
-interface ColorScheme {
-  type: 'gradient' | 'discrete'
-  colors: string[]  // hex color codes
-}
-
-interface ColorScaleGlobalConfig {
-  enabled: boolean
-  columns: Record<string, ColorScaleConfig>
-}
-
-// 対象列の定義
+// 対象列の定義（固定設定）
 const COLUMN_DEFINITIONS = {
   'td-volumetric-humidity': {
     name: '容積絶対湿度',
     unit: 'g/㎥',
-    defaultMin: 0,
-    defaultMax: 30,
-    defaultColors: ['#ffffff', '#0066cc']
+    min: 0,
+    max: 30,
+    startColor: '#ffffff',
+    endColor: '#0066cc'
   },
   'td-dew-point': {
     name: '露点温度', 
     unit: '℃',
-    defaultMin: -20,
-    defaultMax: 30,
-    defaultColors: ['#0066cc', '#ff0000']
+    min: -20,
+    max: 30,
+    startColor: '#0066cc',
+    endColor: '#ff0000'
   },
   'td-temperature-humidity-index': {
     name: '不快指数',
     unit: '',
-    defaultMin: 50,
-    defaultMax: 85,
-    defaultColors: ['#00ff00', '#ffff00', '#ff0000']
+    min: 50,
+    max: 85,
+    startColor: '#00ff00',
+    endColor: '#ff0000'
   }
+}
+
+interface ColumnDefinition {
+  name: string
+  unit: string
+  min: number
+  max: number
+  startColor: string
+  endColor: string
 }
 ```
 
-### デフォルト設定
+### 固定設定
 
 - **容積絶対湿度**: 白から青のグラデーション (0-30 g/㎥)
-- **露点温度**: 青から赤のグラデーション (-20-40℃)
-- **不快指数**: 緑から黄色、赤のグラデーション (50-85)
+- **露点温度**: 青から赤のグラデーション (-20-30℃)
+- **不快指数**: 緑から赤のグラデーション (50-85)
 
 ## エラーハンドリング
 
@@ -240,15 +233,15 @@ function interpolateColor(value: number, min: number, max: number, startColor: s
 
 ### UI配置
 
-カラースケール設定UIは以下の構造で配置：
+カラースケール制御UIは以下の構造で配置：
 
 ```html
-<div id="color-scale-controls" style="position: fixed; bottom: 20px; right: 20px; background: white; border: 1px solid #ccc; padding: 10px;">
+<div id="color-scale-controls" style="margin: 10px 0;">
   <label>
     <input type="checkbox" id="color-scale-toggle"> カラースケール有効
   </label>
-  <div id="color-scale-settings">
-    <!-- 各列の設定パネル -->
-  </div>
 </div>
 ```
+
+- 凡例やカラーバーは表示しない
+- シンプルなチェックボックスのみでオン・オフを制御

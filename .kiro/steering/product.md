@@ -2,6 +2,10 @@
 
 Enhance JMA Amedas is a userscript that enhances the Japan Meteorological Agency (JMA) Amedas weather data website by adding calculated meteorological values like volumetric absolute humidity and dew point temperature.
 
+## Colorscale setting
+
+- カラースケールの配色は気象庁公式の色を用いており、勝手に変更しないこと。
+
 ## Key Features
 
 - Adds volumetric absolute humidity calculations to JMA Amedas data tables
