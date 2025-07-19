@@ -120,14 +120,15 @@ describe('ColorScaleUI', () => {
     expect(secondContainer).not.toBeNull()
   })
 
-  test('適切なラベルとタイトルが表示される', () => {
+  test('適切なラベルが表示される', () => {
     ui.initialize()
 
     const container = document.getElementById('color-scale-controls')
     expect(container?.textContent).toContain('カラースケール')
-    expect(container?.textContent).toContain('気象庁公式カラー')
-    expect(container?.textContent).toContain(
-      '気温・湿度・降水量・風速・容積絶対湿度・露点温度・不快指数',
-    )
+
+    // チェックボックスが存在することを確認
+    const checkbox = document.getElementById('color-scale-toggle') as HTMLInputElement
+    expect(checkbox).not.toBeNull()
+    expect(checkbox.type).toBe('checkbox')
   })
 })

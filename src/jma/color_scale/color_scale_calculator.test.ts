@@ -42,7 +42,7 @@ describe('ColorScaleCalculator', () => {
       expect(minColor).toBe('#000080') // 濃い青
 
       const maxColor = calculator.calculateColorFromScale(40, tempScale)
-      expect(maxColor).toBe('#800080') // 紫
+      expect(maxColor).toBe('#A52166') // 紫（JMA公式色）
 
       // 範囲内の値は何らかの色を返す（補間またはそのまま）
       const validColor = calculator.calculateColorFromScale(0, tempScale)
@@ -54,10 +54,10 @@ describe('ColorScaleCalculator', () => {
       const volumetricScale = DERIVED_COLOR_SCALES.volumetricHumidity
 
       const minColor = calculator.calculateColorFromScale(-5, volumetricScale)
-      expect(minColor).toBe('#FFFFFF') // 白
+      expect(minColor).toBe('#4D0F05') // 茶色（湿度スケール最小値）
 
       const maxColor = calculator.calculateColorFromScale(35, volumetricScale)
-      expect(maxColor).toBe('#800080') // 紫
+      expect(maxColor).toBe('#091E78') // 濃い青（湿度スケール最大値）
     })
 
     test('空のスケールに対してtransparentを返す', () => {
@@ -89,7 +89,7 @@ describe('ColorScaleCalculator', () => {
 
       // 最大値より大きい値
       const aboveMax = calculator.calculateColorFromScale(100, tempScale)
-      expect(aboveMax).toBe('#800080') // 最大値の色
+      expect(aboveMax).toBe('#A52166') // 最大値の色（JMA公式色）
     })
   })
 })
