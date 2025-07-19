@@ -1,6 +1,6 @@
 # 実装計画
 
-- [-] 1. ColorScaleManagerの対象列配列を拡張する
+- [x] 1. ColorScaleManagerの対象列配列を拡張する
   - `applyColorScaleToTable`メソッドの`targetColumns`配列に基本気象データの列クラスを追加
   - `removeColorScaleFromTable`メソッドの`targetColumns`配列に基本気象データの列クラスを追加
   - 気温（td-temp）、湿度（td-humidity）、1時間降水量（td-precipitation1h）、風速（td-wind）を対象に含める

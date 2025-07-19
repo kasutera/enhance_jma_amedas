@@ -4,7 +4,7 @@
 
 import { TABLE_CLASS_NAMES } from '../table_classes_definition'
 import { ColorScaleCalculator } from './color_scale_calculator'
-import { DERIVED_COLOR_SCALES } from './jma_official_colors'
+import { DERIVED_COLOR_SCALES, JMA_OFFICIAL_COLOR_SCALES } from './jma_official_colors'
 
 export class ColorScaleManager {
   private calculator: ColorScaleCalculator
@@ -88,6 +88,10 @@ export class ColorScaleManager {
     try {
       // 全ての対象列にカラースケールを適用
       const targetColumns = [
+        TABLE_CLASS_NAMES.temp,
+        TABLE_CLASS_NAMES.humidity,
+        TABLE_CLASS_NAMES.precipitation1h,
+        TABLE_CLASS_NAMES.wind,
         TABLE_CLASS_NAMES.volumetricHumidity,
         TABLE_CLASS_NAMES.dewPoint,
         TABLE_CLASS_NAMES.temperatureHumidityIndex,
@@ -142,6 +146,14 @@ export class ColorScaleManager {
    */
   private getColorScaleForColumn(columnClass: string) {
     switch (columnClass) {
+      case TABLE_CLASS_NAMES.temp:
+        return JMA_OFFICIAL_COLOR_SCALES.temperature
+      case TABLE_CLASS_NAMES.humidity:
+        return JMA_OFFICIAL_COLOR_SCALES.humidity
+      case TABLE_CLASS_NAMES.precipitation1h:
+        return JMA_OFFICIAL_COLOR_SCALES.precipitation
+      case TABLE_CLASS_NAMES.wind:
+        return JMA_OFFICIAL_COLOR_SCALES.windSpeed
       case TABLE_CLASS_NAMES.volumetricHumidity:
         return DERIVED_COLOR_SCALES.volumetricHumidity
       case TABLE_CLASS_NAMES.dewPoint:
@@ -185,6 +197,10 @@ export class ColorScaleManager {
     try {
       // 全ての対象列からカラースケールを削除
       const targetColumns = [
+        TABLE_CLASS_NAMES.temp,
+        TABLE_CLASS_NAMES.humidity,
+        TABLE_CLASS_NAMES.precipitation1h,
+        TABLE_CLASS_NAMES.wind,
         TABLE_CLASS_NAMES.volumetricHumidity,
         TABLE_CLASS_NAMES.dewPoint,
         TABLE_CLASS_NAMES.temperatureHumidityIndex,
