@@ -1,60 +1,92 @@
-# Project Structure
+---
+inclusion: always
+---
 
-## Root Structure
+# Project Structure & Architecture
+
+## Root Directory Layout
 
 ```text
-├── src/                    # Source code
-├── dist/                   # Built userscripts
-├── coverage/               # Test coverage reports
+├── src/                    # TypeScript source code
+├── dist/                   # Built userscripts (production ready)
+├── coverage/               # Jest test coverage reports
 ├── docs/                   # Documentation and screenshots
-├── node_modules/           # Dependencies
-└── config files            # Build and tool configurations
+├── .kiro/                  # Kiro IDE configuration
+└── config files            # Build and development tools
 ```
 
-## Source Code Organization (`src/`)
+## Core Architecture (`src/jma/`)
 
-- **Entry point**: `src/jma/main.ts` - Main application entry
-- **Modular architecture**: Separate modules for different table types
-- **Feature modules**: `areastable/` and `seriestable/` subdirectories
-- **Development entry**: `src/dev.ts` - Development mode entry point
+**Entry Points:**
 
-## Feature Module Structure
+- `main.ts` - Production userscript entry point
+- `dev.ts` - Development mode with hot reload
 
-Each feature module (areastable, seriestable) follows consistent organization:
+**Shared Utilities:**
+
+- `jma_urls.ts` - JMA API URL construction
+- `latest_amedas_date.ts` - Date/time handling for weather data
+- `math.ts` - Meteorological calculations (humidity, dew point)
+- `manifest.json` - Userscript metadata and permissions
+
+## Feature Module Pattern
+
+Each weather table type follows consistent modular architecture:
 
 ```text
 src/jma/{feature}/
-├── {feature}_main.ts       # Feature entry point
-├── dom_handler.ts          # DOM manipulation logic
-├── dom_generators.ts       # HTML generation utilities
-├── jma_amedas_fetcher.ts   # Data fetching logic
-├── presentation.ts         # Data presentation layer
-├── *.test.ts              # Unit tests
-└── testcases/             # Test fixtures and data
+├── {feature}_main.ts       # Module entry point and initialization
+├── dom_handler.ts          # DOM manipulation and table modification
+├── dom_generators.ts       # HTML element generation utilities
+├── jma_amedas_fetcher.ts   # Weather data API integration
+├── presentation.ts         # Data formatting and display logic
+├── *.test.ts              # Unit tests (co-located)
+└── testcases/             # Test fixtures and mock data
 ```
 
-## Shared Components (`src/jma/`)
+**Current Feature Modules:**
 
-- `jma_urls.ts` - URL construction utilities
-- `latest_amedas_date.ts` - Date handling
-- `math.ts` - Mathematical calculations
-- `manifest.json` - Userscript metadata
+- `areastable/` - Regional weather data tables
+- `seriestable/` - Time series weather data tables
+- `color_scale/` - Weather data visualization and coloring
 
-## Build Output (`dist/`)
+## Development Rules
 
-- `jma.user.js` - Production userscript
-- `jma.dev.user.js` - Development userscript with hot reload
+**File Organization:**
 
-## Testing Structure
+- Tests must be co-located with source files (`*.test.ts`)
+- Test fixtures in dedicated `testcases/` subdirectories
+- HTML fixtures for DOM testing, JSON for API mocking
 
-- Tests co-located with source files (`*.test.ts`)
-- Test fixtures in `testcases/` subdirectories
-- HTML fixtures for DOM testing
-- JSON fixtures for API response testing
+**Module Dependencies:**
 
-## Configuration Files
+- Feature modules should be self-contained
+- Shared utilities in `src/jma/` root only
+- No circular dependencies between feature modules
 
-- `rollup.config.ts` - Build configuration
-- `jest.config.ts` - Test configuration  
-- `tsconfig.json` - TypeScript configuration
-- `biome.jsonc` - Code formatting/linting rules
+**Naming Conventions:**
+
+- Feature directories: lowercase with underscores
+- Main files: `{feature}_main.ts` pattern
+- Test files: `{source}.test.ts` pattern
+
+## Build System
+
+**Output Files:**
+
+- `dist/jma.user.js` - Production userscript (minified)
+- `dist/jma.dev.user.js` - Development version (with source maps)
+
+**Configuration:**
+
+- `rollup.config.ts` - Build pipeline and bundling
+- `jest.config.ts` - Test runner configuration
+- `tsconfig.json` - TypeScript compiler settings
+- `biome.jsonc` - Code formatting and linting rules
+
+## Testing Strategy
+
+- **Unit Tests**: Logic and calculation functions
+- **DOM Tests**: HTML manipulation and generation
+- **Integration Tests**: API data processing
+- **Fixture-Based**: Realistic JMA website HTML structures

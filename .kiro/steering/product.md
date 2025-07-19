@@ -1,26 +1,46 @@
+---
+inclusion: always
+---
+
 # Product Overview
 
 Enhance JMA Amedas is a userscript that enhances the Japan Meteorological Agency (JMA) Amedas weather data website by adding calculated meteorological values like volumetric absolute humidity and dew point temperature.
 
-## Colorscale setting
+## Critical Design Constraints
 
-- カラースケールの配色は気象庁公式の色を用いており、勝手に変更しないこと。
+- **カラースケール配色**: 気象庁公式の色を使用すること。勝手に変更してはならない
+- **Target Website**: JMA Amedas website (`www.jma.go.jp/bosai/amedas/`) のみ対応
+- **Userscript Compatibility**: Tampermonkey/Violentmonkey環境での動作を保証すること
+- **Language**: ユーザー向けドキュメントは日本語で記述すること
 
-## Key Features
+## Core Features
 
-- Adds volumetric absolute humidity calculations to JMA Amedas data tables
-- Adds dew point temperature calculations
-- Works on the official JMA Amedas website (<www.jma.go.jp/bosai/amedas/>)
-- Supports both area tables and time series tables
-- Distributed as a userscript for Tampermonkey/Violentmonkey
+- **気象計算機能**: 体積絶対湿度と露点温度の自動計算・表示
+- **テーブル拡張**: 既存のJMAテーブルに新しい列を動的に追加
+- **カラースケール機能**: 気象庁公式配色による数値の視覚化
+- **双方向対応**: エリアテーブルと時系列テーブルの両方をサポート
+- **リアルタイム処理**: ページ読み込み時とデータ更新時の自動処理
 
-## Target Users
+## Architecture Principles
 
-- Weather enthusiasts and professionals who need enhanced meteorological calculations
-- Users of the JMA Amedas website who want additional derived weather parameters
-- Japanese-speaking users (documentation is in Japanese)
+- **モジュラー設計**: `areastable/`、`seriestable/`、`color_scale/`で機能を分離
+- **DOM操作の最小化**: 既存のJMAサイト構造を尊重し、必要最小限の変更のみ
+- **エラーハンドリング**: JMAサイトの構造変更に対する堅牢性を確保
+- **パフォーマンス**: 大量の気象データ処理時の応答性を維持
+- **状態管理**: LocalStorageを使用したユーザー設定の永続化
 
-## Distribution
+## Development Guidelines
 
-- Distributed as `dist/jma.user.js` via GitHub releases
-- Installed through userscript managers like Tampermonkey or Violentmonkey
+- **気象計算の精度**: 科学的に正確な計算式を使用すること
+- **UI一貫性**: JMAサイトの既存デザインと調和すること
+- **テスト要件**: 気象計算ロジックには必ず単体テストを含めること
+- **ブラウザ互換性**: 主要ブラウザでの動作を確認すること
+
+## Color Scale Implementation
+
+- **ColorScaleCalculator**: 気象庁公式カラースケールによる色計算エンジン
+- **ColorScaleManager**: テーブル全体のカラースケール適用・管理
+- **ColorScaleUI**: ユーザー向けON/OFF切り替えインターフェース
+- **公式配色の厳守**: `jma_official_colors.ts`で定義された配色のみ使用
+- **動的適用**: 既存テーブルへの非破壊的なスタイル適用
+- **設定永続化**: LocalStorageによるユーザー設定の保存・復元
