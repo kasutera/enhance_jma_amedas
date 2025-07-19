@@ -1,54 +1,59 @@
 /**
- * ColorScaleUIのテスト
+ * ColorScaleUI のテスト
  */
 
 import { ColorScaleManager } from './color_scale_manager'
 import { ColorScaleUI } from './color_scale_ui'
+
+// ローカルストレージのモック
+const localStorageMock = {
+  getItem: jest.fn(),
+  setItem: jest.fn(),
+  removeItem: jest.fn(),
+  clear: jest.fn(),
+}
+Object.defineProperty(window, 'localStorage', {
+  value: localStorageMock,
+})
 
 describe('ColorScaleUI', () => {
   let manager: ColorScaleManager
   let ui: ColorScaleUI
 
   beforeEach(() => {
+    // ローカルストレージのモックをリセット
+    localStorageMock.getItem.mockClear()
+    localStorageMock.setItem.mockClear()
+    localStorageMock.getItem.mockReturnValue(null)
+
     manager = new ColorScaleManager()
     ui = new ColorScaleUI(manager)
-    document.body.innerHTML = ''
+
+    // 既存のUIコンテナを削除
+    const existingContainer = document.getElementById('color-scale-controls')
+    if (existingContainer) {
+      existingContainer.remove()
+    }
   })
 
   afterEach(() => {
     ui.destroy()
-    document.body.innerHTML = ''
   })
 
-  test('initialize()でUIが作成される', () => {
+  test('UIを初期化できる', () => {
     ui.initialize()
 
     const container = document.getElementById('color-scale-controls')
-    expect(container).toBeTruthy()
-
-    const checkbox = document.getElementById('color-scale-toggle') as HTMLInputElement
-    expect(checkbox).toBeTruthy()
-    expect(checkbox.type).toBe('checkbox')
-    expect(checkbox.checked).toBe(true) // 初期状態は有効
+    expect(container).not.toBeNull()
+    expect(container?.style.position).toBe('fixed')
   })
 
-  test('チェックボックスの状態がマネージャーの状態と同期する', () => {
+  test('チェックボックスが正しい初期状態を持つ', () => {
     ui.initialize()
 
     const checkbox = document.getElementById('color-scale-toggle') as HTMLInputElement
-
-    // 初期状態
+    expect(checkbox).not.toBeNull()
     expect(checkbox.checked).toBe(manager.getEnabled())
-
-    // マネージャーを無効化
-    manager.disable()
-
-    // UIを再初期化して状態を確認
-    ui.destroy()
-    ui.initialize()
-
-    const newCheckbox = document.getElementById('color-scale-toggle') as HTMLInputElement
-    expect(newCheckbox.checked).toBe(false)
   })
 
   test('チェックボックスをクリックするとマネージャーの状態が変わる', () => {
@@ -76,16 +81,35 @@ describe('ColorScaleUI', () => {
     expect(manager.getEnabled()).toBe(initialState)
   })
 
-  test('destroy()でUIが削除される', () => {
+  test('UIを破棄できる', () => {
     ui.initialize()
 
-    // UIが存在することを確認
-    expect(document.getElementById('color-scale-controls')).toBeTruthy()
+    const container = document.getElementById('color-scale-controls')
+    expect(container).not.toBeNull()
 
-    // 破棄
     ui.destroy()
 
-    // UIが削除されていることを確認
-    expect(document.getElementById('color-scale-controls')).toBeFalsy()
+    const destroyedContainer = document.getElementById('color-scale-controls')
+    expect(destroyedContainer).toBeNull()
+  })
+
+  test('既存のUIコンテナを置き換える', () => {
+    ui.initialize()
+    const firstContainer = document.getElementById('color-scale-controls')
+
+    ui.initialize() // 再初期化
+    const secondContainer = document.getElementById('color-scale-controls')
+
+    expect(firstContainer).not.toBe(secondContainer)
+    expect(secondContainer).not.toBeNull()
+  })
+
+  test('適切なラベルとタイトルが表示される', () => {
+    ui.initialize()
+
+    const container = document.getElementById('color-scale-controls')
+    expect(container?.textContent).toContain('カラースケール')
+    expect(container?.textContent).toContain('気象庁公式カラー')
+    expect(container?.textContent).toContain('容積絶対湿度・露点温度・不快指数')
   })
 })

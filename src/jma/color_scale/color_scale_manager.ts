@@ -1,29 +1,27 @@
 /**
- * カラースケール管理クラス（設定永続化・全列対応）
+ * カラースケール管理クラス（気象庁公式カラースケール・シンプル版）
  */
 
 import { ColorScaleCalculator } from './color_scale_calculator'
-import { ColorScaleStorage } from './color_scale_storage'
-import type { ColorScaleConfig, ColorScaleGlobalConfig } from './color_scale_types'
+import { DERIVED_COLOR_SCALES } from './jma_official_colors'
 
 export class ColorScaleManager {
   private calculator: ColorScaleCalculator
-  private storage: ColorScaleStorage
-  private config: ColorScaleGlobalConfig
+  private isEnabled: boolean
   private currentTables: Set<HTMLTableElement> = new Set()
 
   constructor() {
     this.calculator = new ColorScaleCalculator()
-    this.storage = new ColorScaleStorage()
-    this.config = this.storage.loadConfig()
+    // ローカルストレージから設定を読み込み
+    this.isEnabled = this.loadEnabledState()
   }
 
   /**
    * カラースケール機能を有効にする
    */
   enable(): void {
-    this.config.enabled = true
-    this.saveConfig()
+    this.isEnabled = true
+    this.saveEnabledState()
     this.applyColorScaleToAllTables()
   }
 
@@ -31,8 +29,8 @@ export class ColorScaleManager {
    * カラースケール機能を無効にする
    */
   disable(): void {
-    this.config.enabled = false
-    this.saveConfig()
+    this.isEnabled = false
+    this.saveEnabledState()
     this.removeColorScaleFromAllTables()
   }
 
@@ -40,43 +38,7 @@ export class ColorScaleManager {
    * カラースケール機能の有効状態を取得する
    */
   getEnabled(): boolean {
-    return this.config.enabled
-  }
-
-  /**
-   * 設定を保存する
-   */
-  private saveConfig(): void {
-    this.storage.saveConfig(this.config)
-  }
-
-  /**
-   * 列の設定を更新する
-   */
-  updateColumnConfig(columnClass: string, columnConfig: ColorScaleConfig): void {
-    this.config.columns[columnClass] = columnConfig
-    this.saveConfig()
-
-    // 該当列のカラースケールを更新
-    if (this.config.enabled) {
-      this.currentTables.forEach((table) => {
-        this.applyColorScaleToColumn(table, columnClass)
-      })
-    }
-  }
-
-  /**
-   * 列の設定を取得する
-   */
-  getColumnConfig(columnClass: string): ColorScaleConfig | undefined {
-    return this.config.columns[columnClass]
-  }
-
-  /**
-   * 全ての列設定を取得する
-   */
-  getAllColumnConfigs(): Record<string, ColorScaleConfig> {
-    return { ...this.config.columns }
+    return this.isEnabled
   }
 
   /**
@@ -84,7 +46,7 @@ export class ColorScaleManager {
    */
   registerTable(table: HTMLTableElement): void {
     this.currentTables.add(table)
-    if (this.config.enabled) {
+    if (this.isEnabled) {
       this.applyColorScaleToTable(table)
     }
   }
@@ -95,7 +57,7 @@ export class ColorScaleManager {
   applyColorScaleToColumn(table: HTMLTableElement, columnClass: string): void {
     this.registerTable(table)
 
-    if (this.config.enabled) {
+    if (this.isEnabled) {
       this.applyColorScaleToSpecificColumn(table, columnClass)
     }
   }
@@ -144,13 +106,14 @@ export class ColorScaleManager {
    */
   private applyColorScaleToSpecificColumn(table: HTMLTableElement, columnClass: string): void {
     try {
-      const columnConfig = this.config.columns[columnClass]
-      if (!columnConfig || !columnConfig.enabled) {
+      const cells = table.querySelectorAll(`.${columnClass}`)
+      if (cells.length === 0) {
         return
       }
 
-      const cells = table.querySelectorAll(`.${columnClass}`)
-      if (cells.length === 0) {
+      // 列に対応するカラースケールを取得
+      const colorScale = this.getColorScaleForColumn(columnClass)
+      if (!colorScale) {
         return
       }
 
@@ -159,12 +122,7 @@ export class ColorScaleManager {
         if (cell instanceof HTMLElement) {
           const value = this.calculator.parseNumericValue(cell.textContent || '')
           if (value !== null) {
-            const color = this.calculator.calculateColor(
-              value,
-              columnConfig.minValue,
-              columnConfig.maxValue,
-              columnConfig.colorScheme,
-            )
+            const color = this.calculator.calculateColorFromScale(value, colorScale)
             if (color !== 'transparent') {
               cell.style.backgroundColor = color
               // 文字の可読性を確保するため、背景の明度に基づいて文字色を調整
@@ -175,6 +133,22 @@ export class ColorScaleManager {
       })
     } catch (error) {
       console.error(`列 ${columnClass} のカラースケール適用中にエラーが発生しました:`, error)
+    }
+  }
+
+  /**
+   * 列に対応するカラースケールを取得する
+   */
+  private getColorScaleForColumn(columnClass: string) {
+    switch (columnClass) {
+      case 'td-volumetric-humidity':
+        return DERIVED_COLOR_SCALES.volumetricHumidity
+      case 'td-dew-point':
+        return DERIVED_COLOR_SCALES.dewPoint
+      case 'td-temperature-humidity-index':
+        return DERIVED_COLOR_SCALES.temperatureHumidityIndex
+      default:
+        return null
     }
   }
 
@@ -227,6 +201,30 @@ export class ColorScaleManager {
     } catch (error) {
       console.error('カラースケール削除中にエラーが発生しました:', error)
       // エラーが発生しても既存機能に影響を与えない
+    }
+  }
+
+  /**
+   * 有効状態をローカルストレージから読み込む
+   */
+  private loadEnabledState(): boolean {
+    try {
+      const stored = localStorage.getItem('jma-color-scale-enabled')
+      return stored !== null ? JSON.parse(stored) : true // デフォルトは有効
+    } catch (error) {
+      console.error('カラースケール設定の読み込みに失敗しました:', error)
+      return true // エラー時はデフォルト値
+    }
+  }
+
+  /**
+   * 有効状態をローカルストレージに保存する
+   */
+  private saveEnabledState(): void {
+    try {
+      localStorage.setItem('jma-color-scale-enabled', JSON.stringify(this.isEnabled))
+    } catch (error) {
+      console.error('カラースケール設定の保存に失敗しました:', error)
     }
   }
 }

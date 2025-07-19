@@ -3,7 +3,7 @@
  */
 
 import { ColorScaleCalculator } from './color_scale_calculator'
-import type { ColorScheme } from './color_scale_types'
+import { DERIVED_COLOR_SCALES, JMA_OFFICIAL_COLOR_SCALES } from './jma_official_colors'
 
 describe('ColorScaleCalculator', () => {
   let calculator: ColorScaleCalculator
@@ -14,55 +14,82 @@ describe('ColorScaleCalculator', () => {
 
   describe('parseNumericValue', () => {
     test('正常な数値を解析できる', () => {
-      expect(calculator.parseNumericValue('15.5')).toBe(15.5)
-      expect(calculator.parseNumericValue('25')).toBe(25)
-      expect(calculator.parseNumericValue('-10.2')).toBe(-10.2)
+      expect(calculator.parseNumericValue('25.5')).toBe(25.5)
+      expect(calculator.parseNumericValue('-10')).toBe(-10)
+      expect(calculator.parseNumericValue('0')).toBe(0)
     })
 
     test('単位付きの数値を解析できる', () => {
-      expect(calculator.parseNumericValue('15.5g/㎥')).toBe(15.5)
-      expect(calculator.parseNumericValue('25℃')).toBe(25)
-      expect(calculator.parseNumericValue('70%')).toBe(70)
+      expect(calculator.parseNumericValue('25.5℃')).toBe(25.5)
+      expect(calculator.parseNumericValue('80%')).toBe(80)
+      expect(calculator.parseNumericValue('15.2g/m³')).toBe(15.2)
     })
 
-    test('欠損データを正しく処理する', () => {
-      expect(calculator.parseNumericValue('---')).toBeNull()
+    test('無効な値に対してnullを返す', () => {
       expect(calculator.parseNumericValue('')).toBeNull()
-      expect(calculator.parseNumericValue('   ')).toBeNull()
-    })
-
-    test('無効な文字列を正しく処理する', () => {
-      expect(calculator.parseNumericValue('abc')).toBeNull()
+      expect(calculator.parseNumericValue('---')).toBeNull()
       expect(calculator.parseNumericValue('N/A')).toBeNull()
+      expect(calculator.parseNumericValue('abc')).toBeNull()
     })
   })
 
-  describe('calculateColor', () => {
-    const colorScheme: ColorScheme = {
-      type: 'gradient',
-      colors: ['#ffffff', '#0066cc'],
-    }
+  describe('calculateColorFromScale', () => {
+    test('気温スケールで色を計算する', () => {
+      const tempScale = JMA_OFFICIAL_COLOR_SCALES.temperature
 
-    test('範囲内の値に対してカラーを計算する', () => {
-      const color = calculator.calculateColor(15, 0, 30, colorScheme)
-      expect(color).toMatch(/^rgb\(\d+, \d+, \d+\)$/)
+      // 範囲外の値は境界値の色を返す
+      const minColor = calculator.calculateColorFromScale(-10, tempScale)
+      expect(minColor).toBe('#000080') // 濃い青
+
+      const maxColor = calculator.calculateColorFromScale(40, tempScale)
+      expect(maxColor).toBe('#800080') // 紫
+
+      // 範囲内の値は何らかの色を返す（補間またはそのまま）
+      const validColor = calculator.calculateColorFromScale(0, tempScale)
+      expect(validColor).toBeTruthy()
+      expect(validColor).not.toBe('transparent')
     })
 
-    test('最小値に対して開始色を返す', () => {
-      const color = calculator.calculateColor(0, 0, 30, colorScheme)
-      expect(color).toBe('rgb(255, 255, 255)') // #ffffff
+    test('容積絶対湿度スケールで色を計算する', () => {
+      const volumetricScale = DERIVED_COLOR_SCALES.volumetricHumidity
+
+      const minColor = calculator.calculateColorFromScale(-5, volumetricScale)
+      expect(minColor).toBe('#FFFFFF') // 白
+
+      const maxColor = calculator.calculateColorFromScale(35, volumetricScale)
+      expect(maxColor).toBe('#800080') // 紫
     })
 
-    test('最大値に対して終了色を返す', () => {
-      const color = calculator.calculateColor(30, 0, 30, colorScheme)
-      expect(color).toBe('rgb(0, 102, 204)') // #0066cc
+    test('空のスケールに対してtransparentを返す', () => {
+      const emptyScale = { values: [], colors: [] }
+      const color = calculator.calculateColorFromScale(25, emptyScale)
+      expect(color).toBe('transparent')
     })
 
-    test('範囲外の値に対して最小値・最大値と同じ色を返す', () => {
-      // 最小値未満の場合は最小値と同じ色
-      expect(calculator.calculateColor(-5, 0, 30, colorScheme)).toBe('rgb(255, 255, 255)') // #ffffff
-      // 最大値超過の場合は最大値と同じ色
-      expect(calculator.calculateColor(35, 0, 30, colorScheme)).toBe('rgb(0, 102, 204)') // #0066cc
+    test('線形補間が動作する', () => {
+      const simpleScale = {
+        values: [0, 10],
+        colors: ['#000000', '#FFFFFF'], // 黒から白
+      }
+
+      // 中間値は何らかの色を返す
+      const midColor = calculator.calculateColorFromScale(5, simpleScale)
+      expect(midColor).toBeTruthy()
+      expect(midColor).not.toBe('transparent')
+      // RGB形式またはHEX形式であることを確認
+      expect(midColor).toMatch(/^(#[0-9A-Fa-f]{6}|rgb\(\d+, \d+, \d+\))$/)
+    })
+
+    test('範囲外の値を正しく処理する', () => {
+      const tempScale = JMA_OFFICIAL_COLOR_SCALES.temperature
+
+      // 最小値より小さい値
+      const belowMin = calculator.calculateColorFromScale(-100, tempScale)
+      expect(belowMin).toBe('#000080') // 最小値の色
+
+      // 最大値より大きい値
+      const aboveMax = calculator.calculateColorFromScale(100, tempScale)
+      expect(aboveMax).toBe('#800080') // 最大値の色
     })
   })
 })

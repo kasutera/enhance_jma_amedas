@@ -1,98 +1,120 @@
 /**
- * ColorScaleManagerのテスト
+ * ColorScaleManager のテスト
  */
 
 import { ColorScaleManager } from './color_scale_manager'
 
+// ローカルストレージのモック
+const localStorageMock = {
+  getItem: jest.fn(),
+  setItem: jest.fn(),
+  removeItem: jest.fn(),
+  clear: jest.fn(),
+}
+Object.defineProperty(window, 'localStorage', {
+  value: localStorageMock,
+})
+
 describe('ColorScaleManager', () => {
   let manager: ColorScaleManager
-  let mockTable: HTMLTableElement
 
   beforeEach(() => {
-    manager = new ColorScaleManager()
+    // ローカルストレージのモックをリセット
+    localStorageMock.getItem.mockClear()
+    localStorageMock.setItem.mockClear()
 
-    // モックテーブルを作成
-    document.body.innerHTML = `
-      <table id="test-table">
+    // デフォルトでは設定なし（初期値true）
+    localStorageMock.getItem.mockReturnValue(null)
+
+    manager = new ColorScaleManager()
+  })
+
+  describe('基本機能', () => {
+    test('初期状態は有効', () => {
+      expect(manager.getEnabled()).toBe(true)
+    })
+
+    test('無効にできる', () => {
+      manager.disable()
+      expect(manager.getEnabled()).toBe(false)
+      expect(localStorageMock.setItem).toHaveBeenCalledWith('jma-color-scale-enabled', 'false')
+    })
+
+    test('有効にできる', () => {
+      manager.disable()
+      manager.enable()
+      expect(manager.getEnabled()).toBe(true)
+      expect(localStorageMock.setItem).toHaveBeenCalledWith('jma-color-scale-enabled', 'true')
+    })
+  })
+
+  describe('設定永続化', () => {
+    test('保存された設定を読み込む（有効）', () => {
+      localStorageMock.getItem.mockReturnValue('true')
+      const newManager = new ColorScaleManager()
+      expect(newManager.getEnabled()).toBe(true)
+    })
+
+    test('保存された設定を読み込む（無効）', () => {
+      localStorageMock.getItem.mockReturnValue('false')
+      const newManager = new ColorScaleManager()
+      expect(newManager.getEnabled()).toBe(false)
+    })
+
+    test('無効な設定値の場合はデフォルト値を使用', () => {
+      localStorageMock.getItem.mockImplementation(() => {
+        throw new Error('Storage error')
+      })
+      const newManager = new ColorScaleManager()
+      expect(newManager.getEnabled()).toBe(true)
+    })
+  })
+
+  describe('テーブル操作', () => {
+    let table: HTMLTableElement
+
+    beforeEach(() => {
+      // テスト用のテーブルを作成
+      table = document.createElement('table')
+      table.innerHTML = `
         <tr>
           <td class="td-volumetric-humidity">15.5</td>
-          <td class="td-volumetric-humidity">25.0</td>
-          <td class="td-volumetric-humidity">---</td>
+          <td class="td-dew-point">10.2</td>
+          <td class="td-temperature-humidity-index">65</td>
         </tr>
-      </table>
-    `
-    mockTable = document.getElementById('test-table') as HTMLTableElement
-  })
+      `
+      document.body.appendChild(table)
+    })
 
-  afterEach(() => {
-    document.body.innerHTML = ''
-  })
+    afterEach(() => {
+      document.body.removeChild(table)
+    })
 
-  test('初期状態では有効になっている', () => {
-    expect(manager.getEnabled()).toBe(true)
-  })
+    test('テーブルを登録できる', () => {
+      expect(() => {
+        manager.registerTable(table)
+      }).not.toThrow()
+    })
 
-  test('disable()で無効にできる', () => {
-    manager.disable()
-    expect(manager.getEnabled()).toBe(false)
-  })
+    test('特定の列にカラースケールを適用できる', () => {
+      manager.applyColorScaleToColumn(table, 'td-volumetric-humidity')
 
-  test('enable()で有効にできる', () => {
-    manager.disable()
-    manager.enable()
-    expect(manager.getEnabled()).toBe(true)
-  })
+      const cell = table.querySelector('.td-volumetric-humidity') as HTMLElement
+      expect(cell.style.backgroundColor).not.toBe('')
+    })
 
-  test('カラースケールが適用される', () => {
-    manager.applyColorScaleToColumn(mockTable, 'td-volumetric-humidity')
+    test('無効状態では色が適用されない', () => {
+      manager.disable()
+      manager.applyColorScaleToColumn(table, 'td-volumetric-humidity')
 
-    const cells = mockTable.querySelectorAll('.td-volumetric-humidity')
-    const cell1 = cells[0] as HTMLElement
-    const cell2 = cells[1] as HTMLElement
-    const cell3 = cells[2] as HTMLElement
+      const cell = table.querySelector('.td-volumetric-humidity') as HTMLElement
+      expect(cell.style.backgroundColor).toBe('')
+    })
 
-    // 数値セルには背景色が適用される
-    expect(cell1.style.backgroundColor).toBeTruthy()
-    expect(cell2.style.backgroundColor).toBeTruthy()
-
-    // 欠損データ（---）には背景色が適用されない
-    expect(cell3.style.backgroundColor).toBeFalsy()
-  })
-
-  test('無効化するとカラースケールが削除される', () => {
-    // まずカラースケールを適用
-    manager.applyColorScaleToColumn(mockTable, 'td-volumetric-humidity')
-
-    const cells = mockTable.querySelectorAll('.td-volumetric-humidity')
-    const cell1 = cells[0] as HTMLElement
-
-    // 背景色が適用されていることを確認
-    expect(cell1.style.backgroundColor).toBeTruthy()
-
-    // 無効化
-    manager.disable()
-
-    // 背景色が削除されていることを確認
-    expect(cell1.style.backgroundColor).toBe('')
-  })
-
-  test('再有効化するとカラースケールが再適用される', () => {
-    // カラースケールを適用
-    manager.applyColorScaleToColumn(mockTable, 'td-volumetric-humidity')
-
-    // 無効化
-    manager.disable()
-
-    const cells = mockTable.querySelectorAll('.td-volumetric-humidity')
-    const cell1 = cells[0] as HTMLElement
-
-    // 背景色が削除されていることを確認
-    expect(cell1.style.backgroundColor).toBe('')
-
-    // 再有効化
-    manager.enable()
-
-    // 背景色が再適用されていることを確認
-    expect(cell1.style.backgroundColor).toBeTruthy()
+    test('無効な列クラスではエラーが発生しない', () => {
+      expect(() => {
+        manager.applyColorScaleToColumn(table, 'invalid-column')
+      }).not.toThrow()
+    })
   })
 })

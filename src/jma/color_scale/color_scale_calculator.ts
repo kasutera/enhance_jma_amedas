@@ -1,30 +1,36 @@
 /**
- * カラースケール計算機能
+ * 気象庁公式カラースケール計算機能
  */
 
-import type { ColorScheme } from './color_scale_types'
+import type { ColorScale } from './jma_official_colors'
 
 export class ColorScaleCalculator {
   /**
-   * 数値からカラーを計算する
+   * 気象庁公式カラースケールを使用して色を計算する
    */
-  calculateColor(value: number, min: number, max: number, colorScheme: ColorScheme): string {
-    if (colorScheme.type === 'gradient' && colorScheme.colors.length >= 2) {
-      // 範囲外の値は最小値・最大値にクランプする
-      const clampedValue = Math.max(min, Math.min(max, value))
+  calculateColorFromScale(value: number, colorScale: ColorScale): string {
+    if (colorScale.values.length === 0 || colorScale.colors.length === 0) {
+      return 'transparent'
+    }
 
-      if (colorScheme.colors.length === 2) {
-        // 2色のグラデーション
-        return this.interpolateColor(
-          clampedValue,
-          min,
-          max,
-          colorScheme.colors[0],
-          colorScheme.colors[1],
-        )
+    // 値が範囲外の場合の処理
+    if (value <= colorScale.values[0]) {
+      return colorScale.colors[0]
+    }
+    if (value >= colorScale.values[colorScale.values.length - 1]) {
+      return colorScale.colors[colorScale.colors.length - 1]
+    }
+
+    // 値が属する区間を見つける
+    for (let i = 0; i < colorScale.values.length - 1; i++) {
+      const currentValue = colorScale.values[i]
+      const nextValue = colorScale.values[i + 1]
+
+      if (value >= currentValue && value <= nextValue) {
+        // 線形補間で色を計算
+        const ratio = (value - currentValue) / (nextValue - currentValue)
+        return this.interpolateColor(colorScale.colors[i], colorScale.colors[i + 1], ratio)
       }
-      // 3色以上のマルチカラーグラデーション
-      return this.interpolateMultiColor(clampedValue, min, max, colorScheme.colors)
     }
 
     return 'transparent'
@@ -49,16 +55,9 @@ export class ColorScaleCalculator {
   }
 
   /**
-   * 線形補間によるカラー計算（2色）
+   * 2色間の線形補間
    */
-  private interpolateColor(
-    value: number,
-    min: number,
-    max: number,
-    startColor: string,
-    endColor: string,
-  ): string {
-    const ratio = (value - min) / (max - min)
+  private interpolateColor(startColor: string, endColor: string, ratio: number): string {
     const startRgb = this.hexToRgb(startColor)
     const endRgb = this.hexToRgb(endColor)
 
@@ -69,39 +68,6 @@ export class ColorScaleCalculator {
     const r = Math.round(startRgb.r + (endRgb.r - startRgb.r) * ratio)
     const g = Math.round(startRgb.g + (endRgb.g - startRgb.g) * ratio)
     const b = Math.round(startRgb.b + (endRgb.b - startRgb.b) * ratio)
-
-    return `rgb(${r}, ${g}, ${b})`
-  }
-
-  /**
-   * マルチカラーグラデーション計算（3色以上）
-   */
-  private interpolateMultiColor(value: number, min: number, max: number, colors: string[]): string {
-    if (colors.length < 2) {
-      return 'transparent'
-    }
-
-    const ratio = (value - min) / (max - min)
-    const segmentCount = colors.length - 1
-    const segmentSize = 1 / segmentCount
-
-    // どのセグメント（色の区間）にいるかを計算
-    const segmentIndex = Math.min(Math.floor(ratio / segmentSize), segmentCount - 1)
-    const segmentRatio = (ratio - segmentIndex * segmentSize) / segmentSize
-
-    const startColor = colors[segmentIndex]
-    const endColor = colors[segmentIndex + 1]
-
-    const startRgb = this.hexToRgb(startColor)
-    const endRgb = this.hexToRgb(endColor)
-
-    if (!startRgb || !endRgb) {
-      return 'transparent'
-    }
-
-    const r = Math.round(startRgb.r + (endRgb.r - startRgb.r) * segmentRatio)
-    const g = Math.round(startRgb.g + (endRgb.g - startRgb.g) * segmentRatio)
-    const b = Math.round(startRgb.b + (endRgb.b - startRgb.b) * segmentRatio)
 
     return `rgb(${r}, ${g}, ${b})`
   }
