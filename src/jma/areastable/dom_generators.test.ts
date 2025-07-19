@@ -1,3 +1,4 @@
+import { TABLE_CLASS_NAMES } from '../table_classes_definition'
 import {
   generate1stContentsHeaderElement,
   generate2ndContentsHeaderElement,
@@ -59,11 +60,11 @@ describe('DOM操作関連の関数のテスト', () => {
 
   describe('generateAmdTableTdElement()', () => {
     test('正しい構造のtd要素が生成される', () => {
-      const className = 'td-wind'
+      const className = TABLE_CLASS_NAMES.wind
       const value = '3.2'
 
       expect(generateAmdTableTdElement(className, value).outerHTML).toBe(
-        '<td class="td-wind">3.2</td>',
+        `<td class="${TABLE_CLASS_NAMES.wind}">3.2</td>`,
       )
     })
   })

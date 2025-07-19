@@ -4,6 +4,7 @@
 
 import { globalColorScaleManager } from '../color_scale/color_scale_global'
 import { getAmdnoFromUrl } from '../jma_urls'
+import { TABLE_CLASS_NAMES } from '../table_classes_definition'
 import { appendColumnToSeriestable, getTimeSeries } from './dom_handler'
 import { type AmedasData, AmedasFetcher } from './jma_amedas_fetcher'
 import { convertAmedasDataToSeriestableRow } from './presentation'
@@ -27,9 +28,15 @@ export function seriestable_main() {
     appendColumnToSeriestable(seriestable, temperatureHumidityIndexRow)
 
     // カラースケールを適用（全ての対象列）
-    globalColorScaleManager.applyColorScaleToColumn(seriestable, 'td-volumetric-humidity')
-    globalColorScaleManager.applyColorScaleToColumn(seriestable, 'td-dew-point')
-    globalColorScaleManager.applyColorScaleToColumn(seriestable, 'td-temperature-humidity-index')
+    globalColorScaleManager.applyColorScaleToColumn(
+      seriestable,
+      TABLE_CLASS_NAMES.volumetricHumidity,
+    )
+    globalColorScaleManager.applyColorScaleToColumn(seriestable, TABLE_CLASS_NAMES.dewPoint)
+    globalColorScaleManager.applyColorScaleToColumn(
+      seriestable,
+      TABLE_CLASS_NAMES.temperatureHumidityIndex,
+    )
   }
 
   const observationTarget = document.querySelector('#amd-table')

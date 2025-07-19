@@ -1,10 +1,8 @@
 import { HumidCalculator } from '../math'
+import { TABLE_CLASS_NAMES } from '../table_classes_definition'
 import type { SeriestableRow } from './dom_handler'
 import type { AmedasData } from './jma_amedas_fetcher'
 
-const VOLUMETRIC_HUMIDITY_CLASS = 'td-volumetric-humidity'
-const DEW_POINT_CLASS = 'td-dew-point'
-const TEMPERATURE_HUMIDITY_INDEX_CLASS = 'td-temperature-humidity-index'
 const STANDARD_PRESSURE = 1013.25
 
 const VALUES_PRECISION = 1
@@ -39,21 +37,21 @@ export function convertAmedasDataToSeriestableRow(
   }
 
   const volumetricHumidityRow: SeriestableRow = {
-    class: VOLUMETRIC_HUMIDITY_CLASS,
+    class: TABLE_CLASS_NAMES.volumetricHumidity,
     headerValue: '容積絶対湿度',
     headerUnit: 'g/㎥',
     values: volumetricHumidityValues.map((value) => value?.toFixed(VALUES_PRECISION) || '---'),
   }
 
   const dewPointRow: SeriestableRow = {
-    class: DEW_POINT_CLASS,
+    class: TABLE_CLASS_NAMES.dewPoint,
     headerValue: '露点温度',
     headerUnit: '℃',
     values: dewPointValues.map((value) => value?.toFixed(VALUES_PRECISION) || '---'),
   }
 
   const temperatureHumidityIndexRow: SeriestableRow = {
-    class: TEMPERATURE_HUMIDITY_INDEX_CLASS,
+    class: TABLE_CLASS_NAMES.temperatureHumidityIndex,
     headerValue: '不快指数',
     headerUnit: '',
     values: temperatureHumidityIndexValues.map(

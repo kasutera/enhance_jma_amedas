@@ -2,6 +2,7 @@
  * ColorScaleManager のテスト
  */
 
+import { TABLE_CLASS_NAMES } from '../table_classes_definition'
 import { ColorScaleManager } from './color_scale_manager'
 
 // ローカルストレージのモック
@@ -78,9 +79,9 @@ describe('ColorScaleManager', () => {
       table = document.createElement('table')
       table.innerHTML = `
         <tr>
-          <td class="td-volumetric-humidity">15.5</td>
-          <td class="td-dew-point">10.2</td>
-          <td class="td-temperature-humidity-index">65</td>
+          <td class="${TABLE_CLASS_NAMES.volumetricHumidity}">15.5</td>
+          <td class="${TABLE_CLASS_NAMES.dewPoint}">10.2</td>
+          <td class="${TABLE_CLASS_NAMES.temperatureHumidityIndex}">65</td>
         </tr>
       `
       document.body.appendChild(table)
@@ -97,17 +98,17 @@ describe('ColorScaleManager', () => {
     })
 
     test('特定の列にカラースケールを適用できる', () => {
-      manager.applyColorScaleToColumn(table, 'td-volumetric-humidity')
+      manager.applyColorScaleToColumn(table, TABLE_CLASS_NAMES.volumetricHumidity)
 
-      const cell = table.querySelector('.td-volumetric-humidity') as HTMLElement
+      const cell = table.querySelector(`.${TABLE_CLASS_NAMES.volumetricHumidity}`) as HTMLElement
       expect(cell.style.backgroundColor).not.toBe('')
     })
 
     test('無効状態では色が適用されない', () => {
       manager.disable()
-      manager.applyColorScaleToColumn(table, 'td-volumetric-humidity')
+      manager.applyColorScaleToColumn(table, TABLE_CLASS_NAMES.volumetricHumidity)
 
-      const cell = table.querySelector('.td-volumetric-humidity') as HTMLElement
+      const cell = table.querySelector(`.${TABLE_CLASS_NAMES.volumetricHumidity}`) as HTMLElement
       expect(cell.style.backgroundColor).toBe('')
     })
 

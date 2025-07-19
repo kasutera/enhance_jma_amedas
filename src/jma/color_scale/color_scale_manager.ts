@@ -2,6 +2,7 @@
  * カラースケール管理クラス（気象庁公式カラースケール・シンプル版）
  */
 
+import { TABLE_CLASS_NAMES } from '../table_classes_definition'
 import { ColorScaleCalculator } from './color_scale_calculator'
 import { DERIVED_COLOR_SCALES } from './jma_official_colors'
 
@@ -87,9 +88,9 @@ export class ColorScaleManager {
     try {
       // 全ての対象列にカラースケールを適用
       const targetColumns = [
-        'td-volumetric-humidity',
-        'td-dew-point',
-        'td-temperature-humidity-index',
+        TABLE_CLASS_NAMES.volumetricHumidity,
+        TABLE_CLASS_NAMES.dewPoint,
+        TABLE_CLASS_NAMES.temperatureHumidityIndex,
       ]
 
       for (const columnClass of targetColumns) {
@@ -141,11 +142,11 @@ export class ColorScaleManager {
    */
   private getColorScaleForColumn(columnClass: string) {
     switch (columnClass) {
-      case 'td-volumetric-humidity':
+      case TABLE_CLASS_NAMES.volumetricHumidity:
         return DERIVED_COLOR_SCALES.volumetricHumidity
-      case 'td-dew-point':
+      case TABLE_CLASS_NAMES.dewPoint:
         return DERIVED_COLOR_SCALES.dewPoint
-      case 'td-temperature-humidity-index':
+      case TABLE_CLASS_NAMES.temperatureHumidityIndex:
         return DERIVED_COLOR_SCALES.temperatureHumidityIndex
       default:
         return null
@@ -184,9 +185,9 @@ export class ColorScaleManager {
     try {
       // 全ての対象列からカラースケールを削除
       const targetColumns = [
-        'td-volumetric-humidity',
-        'td-dew-point',
-        'td-temperature-humidity-index',
+        TABLE_CLASS_NAMES.volumetricHumidity,
+        TABLE_CLASS_NAMES.dewPoint,
+        TABLE_CLASS_NAMES.temperatureHumidityIndex,
       ]
 
       for (const columnClass of targetColumns) {

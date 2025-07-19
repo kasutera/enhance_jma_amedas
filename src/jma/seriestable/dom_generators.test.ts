@@ -1,3 +1,4 @@
+import { TABLE_CLASS_NAMES } from '../table_classes_definition'
 import {
   generate1stContentsHeaderElement,
   generate2ndContentsHeaderElement,
@@ -39,22 +40,22 @@ describe('DOM操作関連の関数のテスト', () => {
 
   describe('generate1stContentsHeaderElement()', () => {
     test('正しい構造のth要素が生成される', () => {
-      const className = 'td-wind'
+      const className = TABLE_CLASS_NAMES.wind
       const headerValue = '風速'
 
       expect(generate1stContentsHeaderElement(className, headerValue).outerHTML).toBe(
-        '<th class="td-wind"><div><div class="amd-table-div-elemname amd-table-elemname-resize-responsive">風速</div></div></th>',
+        `<th class="${TABLE_CLASS_NAMES.wind}"><div><div class="amd-table-div-elemname amd-table-elemname-resize-responsive">風速</div></div></th>`,
       )
     })
   })
 
   describe('generate2ndContentsHeaderElement()', () => {
     test('正しい構造のth要素が生成される', () => {
-      const className = 'td-wind'
+      const className = TABLE_CLASS_NAMES.wind
       const headerUnit = 'm/s'
 
       expect(generate2ndContentsHeaderElement(className, headerUnit).outerHTML).toBe(
-        '<th class="td-wind"><div class="amd-table-elemunit-resize-responsive">m/s</div></th>',
+        `<th class="${TABLE_CLASS_NAMES.wind}"><div class="amd-table-elemunit-resize-responsive">m/s</div></th>`,
       )
     })
   })
