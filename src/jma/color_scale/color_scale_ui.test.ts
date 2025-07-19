@@ -34,10 +34,26 @@ describe('ColorScaleUI', () => {
     if (existingContainer) {
       existingContainer.remove()
     }
+
+    // テスト用のテーブル構造を作成
+    const amdTable = document.createElement('div')
+    amdTable.id = 'amd-table'
+
+    const areastable = document.createElement('table')
+    areastable.className = 'amd-areastable'
+
+    amdTable.appendChild(areastable)
+    document.body.appendChild(amdTable)
   })
 
   afterEach(() => {
     ui.destroy()
+
+    // テスト用のテーブル構造を削除
+    const amdTable = document.getElementById('amd-table')
+    if (amdTable) {
+      amdTable.remove()
+    }
   })
 
   test('UIを初期化できる', () => {

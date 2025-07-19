@@ -16,38 +16,69 @@ export class ColorScaleUI {
    * UIを初期化して表示する
    */
   initialize(): void {
+    // テーブルが存在するかチェック
+    const tableExists = this.checkTableExists()
+    if (!tableExists) {
+      // テーブルが存在しない場合は少し待ってから再試行
+      setTimeout(() => {
+        this.initialize()
+      }, 500)
+      return
+    }
+
     this.createContainer()
     this.render()
+  }
+
+  /**
+   * 対象テーブルが存在するかチェックする
+   */
+  private checkTableExists(): boolean {
+    const amdTable = document.querySelector('#amd-table')
+    if (!amdTable) {
+      return false
+    }
+
+    // エリアテーブルまたは時系列テーブルが存在するかチェック
+    const areastable = amdTable.querySelector('.amd-areastable')
+    const seriestable = amdTable.querySelector('.amd-table-seriestable')
+
+    return areastable !== null || seriestable !== null
   }
 
   /**
    * UIコンテナを作成する
    */
   private createContainer(): void {
-    // 既存のコンテナがあれば削除
-    const existingContainer = document.getElementById('color-scale-controls')
-    if (existingContainer) {
-      existingContainer.remove()
+    try {
+      // 既存のコンテナがあれば削除
+      const existingContainer = document.getElementById('color-scale-controls')
+      if (existingContainer) {
+        existingContainer.remove()
+      }
+
+      // 新しいコンテナを作成
+      this.container = document.createElement('div')
+      this.container.id = 'color-scale-controls'
+      this.container.style.cssText = `
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background: white;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        padding: 12px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        z-index: 1000;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        font-size: 14px;
+      `
+
+      document.body.appendChild(this.container)
+    } catch (error) {
+      console.error('カラースケールUIコンテナの作成に失敗しました:', error)
+      // エラーが発生しても既存機能に影響を与えない
     }
-
-    // 新しいコンテナを作成
-    this.container = document.createElement('div')
-    this.container.id = 'color-scale-controls'
-    this.container.style.cssText = `
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      background: white;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-      padding: 12px;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-      z-index: 1000;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      font-size: 14px;
-    `
-
-    document.body.appendChild(this.container)
   }
 
   /**
@@ -58,76 +89,93 @@ export class ColorScaleUI {
       return
     }
 
-    this.container.innerHTML = ''
+    try {
+      this.container.innerHTML = ''
 
-    // タイトル
-    const title = document.createElement('div')
-    title.textContent = 'カラースケール'
-    title.style.cssText = `
-      font-weight: bold;
-      margin-bottom: 8px;
-      color: #333;
-      font-size: 13px;
-    `
-    this.container.appendChild(title)
+      // タイトル
+      const title = document.createElement('div')
+      title.textContent = 'カラースケール'
+      title.style.cssText = `
+        font-weight: bold;
+        margin-bottom: 8px;
+        color: #333;
+        font-size: 13px;
+      `
+      this.container.appendChild(title)
 
-    // トグルチェックボックスを作成
-    const toggleContainer = document.createElement('label')
-    toggleContainer.style.cssText = `
-      display: flex;
-      align-items: center;
-      cursor: pointer;
-      user-select: none;
-    `
+      // トグルチェックボックスを作成
+      const toggleContainer = document.createElement('label')
+      toggleContainer.style.cssText = `
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+        user-select: none;
+      `
 
-    const checkbox = document.createElement('input')
-    checkbox.type = 'checkbox'
-    checkbox.id = 'color-scale-toggle'
-    checkbox.checked = this.manager.getEnabled()
-    checkbox.style.cssText = `
-      margin-right: 8px;
-      cursor: pointer;
-    `
+      const checkbox = document.createElement('input')
+      checkbox.type = 'checkbox'
+      checkbox.id = 'color-scale-toggle'
+      checkbox.checked = this.manager.getEnabled()
+      checkbox.style.cssText = `
+        margin-right: 8px;
+        cursor: pointer;
+      `
 
-    const label = document.createElement('span')
-    label.textContent = '気象庁公式カラー'
-    label.style.cssText = `
-      color: #333;
-      font-size: 12px;
-    `
+      const label = document.createElement('span')
+      label.textContent = '気象庁公式カラー'
+      label.style.cssText = `
+        color: #333;
+        font-size: 12px;
+      `
 
-    // イベントリスナーを追加
-    checkbox.addEventListener('change', (event) => {
-      const target = event.target as HTMLInputElement
-      if (target.checked) {
-        this.manager.enable()
-      } else {
-        this.manager.disable()
-      }
-    })
+      // イベントリスナーを追加（エラーハンドリング付き）
+      checkbox.addEventListener('change', (event) => {
+        try {
+          const target = event.target as HTMLInputElement
+          if (target.checked) {
+            this.manager.enable()
+          } else {
+            this.manager.disable()
+          }
+        } catch (error) {
+          console.error('カラースケール切り替え中にエラーが発生しました:', error)
+          // エラーが発生してもUIは元の状態に戻す
+          checkbox.checked = this.manager.getEnabled()
+        }
+      })
 
-    toggleContainer.appendChild(checkbox)
-    toggleContainer.appendChild(label)
-    this.container.appendChild(toggleContainer)
+      toggleContainer.appendChild(checkbox)
+      toggleContainer.appendChild(label)
+      this.container.appendChild(toggleContainer)
 
-    // 説明文
-    const description = document.createElement('div')
-    description.textContent = '容積絶対湿度・露点温度・不快指数'
-    description.style.cssText = `
-      font-size: 10px;
-      color: #666;
-      margin-top: 4px;
-      line-height: 1.2;
-    `
-    this.container.appendChild(description)
+      // 説明文
+      const description = document.createElement('div')
+      description.textContent = '容積絶対湿度・露点温度・不快指数'
+      description.style.cssText = `
+        font-size: 10px;
+        color: #666;
+        margin-top: 4px;
+        line-height: 1.2;
+      `
+      this.container.appendChild(description)
+    } catch (error) {
+      console.error('カラースケールUI描画中にエラーが発生しました:', error)
+      // エラーが発生しても既存機能に影響を与えない
+    }
   }
 
   /**
    * UIを破棄する
    */
   destroy(): void {
-    if (this.container) {
-      this.container.remove()
+    try {
+      if (this.container) {
+        this.container.remove()
+        this.container = null
+      }
+    } catch (error) {
+      console.error('カラースケールUI破棄中にエラーが発生しました:', error)
+      // エラーが発生してもcontainerをnullにして状態をリセット
       this.container = null
     }
   }
