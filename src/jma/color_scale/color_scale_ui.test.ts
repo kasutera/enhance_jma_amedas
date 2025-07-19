@@ -126,6 +126,8 @@ describe('ColorScaleUI', () => {
     const container = document.getElementById('color-scale-controls')
     expect(container?.textContent).toContain('カラースケール')
     expect(container?.textContent).toContain('気象庁公式カラー')
-    expect(container?.textContent).toContain('容積絶対湿度・露点温度・不快指数')
+    expect(container?.textContent).toContain(
+      '気温・湿度・降水量・風速・容積絶対湿度・露点温度・不快指数',
+    )
   })
 })

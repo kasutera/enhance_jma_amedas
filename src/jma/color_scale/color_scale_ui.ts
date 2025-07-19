@@ -92,17 +92,6 @@ export class ColorScaleUI {
     try {
       this.container.innerHTML = ''
 
-      // タイトル
-      const title = document.createElement('div')
-      title.textContent = 'カラースケール'
-      title.style.cssText = `
-        font-weight: bold;
-        margin-bottom: 8px;
-        color: #333;
-        font-size: 13px;
-      `
-      this.container.appendChild(title)
-
       // トグルチェックボックスを作成
       const toggleContainer = document.createElement('label')
       toggleContainer.style.cssText = `
@@ -122,7 +111,7 @@ export class ColorScaleUI {
       `
 
       const label = document.createElement('span')
-      label.textContent = '気象庁公式カラー'
+      label.textContent = 'カラースケール'
       label.style.cssText = `
         color: #333;
         font-size: 12px;
@@ -147,17 +136,6 @@ export class ColorScaleUI {
       toggleContainer.appendChild(checkbox)
       toggleContainer.appendChild(label)
       this.container.appendChild(toggleContainer)
-
-      // 説明文
-      const description = document.createElement('div')
-      description.textContent = '容積絶対湿度・露点温度・不快指数'
-      description.style.cssText = `
-        font-size: 10px;
-        color: #666;
-        margin-top: 4px;
-        line-height: 1.2;
-      `
-      this.container.appendChild(description)
     } catch (error) {
       console.error('カラースケールUI描画中にエラーが発生しました:', error)
       // エラーが発生しても既存機能に影響を与えない
