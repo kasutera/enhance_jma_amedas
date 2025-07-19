@@ -741,6 +741,7 @@
         align-items: center;
         cursor: pointer;
         user-select: none;
+        margin-bottom: 0px;
       `
         const checkbox = document.createElement('input')
         checkbox.type = 'checkbox'
