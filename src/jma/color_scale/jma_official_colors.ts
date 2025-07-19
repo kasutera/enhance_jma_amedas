@@ -49,9 +49,10 @@ export const JMA_OFFICIAL_COLOR_SCALES = {
 
   // 風速（m/s）
   windSpeed: {
-    values: [5, 7.5, 12.5, 17.5, 22.5, 25],
+    values: [0, 5, 7.5, 12.5, 17.5, 22.5, 25],
     colors: [
-      '#F2F2FE', // 5m/s-
+      '#FFFFFF', // 0m/s
+      '#F2F2FE', // 5m/s
       '#1840F5', // 7.5m/s
       '#F9F551', // 12.5m/s
       '#F19E38', // 17.5m/s
@@ -62,9 +63,10 @@ export const JMA_OFFICIAL_COLOR_SCALES = {
 
   // 1時間降水量（mm）
   precipitation: {
-    values: [1, 3, 7.5, 15, 25, 40, 75, 80],
+    values: [0, 1, 3, 7.5, 15, 25, 40, 75, 80],
     colors: [
-      '#F2F2FE', // 1mm-
+      '#FFFFFF', // 0mm
+      '#F2F2FE', // 1mm
       '#AAD1FB', // 3mm
       '#458AF7', // 7.5mm
       '#1840F5', // 15mm
