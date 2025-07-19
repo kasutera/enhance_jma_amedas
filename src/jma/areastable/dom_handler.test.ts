@@ -1,4 +1,5 @@
 import * as fs from 'node:fs'
+import { TABLE_CLASS_NAMES } from '../table_classes_definition'
 import {
   _getAmdnos,
   type AreastableColumn,
@@ -40,7 +41,7 @@ describe('Areastable の行を追加する関数のテスト', () => {
       document.body.innerHTML = fs.readFileSync(srcPath, { encoding: 'utf8' })
 
       const column: AreastableColumn = {
-        class: 'td-new-class',
+        class: TABLE_CLASS_NAMES.volumetricHumidity,
         headerValue: 'headerValue',
         headerUnit: 'headerUnit',
         values: ['value1', 'value2', 'value3', 'value4', 'value5'],

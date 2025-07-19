@@ -2,7 +2,9 @@
 // 2. 取得したデータから、絶対湿度 (enhance-abs-humidity), 露点温度 (enhance-dew-point) を算出する
 // 3. 算出したデータを、DOM操作によってテーブルに挿入する
 
+import { globalColorScaleManager } from '../color_scale/color_scale_global'
 import { getAmdnoFromUrl } from '../jma_urls'
+import { TABLE_CLASS_NAMES } from '../table_classes_definition'
 import { appendColumnToSeriestable, getTimeSeries } from './dom_handler'
 import { type AmedasData, AmedasFetcher } from './jma_amedas_fetcher'
 import { convertAmedasDataToSeriestableRow } from './presentation'
@@ -24,6 +26,17 @@ export function seriestable_main() {
     appendColumnToSeriestable(seriestable, volumetricHumidityRow)
     appendColumnToSeriestable(seriestable, dewPointRow)
     appendColumnToSeriestable(seriestable, temperatureHumidityIndexRow)
+
+    // カラースケールを適用（全ての対象列）
+    globalColorScaleManager.applyColorScaleToColumn(
+      seriestable,
+      TABLE_CLASS_NAMES.volumetricHumidity,
+    )
+    globalColorScaleManager.applyColorScaleToColumn(seriestable, TABLE_CLASS_NAMES.dewPoint)
+    globalColorScaleManager.applyColorScaleToColumn(
+      seriestable,
+      TABLE_CLASS_NAMES.temperatureHumidityIndex,
+    )
   }
 
   const observationTarget = document.querySelector('#amd-table')

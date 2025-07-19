@@ -14,6 +14,354 @@
 // ==/UserScript==
 
 ;(() => {
+  const BASIC_TABLE_CLASS_NAMES = {
+    pressure: 'td-pressure',
+    normalPressure: 'td-normalPressure',
+    temp: 'td-temp',
+    humidity: 'td-humidity',
+    precipitation: 'td-precipitation',
+    snow1h: 'td-snow1h',
+    snow6h: 'td-snow6h',
+    snow12h: 'td-snow12h',
+    snow24h: 'td-snow24h',
+    sun10m: 'td-sum10m',
+    sum1h: 'td-sum1h',
+    precipitation10m: 'td-precipitation10m',
+    precipitation1h: 'td-precipitation1h',
+    precipitation3h: 'td-precipitation3h',
+    precipitation24h: 'td-precipitation24h',
+    windDirection: 'td-windDirection',
+    wind: 'td-wind',
+  }
+  const ENHANCED_TABLE_CLASS_NAMES = {
+    volumetricHumidity: 'td-volumetric-humidity',
+    dewPoint: 'td-dew-point',
+    temperatureHumidityIndex: 'td-temperature-humidity-index',
+  }
+  const TABLE_CLASS_NAMES = {
+    ...BASIC_TABLE_CLASS_NAMES,
+    ...ENHANCED_TABLE_CLASS_NAMES,
+  }
+
+  class ColorScaleCalculator {
+    calculateColorFromScale(value, colorScale) {
+      if (colorScale.values.length === 0 || colorScale.colors.length === 0) {
+        return 'transparent'
+      }
+      if (value <= colorScale.values[0]) {
+        return colorScale.colors[0]
+      }
+      if (value >= colorScale.values[colorScale.values.length - 1]) {
+        return colorScale.colors[colorScale.colors.length - 1]
+      }
+      for (let i = 0; i < colorScale.values.length - 1; i++) {
+        const currentValue = colorScale.values[i]
+        const nextValue = colorScale.values[i + 1]
+        if (value >= currentValue && value <= nextValue) {
+          const ratio = (value - currentValue) / (nextValue - currentValue)
+          return this.interpolateColor(colorScale.colors[i], colorScale.colors[i + 1], ratio)
+        }
+      }
+      return 'transparent'
+    }
+    parseNumericValue(cellText) {
+      if (!cellText) {
+        return null
+      }
+      const numericMatch = cellText.trim().match(/^(-?\d+(?:\.\d+)?)$/)
+      if (!numericMatch) {
+        return null
+      }
+      const value = Number.parseFloat(numericMatch[1])
+      return Number.isNaN(value) ? null : value
+    }
+    interpolateColor(startColor, endColor, ratio) {
+      const startRgb = this.hexToRgb(startColor)
+      const endRgb = this.hexToRgb(endColor)
+      if (!startRgb || !endRgb) {
+        return 'transparent'
+      }
+      const r = Math.round(startRgb.r + (endRgb.r - startRgb.r) * ratio)
+      const g = Math.round(startRgb.g + (endRgb.g - startRgb.g) * ratio)
+      const b = Math.round(startRgb.b + (endRgb.b - startRgb.b) * ratio)
+      return `rgb(${r}, ${g}, ${b})`
+    }
+    hexToRgb(hex) {
+      const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex)
+      return result
+        ? {
+            r: Number.parseInt(result[1], 16),
+            g: Number.parseInt(result[2], 16),
+            b: Number.parseInt(result[3], 16),
+          }
+        : null
+    }
+  }
+
+  const JMA_OFFICIAL_COLOR_SCALES = {
+    temperature: {
+      values: [-5, -2.5, 2.5, 7.5, 12.5, 17.5, 22.5, 27.5, 32.5, 35],
+      colors: [
+        '#000080',
+        '#1840F5',
+        '#4294F7',
+        '#C3EAFD',
+        '#FFFFF1',
+        '#FFFFA3',
+        '#F9F551',
+        '#F19E38',
+        '#EA4225',
+        '#A52166',
+      ],
+    },
+    humidity: {
+      values: [10, 15, 25, 35, 45, 55, 65, 75, 85, 95, 100],
+      colors: [
+        '#4D0F05',
+        '#6C1C0B',
+        '#9F501D',
+        '#DA8C33',
+        '#F6CA5F',
+        '#FFFFF1',
+        '#9FF5E7',
+        '#5CBFD0',
+        '#307096',
+        '#1D4A91',
+        '#091E78',
+      ],
+    },
+    windSpeed: {
+      values: [0, 5, 7.5, 12.5, 17.5, 22.5, 25],
+      colors: ['#FFFFFF', '#F2F2FE', '#1840F5', '#F9F551', '#F19E38', '#EA4225', '#A52166'],
+    },
+    precipitation: {
+      values: [0, 1, 3, 7.5, 15, 25, 40, 75, 80],
+      colors: [
+        '#FFFFFF',
+        '#F2F2FE',
+        '#AAD1FB',
+        '#458AF7',
+        '#1840F5',
+        '#F9F551',
+        '#F19E38',
+        '#EA4225',
+        '#A52166',
+      ],
+    },
+  }
+  const DERIVED_COLOR_SCALES = {
+    dewPoint: {
+      values: [-5, -2.5, 2.5, 7.5, 12.5, 17.5, 22.5, 27.5, 32.5, 35],
+      colors: [
+        '#000080',
+        '#1840F5',
+        '#4294F7',
+        '#C3EAFD',
+        '#FFFFF1',
+        '#FFFFA3',
+        '#F9F551',
+        '#F19E38',
+        '#EA4225',
+        '#A52166',
+      ],
+    },
+    volumetricHumidity: {
+      values: [2, 4, 6, 8, 10, 12, 15, 18, 22, 25, 30],
+      colors: [
+        '#4D0F05',
+        '#6C1C0B',
+        '#9F501D',
+        '#DA8C33',
+        '#F6CA5F',
+        '#FFFFF1',
+        '#9FF5E7',
+        '#5CBFD0',
+        '#307096',
+        '#1D4A91',
+        '#091E78',
+      ],
+    },
+    temperatureHumidityIndex: {
+      values: [50, 55, 60, 65, 70, 75, 80, 85],
+      colors: [
+        '#000080',
+        '#4294F7',
+        '#C3EAFD',
+        '#FFFFF1',
+        '#FFFFA3',
+        '#F9F551',
+        '#F19E38',
+        '#EA4225',
+      ],
+    },
+  }
+
+  class ColorScaleManager {
+    calculator
+    isEnabled
+    currentTables = new Set()
+    constructor() {
+      this.calculator = new ColorScaleCalculator()
+      this.isEnabled = this.loadEnabledState()
+    }
+    enable() {
+      this.isEnabled = true
+      this.saveEnabledState()
+      this.applyColorScaleToAllTables()
+    }
+    disable() {
+      this.isEnabled = false
+      this.saveEnabledState()
+      this.removeColorScaleFromAllTables()
+    }
+    getEnabled() {
+      return this.isEnabled
+    }
+    registerTable(table) {
+      this.currentTables.add(table)
+      if (this.isEnabled) {
+        this.applyColorScaleToTable(table)
+      }
+    }
+    applyColorScaleToColumn(table, columnClass) {
+      this.registerTable(table)
+      if (this.isEnabled) {
+        this.applyColorScaleToSpecificColumn(table, columnClass)
+      }
+    }
+    applyColorScaleToAllTables() {
+      this.currentTables.forEach((table) => {
+        this.applyColorScaleToTable(table)
+      })
+    }
+    removeColorScaleFromAllTables() {
+      this.currentTables.forEach((table) => {
+        this.removeColorScaleFromTable(table)
+      })
+    }
+    applyColorScaleToTable(table) {
+      try {
+        const targetColumns = [
+          TABLE_CLASS_NAMES.temp,
+          TABLE_CLASS_NAMES.humidity,
+          TABLE_CLASS_NAMES.precipitation1h,
+          TABLE_CLASS_NAMES.wind,
+          TABLE_CLASS_NAMES.volumetricHumidity,
+          TABLE_CLASS_NAMES.dewPoint,
+          TABLE_CLASS_NAMES.temperatureHumidityIndex,
+        ]
+        for (const columnClass of targetColumns) {
+          this.applyColorScaleToSpecificColumn(table, columnClass)
+        }
+      } catch (error) {
+        console.error('カラースケール適用中にエラーが発生しました:', error)
+      }
+    }
+    applyColorScaleToSpecificColumn(table, columnClass) {
+      try {
+        const cells = table.querySelectorAll(`.${columnClass}`)
+        if (cells.length === 0) {
+          return
+        }
+        const colorScale = this.getColorScaleForColumn(columnClass)
+        if (!colorScale) {
+          return
+        }
+        cells.forEach((cell) => {
+          if (cell instanceof HTMLElement) {
+            const value = this.calculator.parseNumericValue(cell.textContent || '')
+            if (value !== null) {
+              const color = this.calculator.calculateColorFromScale(value, colorScale)
+              if (color !== 'transparent') {
+                cell.style.backgroundColor = color
+                this.adjustTextColor(cell, color)
+              }
+            }
+          }
+        })
+      } catch (error) {
+        console.error(`列 ${columnClass} のカラースケール適用中にエラーが発生しました:`, error)
+      }
+    }
+    getColorScaleForColumn(columnClass) {
+      switch (columnClass) {
+        case TABLE_CLASS_NAMES.temp:
+          return JMA_OFFICIAL_COLOR_SCALES.temperature
+        case TABLE_CLASS_NAMES.humidity:
+          return JMA_OFFICIAL_COLOR_SCALES.humidity
+        case TABLE_CLASS_NAMES.precipitation1h:
+          return JMA_OFFICIAL_COLOR_SCALES.precipitation
+        case TABLE_CLASS_NAMES.wind:
+          return JMA_OFFICIAL_COLOR_SCALES.windSpeed
+        case TABLE_CLASS_NAMES.volumetricHumidity:
+          return DERIVED_COLOR_SCALES.volumetricHumidity
+        case TABLE_CLASS_NAMES.dewPoint:
+          return DERIVED_COLOR_SCALES.dewPoint
+        case TABLE_CLASS_NAMES.temperatureHumidityIndex:
+          return DERIVED_COLOR_SCALES.temperatureHumidityIndex
+        default:
+          return null
+      }
+    }
+    adjustTextColor(element, backgroundColor) {
+      try {
+        const rgbMatch = backgroundColor.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/)
+        if (!rgbMatch) {
+          return
+        }
+        const r = Number.parseInt(rgbMatch[1])
+        const g = Number.parseInt(rgbMatch[2])
+        const b = Number.parseInt(rgbMatch[3])
+        const brightness = (r * 299 + g * 587 + b * 114) / 1000
+        element.style.color = brightness < 128 ? 'white' : 'black'
+      } catch (error) {
+        console.error('文字色調整中にエラーが発生しました:', error)
+      }
+    }
+    removeColorScaleFromTable(table) {
+      try {
+        const targetColumns = [
+          TABLE_CLASS_NAMES.temp,
+          TABLE_CLASS_NAMES.humidity,
+          TABLE_CLASS_NAMES.precipitation1h,
+          TABLE_CLASS_NAMES.wind,
+          TABLE_CLASS_NAMES.volumetricHumidity,
+          TABLE_CLASS_NAMES.dewPoint,
+          TABLE_CLASS_NAMES.temperatureHumidityIndex,
+        ]
+        for (const columnClass of targetColumns) {
+          const cells = table.querySelectorAll(`.${columnClass}`)
+          cells.forEach((cell) => {
+            if (cell instanceof HTMLElement) {
+              cell.style.backgroundColor = ''
+              cell.style.color = ''
+            }
+          })
+        }
+      } catch (error) {
+        console.error('カラースケール削除中にエラーが発生しました:', error)
+      }
+    }
+    loadEnabledState() {
+      try {
+        const stored = localStorage.getItem('jma-color-scale-enabled')
+        return stored !== null ? JSON.parse(stored) : true
+      } catch (error) {
+        console.error('カラースケール設定の読み込みに失敗しました:', error)
+        return true
+      }
+    }
+    saveEnabledState() {
+      try {
+        localStorage.setItem('jma-color-scale-enabled', JSON.stringify(this.isEnabled))
+      } catch (error) {
+        console.error('カラースケール設定の保存に失敗しました:', error)
+      }
+    }
+  }
+
+  const globalColorScaleManager = new ColorScaleManager()
+
   const latestTimeUrl = 'https://www.jma.go.jp/bosai/amedas/data/latest_time.txt'
   function getAmdnoFromUrl(url) {
     const pattern = /[#&]amdno=(\d+)/
@@ -230,9 +578,6 @@
     }
   }
 
-  const VOLUMETRIC_HUMIDITY_CLASS$1 = 'td-volumetric-humidity'
-  const DEW_POINT_CLASS$1 = 'td-dew-point'
-  const TEMPERATURE_HUMIDITY_INDEX_CLASS$1 = 'td-temperature-humidity-index'
   const STANDARD_PRESSURE$1 = 1013.25
   const VALUES_PRECISION$1 = 1
   function convertAmedasDataToSeriestableRow$1(amdnos, amedasDatas) {
@@ -262,19 +607,19 @@
       temperatureHumidityIndexValues.push(humidCalculator.temperatureHumidityIndex)
     }
     const volumetricHumidityRow = {
-      class: VOLUMETRIC_HUMIDITY_CLASS$1,
+      class: TABLE_CLASS_NAMES.volumetricHumidity,
       headerValue: '容積絶対湿度',
       headerUnit: 'g/㎥',
       values: volumetricHumidityValues.map((value) => value?.toFixed(VALUES_PRECISION$1) || '---'),
     }
     const dewPointRow = {
-      class: DEW_POINT_CLASS$1,
+      class: TABLE_CLASS_NAMES.dewPoint,
       headerValue: '露点温度',
       headerUnit: '℃',
       values: dewPointValues.map((value) => value?.toFixed(VALUES_PRECISION$1) || '---'),
     }
     const temperatureHumidityIndexRow = {
-      class: TEMPERATURE_HUMIDITY_INDEX_CLASS$1,
+      class: TABLE_CLASS_NAMES.temperatureHumidityIndex,
       headerValue: '不快指数',
       headerUnit: '',
       values: temperatureHumidityIndexValues.map(
@@ -295,6 +640,15 @@
       appendColumnToAreastable(areastable, volumetricHumidityRow)
       appendColumnToAreastable(areastable, dewPointRow)
       appendColumnToAreastable(areastable, temperatureHumidityIndexRow)
+      globalColorScaleManager.applyColorScaleToColumn(
+        areastable,
+        TABLE_CLASS_NAMES.volumetricHumidity,
+      )
+      globalColorScaleManager.applyColorScaleToColumn(areastable, TABLE_CLASS_NAMES.dewPoint)
+      globalColorScaleManager.applyColorScaleToColumn(
+        areastable,
+        TABLE_CLASS_NAMES.temperatureHumidityIndex,
+      )
     }
     const observationTarget = document.querySelector('#amd-table')
     if (observationTarget !== null) {
@@ -320,6 +674,118 @@
       })
       const observeOptions = { attributes: true, childList: true, subtree: true }
       observer.observe(observationTarget, observeOptions)
+    }
+  }
+
+  class ColorScaleUI {
+    container = null
+    manager
+    constructor(manager) {
+      this.manager = manager
+    }
+    initialize() {
+      const tableExists = this.checkTableExists()
+      if (!tableExists) {
+        setTimeout(() => {
+          this.initialize()
+        }, 500)
+        return
+      }
+      this.createContainer()
+      this.render()
+    }
+    checkTableExists() {
+      const amdTable = document.querySelector('#amd-table')
+      if (!amdTable) {
+        return false
+      }
+      const areastable = amdTable.querySelector('.amd-areastable')
+      const seriestable = amdTable.querySelector('.amd-table-seriestable')
+      return areastable !== null || seriestable !== null
+    }
+    createContainer() {
+      try {
+        const existingContainer = document.getElementById('color-scale-controls')
+        if (existingContainer) {
+          existingContainer.remove()
+        }
+        this.container = document.createElement('div')
+        this.container.id = 'color-scale-controls'
+        this.container.style.cssText = `
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background: white;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        padding: 12px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        z-index: 1000;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        font-size: 14px;
+      `
+        document.body.appendChild(this.container)
+      } catch (error) {
+        console.error('カラースケールUIコンテナの作成に失敗しました:', error)
+      }
+    }
+    render() {
+      if (!this.container) {
+        return
+      }
+      try {
+        this.container.innerHTML = ''
+        const toggleContainer = document.createElement('label')
+        toggleContainer.style.cssText = `
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+        user-select: none;
+      `
+        const checkbox = document.createElement('input')
+        checkbox.type = 'checkbox'
+        checkbox.id = 'color-scale-toggle'
+        checkbox.checked = this.manager.getEnabled()
+        checkbox.style.cssText = `
+        margin-right: 8px;
+        cursor: pointer;
+      `
+        const label = document.createElement('span')
+        label.textContent = 'カラースケール'
+        label.style.cssText = `
+        color: #333;
+        font-size: 12px;
+      `
+        checkbox.addEventListener('change', (event) => {
+          try {
+            const target = event.target
+            if (target.checked) {
+              this.manager.enable()
+            } else {
+              this.manager.disable()
+            }
+          } catch (error) {
+            console.error('カラースケール切り替え中にエラーが発生しました:', error)
+            checkbox.checked = this.manager.getEnabled()
+          }
+        })
+        toggleContainer.appendChild(checkbox)
+        toggleContainer.appendChild(label)
+        this.container.appendChild(toggleContainer)
+      } catch (error) {
+        console.error('カラースケールUI描画中にエラーが発生しました:', error)
+      }
+    }
+    destroy() {
+      try {
+        if (this.container) {
+          this.container.remove()
+          this.container = null
+        }
+      } catch (error) {
+        console.error('カラースケールUI破棄中にエラーが発生しました:', error)
+        this.container = null
+      }
     }
   }
 
@@ -485,9 +951,6 @@
     }
   }
 
-  const VOLUMETRIC_HUMIDITY_CLASS = 'td-volumetric-humidity'
-  const DEW_POINT_CLASS = 'td-dew-point'
-  const TEMPERATURE_HUMIDITY_INDEX_CLASS = 'td-temperature-humidity-index'
   const STANDARD_PRESSURE = 1013.25
   const VALUES_PRECISION = 1
   function convertAmedasDataToSeriestableRow(amedasDatas) {
@@ -512,19 +975,19 @@
       temperatureHumidityIndexValues.push(humidCalculator.temperatureHumidityIndex)
     }
     const volumetricHumidityRow = {
-      class: VOLUMETRIC_HUMIDITY_CLASS,
+      class: TABLE_CLASS_NAMES.volumetricHumidity,
       headerValue: '容積絶対湿度',
       headerUnit: 'g/㎥',
       values: volumetricHumidityValues.map((value) => value?.toFixed(VALUES_PRECISION) || '---'),
     }
     const dewPointRow = {
-      class: DEW_POINT_CLASS,
+      class: TABLE_CLASS_NAMES.dewPoint,
       headerValue: '露点温度',
       headerUnit: '℃',
       values: dewPointValues.map((value) => value?.toFixed(VALUES_PRECISION) || '---'),
     }
     const temperatureHumidityIndexRow = {
-      class: TEMPERATURE_HUMIDITY_INDEX_CLASS,
+      class: TABLE_CLASS_NAMES.temperatureHumidityIndex,
       headerValue: '不快指数',
       headerUnit: '',
       values: temperatureHumidityIndexValues.map(
@@ -549,6 +1012,15 @@
       appendColumnToSeriestable(seriestable, volumetricHumidityRow)
       appendColumnToSeriestable(seriestable, dewPointRow)
       appendColumnToSeriestable(seriestable, temperatureHumidityIndexRow)
+      globalColorScaleManager.applyColorScaleToColumn(
+        seriestable,
+        TABLE_CLASS_NAMES.volumetricHumidity,
+      )
+      globalColorScaleManager.applyColorScaleToColumn(seriestable, TABLE_CLASS_NAMES.dewPoint)
+      globalColorScaleManager.applyColorScaleToColumn(
+        seriestable,
+        TABLE_CLASS_NAMES.temperatureHumidityIndex,
+      )
     }
     const observationTarget = document.querySelector('#amd-table')
     if (observationTarget === null) {
@@ -577,6 +1049,21 @@
     observer.observe(observationTarget, observeOptions)
   }
 
-  seriestable_main()
-  areastable_main()
+  function initializeApplication() {
+    try {
+      seriestable_main()
+      areastable_main()
+      const colorScaleUI = new ColorScaleUI(globalColorScaleManager)
+      setTimeout(() => {
+        colorScaleUI.initialize()
+      }, 100)
+    } catch (error) {
+      console.error('アプリケーション初期化中にエラーが発生しました:', error)
+    }
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeApplication)
+  } else {
+    initializeApplication()
+  }
 })()

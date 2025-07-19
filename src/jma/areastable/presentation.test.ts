@@ -1,3 +1,4 @@
+import { TABLE_CLASS_NAMES } from '../table_classes_definition'
 import type { AmedasData, Ameid } from './jma_amedas_fetcher'
 import { convertAmedasDataToSeriestableRow } from './presentation'
 
@@ -30,17 +31,17 @@ describe('convertAmedasDataToSeriestableRow', () => {
       // 各列の基本構造を確認
       const [volumetricHumidityColumn, dewPointColumn, temperatureHumidityIndexColumn] = result
 
-      expect(volumetricHumidityColumn.class).toBe('td-volumetric-humidity')
+      expect(volumetricHumidityColumn.class).toBe(TABLE_CLASS_NAMES.volumetricHumidity)
       expect(volumetricHumidityColumn.headerValue).toBe('容積絶対湿度')
       expect(volumetricHumidityColumn.headerUnit).toBe('g/㎥')
       expect(volumetricHumidityColumn.values).toHaveLength(2)
 
-      expect(dewPointColumn.class).toBe('td-dew-point')
+      expect(dewPointColumn.class).toBe(TABLE_CLASS_NAMES.dewPoint)
       expect(dewPointColumn.headerValue).toBe('露点温度')
       expect(dewPointColumn.headerUnit).toBe('℃')
       expect(dewPointColumn.values).toHaveLength(2)
 
-      expect(temperatureHumidityIndexColumn.class).toBe('td-temperature-humidity-index')
+      expect(temperatureHumidityIndexColumn.class).toBe(TABLE_CLASS_NAMES.temperatureHumidityIndex)
       expect(temperatureHumidityIndexColumn.headerValue).toBe('不快指数')
       expect(temperatureHumidityIndexColumn.headerUnit).toBe('')
       expect(temperatureHumidityIndexColumn.values).toHaveLength(2)
