@@ -19,10 +19,10 @@ describe('ColorScaleCalculator', () => {
       expect(calculator.parseNumericValue('0')).toBe(0)
     })
 
-    test('単位付きの数値を解析できる', () => {
-      expect(calculator.parseNumericValue('25.5℃')).toBe(25.5)
-      expect(calculator.parseNumericValue('80%')).toBe(80)
-      expect(calculator.parseNumericValue('15.2g/m³')).toBe(15.2)
+    test('余計な文字の入っている数値に対してnullを返す', () => {
+      expect(calculator.parseNumericValue('25.5℃')).toBe(null)
+      expect(calculator.parseNumericValue('80%')).toBe(null)
+      expect(calculator.parseNumericValue('15.2g/m³')).toBe(null)
     })
 
     test('無効な値に対してnullを返す', () => {

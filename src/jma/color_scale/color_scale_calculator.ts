@@ -37,15 +37,14 @@ export class ColorScaleCalculator {
   }
 
   /**
-   * セルのテキストから数値を解析する
+   * セルのテキストから数値を解析する。数値以外が含まれている場合は null
    */
   parseNumericValue(cellText: string): number | null {
-    if (!cellText || cellText.trim() === '' || cellText.trim() === '---') {
+    if (!cellText) {
       return null
     }
 
-    // 数値部分を抽出（単位や記号を除去）
-    const numericMatch = cellText.match(/(-?\d+(?:\.\d+)?)/)
+    const numericMatch = cellText.trim().match(/^(-?\d+(?:\.\d+)?)$/)
     if (!numericMatch) {
       return null
     }
