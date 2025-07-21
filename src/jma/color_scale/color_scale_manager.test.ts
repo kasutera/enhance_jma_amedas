@@ -3,7 +3,7 @@
  */
 
 import { TABLE_CLASS_NAMES } from '../table_classes_definition'
-import { ColorScaleManager } from './color_scale_manager'
+import { ColorScaleManager, calculateTextColor } from './color_scale_manager'
 
 // ローカルストレージのモック
 const localStorageMock = {
@@ -116,6 +116,48 @@ describe('ColorScaleManager', () => {
       expect(() => {
         manager.applyColorScaleToColumn(table, 'invalid-column')
       }).not.toThrow()
+    })
+  })
+
+  describe('calculateTextColor', () => {
+    test('明るい背景色には黒文字を返す', () => {
+      expect(calculateTextColor('rgb(255, 255, 255)')).toBe('black')
+      expect(calculateTextColor('rgb(200, 200, 200)')).toBe('black')
+      expect(calculateTextColor('rgb(150, 200, 250)')).toBe('black')
+    })
+
+    test('暗い背景色には白文字を返す', () => {
+      expect(calculateTextColor('rgb(0, 0, 0)')).toBe('white')
+      expect(calculateTextColor('rgb(50, 50, 50)')).toBe('white')
+      expect(calculateTextColor('rgb(100, 50, 25)')).toBe('white')
+    })
+
+    test('湿度100%のときの色には白文字を返す (#14)', () => {
+      // 湿度100%の色: #091E78 = rgb(9, 30, 120) - 暗い青色
+      expect(calculateTextColor('rgb(9, 30, 120)')).toBe('white')
+    })
+
+    test('不正な形式の場合はnullを返す', () => {
+      expect(calculateTextColor('invalid')).toBe(null)
+      expect(calculateTextColor('rgb()')).toBe(null)
+      expect(calculateTextColor('rgb(255, 255)')).toBe(null)
+      expect(calculateTextColor('#ffffff')).toBe(null)
+      expect(calculateTextColor('')).toBe(null)
+    })
+
+    test('スペースの有無に関係なく動作する', () => {
+      expect(calculateTextColor('rgb(255,255,255)')).toBe('black')
+      expect(calculateTextColor('rgb( 255 , 255 , 255 )')).toBe('black')
+      expect(calculateTextColor('rgb(0,0,0)')).toBe('white')
+    })
+
+    test('数値の解析エラーを適切に処理する', () => {
+      // console.error のモック
+      const consoleSpy = jest.spyOn(console, 'error').mockImplementation()
+
+      expect(calculateTextColor('rgb(abc, def, ghi)')).toBe(null)
+
+      consoleSpy.mockRestore()
     })
   })
 })
