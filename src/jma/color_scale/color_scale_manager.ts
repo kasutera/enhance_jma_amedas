@@ -6,6 +6,48 @@ import { TABLE_CLASS_NAMES } from '../table_classes_definition'
 import { ColorScaleCalculator } from './color_scale_calculator'
 import { DERIVED_COLOR_SCALES, JMA_OFFICIAL_COLOR_SCALES } from './jma_official_colors'
 
+/**
+ * 背景色に基づいて適切な文字色を計算する
+ * @param backgroundColor RGB形式の背景色文字列
+ * @returns 'white' | 'black' | null
+ */
+export function calculateTextColor(backgroundColor: string): 'white' | 'black' | null {
+  try {
+    // RGB値を抽出
+    const rgbMatch = backgroundColor.match(/rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)/)
+    if (!rgbMatch) {
+      return null
+    }
+
+    const r = Number.parseInt(rgbMatch[1])
+    const g = Number.parseInt(rgbMatch[2])
+    const b = Number.parseInt(rgbMatch[3])
+
+    // 相対輝度を計算 (WCAG基準)
+    const toLinear = (c: number) => {
+      const normalized = c / 255
+      return normalized <= 0.03928 ? normalized / 12.92 : Math.pow((normalized + 0.055) / 1.055, 2.4)
+    }
+    
+    const backgroundLuminance = 0.2126 * toLinear(r) + 0.7152 * toLinear(g) + 0.0722 * toLinear(b)
+    
+    // 白と黒のコントラスト比を計算
+    const whiteLuminance = 1
+    const blackLuminance = 0
+    
+    const contrastWithWhite = (Math.max(whiteLuminance, backgroundLuminance) + 0.05) / 
+                             (Math.min(whiteLuminance, backgroundLuminance) + 0.05)
+    const contrastWithBlack = (Math.max(backgroundLuminance, blackLuminance) + 0.05) / 
+                             (Math.min(backgroundLuminance, blackLuminance) + 0.05)
+
+    // コントラスト比が高い方を返す
+    return contrastWithWhite > contrastWithBlack ? 'white' : 'black'
+  } catch (error) {
+    console.error('文字色計算中にエラーが発生しました:', error)
+    return null
+  }
+}
+
 export class ColorScaleManager {
   private calculator: ColorScaleCalculator
   private isEnabled: boolean
@@ -169,24 +211,9 @@ export class ColorScaleManager {
    * 背景色に基づいて文字色を調整する
    */
   private adjustTextColor(element: HTMLElement, backgroundColor: string): void {
-    try {
-      // RGB値を抽出
-      const rgbMatch = backgroundColor.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/)
-      if (!rgbMatch) {
-        return
-      }
-
-      const r = Number.parseInt(rgbMatch[1])
-      const g = Number.parseInt(rgbMatch[2])
-      const b = Number.parseInt(rgbMatch[3])
-
-      // 明度を計算（相対輝度の簡易版）
-      const brightness = (r * 299 + g * 587 + b * 114) / 1000
-
-      // 明度が128未満の場合は白文字、それ以外は黒文字
-      element.style.color = brightness < 128 ? 'white' : 'black'
-    } catch (error) {
-      console.error('文字色調整中にエラーが発生しました:', error)
+    const textColor = calculateTextColor(backgroundColor)
+    if (textColor) {
+      element.style.color = textColor
     }
   }
 
