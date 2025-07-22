@@ -18,13 +18,17 @@ export function parseColorToRGB(color: string): [number, number, number] | null 
     document.body.appendChild(el)
     const computed = getComputedStyle(el).color
     document.body.removeChild(el)
-    
+
     // rgb(r, g, b) 形式をパース
     console.log(`Parsing color: ${color}, Computed: ${computed}`)
     const match = computed.match(/rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)/)
     console.log(`Match result: ${match}`)
     if (match) {
-      return [parseInt(match[1], 10), parseInt(match[2], 10), parseInt(match[3], 10)]
+      return [
+        Number.parseInt(match[1], 10),
+        Number.parseInt(match[2], 10),
+        Number.parseInt(match[3], 10),
+      ]
     }
     return null
   } catch (error) {
@@ -37,9 +41,10 @@ export function parseColorToRGB(color: string): [number, number, number] | null 
  * @param backgroundColor RGB形式の背景色文字列
  * @returns 'white' | 'black' | null
  */
-export function calculateTextColor(backgroundColor: [number, number, number]): 'white' | 'black' | null {
+export function calculateTextColor(
+  backgroundColor: [number, number, number],
+): 'white' | 'black' | null {
   try {
-
     const r = backgroundColor[0]
     const g = backgroundColor[1]
     const b = backgroundColor[2]
@@ -47,19 +52,21 @@ export function calculateTextColor(backgroundColor: [number, number, number]): '
     // 相対輝度を計算 (WCAG基準)
     const toLinear = (c: number) => {
       const normalized = c / 255
-      return normalized <= 0.03928 ? normalized / 12.92 : Math.pow((normalized + 0.055) / 1.055, 2.4)
+      return normalized <= 0.03928 ? normalized / 12.92 : ((normalized + 0.055) / 1.055) ** 2.4
     }
-    
+
     const backgroundLuminance = 0.2126 * toLinear(r) + 0.7152 * toLinear(g) + 0.0722 * toLinear(b)
-    
+
     // 白と黒のコントラスト比を計算
     const whiteLuminance = 1
     const blackLuminance = 0
-    
-    const contrastWithWhite = (Math.max(whiteLuminance, backgroundLuminance) + 0.05) / 
-                             (Math.min(whiteLuminance, backgroundLuminance) + 0.05)
-    const contrastWithBlack = (Math.max(backgroundLuminance, blackLuminance) + 0.05) / 
-                             (Math.min(backgroundLuminance, blackLuminance) + 0.05)
+
+    const contrastWithWhite =
+      (Math.max(whiteLuminance, backgroundLuminance) + 0.05) /
+      (Math.min(whiteLuminance, backgroundLuminance) + 0.05)
+    const contrastWithBlack =
+      (Math.max(backgroundLuminance, blackLuminance) + 0.05) /
+      (Math.min(backgroundLuminance, blackLuminance) + 0.05)
 
     // コントラスト比が高い方を返す
     return contrastWithWhite > contrastWithBlack ? 'white' : 'black'
