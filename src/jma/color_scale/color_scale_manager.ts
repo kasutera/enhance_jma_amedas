@@ -254,6 +254,14 @@ export class ColorScaleManager {
       const textColor = calculateTextColor(rgbValues)
       if (textColor) {
         element.style.color = textColor
+        // 文字の可読性を向上させるため8方向の縁取りを追加
+        if (textColor === 'black') {
+          element.style.textShadow =
+            '1px 0 0 white, -1px 0 0 white, 0 1px 0 white, 0 -1px 0 white, 1px 1px 0 white, -1px -1px 0 white, 1px -1px 0 white, -1px 1px 0 white'
+        } else {
+          element.style.textShadow =
+            '1px 0 0 black, -1px 0 0 black, 0 1px 0 black, 0 -1px 0 black, 1px 1px 0 black, -1px -1px 0 black, 1px -1px 0 black, -1px 1px 0 black'
+        }
       }
     }
   }
@@ -280,6 +288,7 @@ export class ColorScaleManager {
           if (cell instanceof HTMLElement) {
             cell.style.backgroundColor = ''
             cell.style.color = ''
+            cell.style.textShadow = ''
           }
         })
       }
