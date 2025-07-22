@@ -196,6 +196,34 @@
     },
   }
 
+  function calculateTextColor(backgroundColor) {
+    try {
+      const rgbMatch = backgroundColor.match(/rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)/)
+      if (!rgbMatch) {
+        return null
+      }
+      const r = Number.parseInt(rgbMatch[1])
+      const g = Number.parseInt(rgbMatch[2])
+      const b = Number.parseInt(rgbMatch[3])
+      const toLinear = (c) => {
+        const normalized = c / 255
+        return normalized <= 0.03928 ? normalized / 12.92 : ((normalized + 0.055) / 1.055) ** 2.4
+      }
+      const backgroundLuminance = 0.2126 * toLinear(r) + 0.7152 * toLinear(g) + 0.0722 * toLinear(b)
+      const whiteLuminance = 1
+      const blackLuminance = 0
+      const contrastWithWhite =
+        (Math.max(whiteLuminance, backgroundLuminance) + 0.05) /
+        (Math.min(whiteLuminance, backgroundLuminance) + 0.05)
+      const contrastWithBlack =
+        (Math.max(backgroundLuminance, blackLuminance) + 0.05) /
+        (Math.min(backgroundLuminance, blackLuminance) + 0.05)
+      return contrastWithWhite > contrastWithBlack ? 'white' : 'black'
+    } catch (error) {
+      console.error('文字色計算中にエラーが発生しました:', error)
+      return null
+    }
+  }
   class ColorScaleManager {
     calculator
     isEnabled
@@ -304,18 +332,9 @@
       }
     }
     adjustTextColor(element, backgroundColor) {
-      try {
-        const rgbMatch = backgroundColor.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/)
-        if (!rgbMatch) {
-          return
-        }
-        const r = Number.parseInt(rgbMatch[1])
-        const g = Number.parseInt(rgbMatch[2])
-        const b = Number.parseInt(rgbMatch[3])
-        const brightness = (r * 299 + g * 587 + b * 114) / 1000
-        element.style.color = brightness < 128 ? 'white' : 'black'
-      } catch (error) {
-        console.error('文字色調整中にエラーが発生しました:', error)
+      const textColor = calculateTextColor(backgroundColor)
+      if (textColor) {
+        element.style.color = textColor
       }
     }
     removeColorScaleFromTable(table) {
