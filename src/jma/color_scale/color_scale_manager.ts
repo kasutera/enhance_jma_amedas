@@ -29,7 +29,7 @@ export function parseColorToRGB(color: string): [number, number, number] | null 
       ]
     }
     return null
-  } catch (error) {
+  } catch (_error) {
     return null
   }
 }
@@ -37,11 +37,11 @@ export function parseColorToRGB(color: string): [number, number, number] | null 
 /**
  * 背景色に基づいて適切な文字色を計算する
  * @param backgroundColor RGB形式の背景色文字列
- * @returns 'white' | 'black' | null
+ * @returns 'white' | '#444' | null
  */
 export function calculateTextColor(
   backgroundColor: [number, number, number],
-): 'white' | 'black' | null {
+): 'white' | '#444' | null {
   try {
     const r = backgroundColor[0]
     const g = backgroundColor[1]
@@ -55,19 +55,20 @@ export function calculateTextColor(
 
     const backgroundLuminance = 0.2126 * toLinear(r) + 0.7152 * toLinear(g) + 0.0722 * toLinear(b)
 
-    // 白と黒のコントラスト比を計算
+    // 白と#444のコントラスト比を計算
     const whiteLuminance = 1
-    const blackLuminance = 0
+    // #444 (68, 68, 68) の相対輝度を計算
+    const darkGrayLuminance = 0.2126 * toLinear(68) + 0.7152 * toLinear(68) + 0.0722 * toLinear(68)
 
     const contrastWithWhite =
       (Math.max(whiteLuminance, backgroundLuminance) + 0.05) /
       (Math.min(whiteLuminance, backgroundLuminance) + 0.05)
-    const contrastWithBlack =
-      (Math.max(backgroundLuminance, blackLuminance) + 0.05) /
-      (Math.min(backgroundLuminance, blackLuminance) + 0.05)
+    const contrastWithDarkGray =
+      (Math.max(backgroundLuminance, darkGrayLuminance) + 0.05) /
+      (Math.min(backgroundLuminance, darkGrayLuminance) + 0.05)
 
     // コントラスト比が高い方を返す
-    return contrastWithWhite > contrastWithBlack ? 'white' : 'black'
+    return contrastWithWhite > contrastWithDarkGray ? 'white' : '#444'
   } catch (error) {
     console.error('文字色計算中にエラーが発生しました:', error)
     return null
@@ -242,6 +243,14 @@ export class ColorScaleManager {
       const textColor = calculateTextColor(rgbValues)
       if (textColor) {
         element.style.color = textColor
+        // 文字の可読性を向上させるため8方向の縁取りを追加
+        if (textColor === '#444') {
+          element.style.textShadow =
+            '1px 0 0 white, -1px 0 0 white, 0 1px 0 white, 0 -1px 0 white, 1px 1px 0 white, -1px -1px 0 white, 1px -1px 0 white, -1px 1px 0 white'
+        } else {
+          element.style.textShadow =
+            '1px 0 0 black, -1px 0 0 black, 0 1px 0 black, 0 -1px 0 black, 1px 1px 0 black, -1px -1px 0 black, 1px -1px 0 black, -1px 1px 0 black'
+        }
       }
     }
   }
@@ -268,6 +277,7 @@ export class ColorScaleManager {
           if (cell instanceof HTMLElement) {
             cell.style.backgroundColor = ''
             cell.style.color = ''
+            cell.style.textShadow = ''
           }
         })
       }

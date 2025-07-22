@@ -121,9 +121,9 @@ describe('ColorScaleManager', () => {
 
   describe('calculateTextColor', () => {
     test('明るい背景色には黒文字を返す', () => {
-      expect(calculateTextColor([255, 255, 255])).toBe('black')
-      expect(calculateTextColor([200, 200, 200])).toBe('black')
-      expect(calculateTextColor([150, 200, 250])).toBe('black')
+      expect(calculateTextColor([255, 255, 255])).toBe('#444')
+      expect(calculateTextColor([200, 200, 200])).toBe('#444')
+      expect(calculateTextColor([150, 200, 250])).toBe('#444')
     })
 
     test('暗い背景色には白文字を返す', () => {

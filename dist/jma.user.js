@@ -212,7 +212,7 @@
         ]
       }
       return null
-    } catch (error) {
+    } catch (_error) {
       return null
     }
   }
@@ -227,14 +227,15 @@
       }
       const backgroundLuminance = 0.2126 * toLinear(r) + 0.7152 * toLinear(g) + 0.0722 * toLinear(b)
       const whiteLuminance = 1
-      const blackLuminance = 0
+      const darkGrayLuminance =
+        0.2126 * toLinear(68) + 0.7152 * toLinear(68) + 0.0722 * toLinear(68)
       const contrastWithWhite =
         (Math.max(whiteLuminance, backgroundLuminance) + 0.05) /
         (Math.min(whiteLuminance, backgroundLuminance) + 0.05)
-      const contrastWithBlack =
-        (Math.max(backgroundLuminance, blackLuminance) + 0.05) /
-        (Math.min(backgroundLuminance, blackLuminance) + 0.05)
-      return contrastWithWhite > contrastWithBlack ? 'white' : 'black'
+      const contrastWithDarkGray =
+        (Math.max(backgroundLuminance, darkGrayLuminance) + 0.05) /
+        (Math.min(backgroundLuminance, darkGrayLuminance) + 0.05)
+      return contrastWithWhite > contrastWithDarkGray ? 'white' : '#444'
     } catch (error) {
       console.error('文字色計算中にエラーが発生しました:', error)
       return null
@@ -353,6 +354,13 @@
         const textColor = calculateTextColor(rgbValues)
         if (textColor) {
           element.style.color = textColor
+          if (textColor === '#444') {
+            element.style.textShadow =
+              '1px 0 0 white, -1px 0 0 white, 0 1px 0 white, 0 -1px 0 white, 1px 1px 0 white, -1px -1px 0 white, 1px -1px 0 white, -1px 1px 0 white'
+          } else {
+            element.style.textShadow =
+              '1px 0 0 black, -1px 0 0 black, 0 1px 0 black, 0 -1px 0 black, 1px 1px 0 black, -1px -1px 0 black, 1px -1px 0 black, -1px 1px 0 black'
+          }
         }
       }
     }
@@ -373,6 +381,7 @@
             if (cell instanceof HTMLElement) {
               cell.style.backgroundColor = ''
               cell.style.color = ''
+              cell.style.textShadow = ''
             }
           })
         }
