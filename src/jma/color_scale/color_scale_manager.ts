@@ -29,7 +29,7 @@ export function parseColorToRGB(color: string): [number, number, number] | null 
       ]
     }
     return null
-  } catch (error) {
+  } catch (_error) {
     return null
   }
 }
