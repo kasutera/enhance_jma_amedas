@@ -55,19 +55,31 @@ export function calculateTextColor(
 
     const backgroundLuminance = 0.2126 * toLinear(r) + 0.7152 * toLinear(g) + 0.0722 * toLinear(b)
 
-    // 白と黒のコントラスト比を計算
-    const whiteLuminance = 1
-    const blackLuminance = 0
+    /* 元の式を変形:
+       return contrastWithWhite > contrastWithBlack ? 'white' : 'black'
+       backgroundLuminance を L とすると、
+       contrastWithWhite = (max(1, L) + 0.05) / (min(1, L) + 0.05)
+       contrastWithBlack = (max(L, 0) + 0.05) / (min(L, 0) + 0.05)
 
-    const contrastWithWhite =
-      (Math.max(whiteLuminance, backgroundLuminance) + 0.05) /
-      (Math.min(whiteLuminance, backgroundLuminance) + 0.05)
-    const contrastWithBlack =
-      (Math.max(backgroundLuminance, blackLuminance) + 0.05) /
-      (Math.min(backgroundLuminance, blackLuminance) + 0.05)
+       L（backgroundLuminance）の範囲が0≤L≤1なので:
+       contrastWithWhite = (1 + 0.05) / (L + 0.05) = 1.05 / (L + 0.05)
+       contrastWithBlack = (L + 0.05) / (0 + 0.05) = (L + 0.05) / 0.05
+
+       不等式 contrastWithWhite > contrastWithBlack を展開:
+       1.05 / (L + 0.05) > (L + 0.05) / 0.05
+
+       両辺に (L + 0.05) × 0.05 を乗算:
+       1.05 × 0.05 > (L + 0.05)²
+       0.0525 > (L + 0.05)²
+
+       平方根を取る:
+       √0.0525 > L + 0.05
+       0.2291 > L + 0.05
+       L < 0.1791
+      */
 
     // コントラスト比が高い方を返す
-    return contrastWithWhite > contrastWithBlack ? 'white' : 'black'
+    return backgroundLuminance < 0.1791 ? 'white' : 'black'
   } catch (error) {
     console.error('文字色計算中にエラーが発生しました:', error)
     return null
