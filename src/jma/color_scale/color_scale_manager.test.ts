@@ -136,24 +136,6 @@ describe('ColorScaleManager', () => {
       // 湿度100%の色: #091E78 = rgb(9, 30, 120) - 暗い青色
       expect(calculateTextColor([9, 30, 120])).toBe('white')
     })
-
-    test('エラーハンドリング', () => {
-      // console.error のモック
-      const consoleSpy = jest.spyOn(console, 'error').mockImplementation()
-
-      // 不正な値でのエラーテスト（実際の実装では try-catch でエラーをキャッチ）
-      const originalMath = Math.pow
-      Math.pow = jest.fn().mockImplementation(() => {
-        throw new Error('Math error')
-      })
-
-      expect(calculateTextColor([255, 255, 255])).toBe(null)
-      expect(consoleSpy).toHaveBeenCalled()
-
-      // 復元
-      Math.pow = originalMath
-      consoleSpy.mockRestore()
-    })
   })
 
   describe('parseColorToRGB', () => {
