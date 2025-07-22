@@ -20,9 +20,7 @@ export function parseColorToRGB(color: string): [number, number, number] | null 
     document.body.removeChild(el)
 
     // rgb(r, g, b) 形式をパース
-    console.log(`Parsing color: ${color}, Computed: ${computed}`)
     const match = computed.match(/rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)/)
-    console.log(`Match result: ${match}`)
     if (match) {
       return [
         Number.parseInt(match[1], 10),

@@ -203,9 +203,7 @@
       document.body.appendChild(el)
       const computed = getComputedStyle(el).color
       document.body.removeChild(el)
-      console.log(`Parsing color: ${color}, Computed: ${computed}`)
       const match = computed.match(/rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)/)
-      console.log(`Match result: ${match}`)
       if (match) {
         return [
           Number.parseInt(match[1], 10),
