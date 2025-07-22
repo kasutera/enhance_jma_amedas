@@ -7,21 +7,42 @@ import { ColorScaleCalculator } from './color_scale_calculator'
 import { DERIVED_COLOR_SCALES, JMA_OFFICIAL_COLOR_SCALES } from './jma_official_colors'
 
 /**
+ * rgb文字列をパースしてRGB値の配列に変換する
+ * @param color 色を表す文字列（例: '#ff0000', 'rgb(255, 0, 0)'）
+ * @returns [number, number, number] | null
+ */
+export function parseColorToRGB(color: string): [number, number, number] | null {
+  try {
+    const el = document.createElement('div')
+    el.style.color = color
+    document.body.appendChild(el)
+    const computed = getComputedStyle(el).color
+    document.body.removeChild(el)
+    
+    // rgb(r, g, b) 形式をパース
+    console.log(`Parsing color: ${color}, Computed: ${computed}`)
+    const match = computed.match(/rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)/)
+    console.log(`Match result: ${match}`)
+    if (match) {
+      return [parseInt(match[1], 10), parseInt(match[2], 10), parseInt(match[3], 10)]
+    }
+    return null
+  } catch (error) {
+    return null
+  }
+}
+
+/**
  * 背景色に基づいて適切な文字色を計算する
  * @param backgroundColor RGB形式の背景色文字列
  * @returns 'white' | 'black' | null
  */
-export function calculateTextColor(backgroundColor: string): 'white' | 'black' | null {
+export function calculateTextColor(backgroundColor: [number, number, number]): 'white' | 'black' | null {
   try {
-    // RGB値を抽出
-    const rgbMatch = backgroundColor.match(/rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)/)
-    if (!rgbMatch) {
-      return null
-    }
 
-    const r = Number.parseInt(rgbMatch[1])
-    const g = Number.parseInt(rgbMatch[2])
-    const b = Number.parseInt(rgbMatch[3])
+    const r = backgroundColor[0]
+    const g = backgroundColor[1]
+    const b = backgroundColor[2]
 
     // 相対輝度を計算 (WCAG基準)
     const toLinear = (c: number) => {
@@ -211,9 +232,12 @@ export class ColorScaleManager {
    * 背景色に基づいて文字色を調整する
    */
   private adjustTextColor(element: HTMLElement, backgroundColor: string): void {
-    const textColor = calculateTextColor(backgroundColor)
-    if (textColor) {
-      element.style.color = textColor
+    const rgbValues = parseColorToRGB(backgroundColor)
+    if (rgbValues) {
+      const textColor = calculateTextColor(rgbValues)
+      if (textColor) {
+        element.style.color = textColor
+      }
     }
   }
 
