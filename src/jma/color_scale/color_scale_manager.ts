@@ -7,38 +7,66 @@ import { ColorScaleCalculator } from './color_scale_calculator'
 import { DERIVED_COLOR_SCALES, JMA_OFFICIAL_COLOR_SCALES } from './jma_official_colors'
 
 /**
+ * rgb文字列をパースしてRGB値の配列に変換する
+ * @param color 色を表す文字列（例: '#ff0000', 'rgb(255, 0, 0)'）
+ * @returns [number, number, number] | null
+ */
+export function parseColorToRGB(color: string): [number, number, number] | null {
+  try {
+    const el = document.createElement('div')
+    el.style.color = color
+    document.body.appendChild(el)
+    const computed = getComputedStyle(el).color
+    document.body.removeChild(el)
+
+    // rgb(r, g, b) 形式をパース
+    console.log(`Parsing color: ${color}, Computed: ${computed}`)
+    const match = computed.match(/rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)/)
+    console.log(`Match result: ${match}`)
+    if (match) {
+      return [
+        Number.parseInt(match[1], 10),
+        Number.parseInt(match[2], 10),
+        Number.parseInt(match[3], 10),
+      ]
+    }
+    return null
+  } catch (error) {
+    return null
+  }
+}
+
+/**
  * 背景色に基づいて適切な文字色を計算する
  * @param backgroundColor RGB形式の背景色文字列
  * @returns 'white' | 'black' | null
  */
-export function calculateTextColor(backgroundColor: string): 'white' | 'black' | null {
+export function calculateTextColor(
+  backgroundColor: [number, number, number],
+): 'white' | 'black' | null {
   try {
-    // RGB値を抽出
-    const rgbMatch = backgroundColor.match(/rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)/)
-    if (!rgbMatch) {
-      return null
-    }
-
-    const r = Number.parseInt(rgbMatch[1])
-    const g = Number.parseInt(rgbMatch[2])
-    const b = Number.parseInt(rgbMatch[3])
+    const r = backgroundColor[0]
+    const g = backgroundColor[1]
+    const b = backgroundColor[2]
 
     // 相対輝度を計算 (WCAG基準)
     const toLinear = (c: number) => {
       const normalized = c / 255
-      return normalized <= 0.03928 ? normalized / 12.92 : Math.pow((normalized + 0.055) / 1.055, 2.4)
+      return normalized <= 0.03928 ? normalized / 12.92 : ((normalized + 0.055) / 1.055) ** 2.4
     }
-    
+
     const backgroundLuminance = 0.2126 * toLinear(r) + 0.7152 * toLinear(g) + 0.0722 * toLinear(b)
-    
+
     // 白と黒のコントラスト比を計算
     const whiteLuminance = 1
     const blackLuminance = 0
-    
-    const contrastWithWhite = (Math.max(whiteLuminance, backgroundLuminance) + 0.05) / 
-                             (Math.min(whiteLuminance, backgroundLuminance) + 0.05)
-    const contrastWithBlack = (Math.max(backgroundLuminance, blackLuminance) + 0.05) / 
-                             (Math.min(backgroundLuminance, blackLuminance) + 0.05)
+
+    const contrastWithWhite =
+      (Math.max(whiteLuminance, backgroundLuminance) + 0.05) /
+      (Math.min(whiteLuminance, backgroundLuminance) + 0.05)
+    const contrastWithBlack =
+      (Math.max(backgroundLuminance, blackLuminance) + 0.05) /
+      (Math.min(backgroundLuminance, blackLuminance) + 0.05)
 
     // コントラスト比が高い方を返す
     return contrastWithWhite > contrastWithBlack ? 'white' : 'black'
@@ -211,9 +239,12 @@ export class ColorScaleManager {
    * 背景色に基づいて文字色を調整する
    */
   private adjustTextColor(element: HTMLElement, backgroundColor: string): void {
-    const textColor = calculateTextColor(backgroundColor)
-    if (textColor) {
-      element.style.color = textColor
+    const rgbValues = parseColorToRGB(backgroundColor)
+    if (rgbValues) {
+      const textColor = calculateTextColor(rgbValues)
+      if (textColor) {
+        element.style.color = textColor
+      }
     }
   }
 

@@ -196,15 +196,33 @@
     },
   }
 
+  function parseColorToRGB(color) {
+    try {
+      const el = document.createElement('div')
+      el.style.color = color
+      document.body.appendChild(el)
+      const computed = getComputedStyle(el).color
+      document.body.removeChild(el)
+      console.log(`Parsing color: ${color}, Computed: ${computed}`)
+      const match = computed.match(/rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)/)
+      console.log(`Match result: ${match}`)
+      if (match) {
+        return [
+          Number.parseInt(match[1], 10),
+          Number.parseInt(match[2], 10),
+          Number.parseInt(match[3], 10),
+        ]
+      }
+      return null
+    } catch (error) {
+      return null
+    }
+  }
   function calculateTextColor(backgroundColor) {
     try {
-      const rgbMatch = backgroundColor.match(/rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)/)
-      if (!rgbMatch) {
-        return null
-      }
-      const r = Number.parseInt(rgbMatch[1])
-      const g = Number.parseInt(rgbMatch[2])
-      const b = Number.parseInt(rgbMatch[3])
+      const r = backgroundColor[0]
+      const g = backgroundColor[1]
+      const b = backgroundColor[2]
       const toLinear = (c) => {
         const normalized = c / 255
         return normalized <= 0.03928 ? normalized / 12.92 : ((normalized + 0.055) / 1.055) ** 2.4
@@ -332,9 +350,12 @@
       }
     }
     adjustTextColor(element, backgroundColor) {
-      const textColor = calculateTextColor(backgroundColor)
-      if (textColor) {
-        element.style.color = textColor
+      const rgbValues = parseColorToRGB(backgroundColor)
+      if (rgbValues) {
+        const textColor = calculateTextColor(rgbValues)
+        if (textColor) {
+          element.style.color = textColor
+        }
       }
     }
     removeColorScaleFromTable(table) {
