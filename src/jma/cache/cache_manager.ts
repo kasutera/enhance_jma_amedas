@@ -133,7 +133,6 @@ export class CacheManager implements ICacheManager {
    * キャッシュエントリが有効期限内かチェック
    */
   private isEntryValid<T>(entry: { data: T; timestamp: number; ttl: number }): boolean {
-    if (entry.ttl === 0) return true // 永続キャッシュ
     return Date.now() - entry.timestamp < entry.ttl
   }
 
@@ -295,55 +294,6 @@ export class CacheManager implements ICacheManager {
   async hasByUrl(url: string): Promise<boolean> {
     const key = this.generateCacheKey(url)
     return this.has(key)
-  }
-
-  /**
-   * 特定の観測所の時系列データをまとめて削除
-   */
-  async clearPointData(stationCode: string): Promise<void> {
-    try {
-      const keys = await this.storage.keys()
-      const pointKeys = keys.filter((key) => key.includes(`:point:${stationCode}:`))
-
-      for (const key of pointKeys) {
-        await this.storage.removeItem(key)
-      }
-
-      console.log(`Cleared ${pointKeys.length} cache entries for station ${stationCode}`)
-    } catch (error) {
-      console.warn(`Failed to clear point data for station ${stationCode}:`, error)
-    }
-  }
-
-  /**
-   * 指定日より古いキャッシュを削除
-   */
-  async clearOlderThan(date: Date): Promise<void> {
-    try {
-      const keys = await this.storage.keys()
-      const expiredKeys: string[] = []
-      const targetTime = date.getTime()
-
-      for (const key of keys) {
-        try {
-          const entry = await this.storage.getItem(key)
-          if (entry && entry.timestamp < targetTime) {
-            expiredKeys.push(key)
-          }
-        } catch {
-          // 破損データも削除
-          expiredKeys.push(key)
-        }
-      }
-
-      for (const key of expiredKeys) {
-        await this.storage.removeItem(key)
-      }
-
-      console.log(`Cleared ${expiredKeys.length} cache entries older than ${date.toISOString()}`)
-    } catch (error) {
-      console.warn('Failed to clear old cache entries:', error)
-    }
   }
 }
 
