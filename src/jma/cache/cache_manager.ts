@@ -4,7 +4,7 @@
  */
 
 import { CacheStorage, type CacheStorageConfig } from './cache_storage'
-import type { CacheConfig, CacheStats, CacheType, ICacheManager, TimeSlotInfo } from './cache_types'
+import type { CacheConfig, CacheType, TimeSlotInfo } from './cache_types'
 
 /**
  * デフォルトキャッシュ設定
@@ -23,13 +23,9 @@ const DEFAULT_CONFIG: CacheConfig = {
 /**
  * 統一キャッシュマネージャー実装
  */
-export class CacheManager implements ICacheManager {
+export class CacheManager {
   private readonly storage: CacheStorage
   private readonly config: CacheConfig
-  private stats = {
-    totalRequests: 0,
-    cacheHits: 0,
-  }
 
   constructor(config: Partial<CacheConfig> = {}) {
     this.config = { ...DEFAULT_CONFIG, ...config }
@@ -136,11 +132,7 @@ export class CacheManager implements ICacheManager {
     return Date.now() - entry.timestamp < entry.ttl
   }
 
-  // ICacheManager インターフェース実装
-
   async get<T>(key: string): Promise<T | undefined> {
-    this.stats.totalRequests++
-
     try {
       const entry = await this.storage.getItem<T>(key)
       if (!entry) return undefined
@@ -150,7 +142,6 @@ export class CacheManager implements ICacheManager {
         return undefined
       }
 
-      this.stats.cacheHits++
       return entry.data
     } catch (error) {
       console.warn(`Cache get failed for key ${key}:`, error)
@@ -196,8 +187,6 @@ export class CacheManager implements ICacheManager {
   async clear(): Promise<void> {
     try {
       await this.storage.clear()
-      this.stats.totalRequests = 0
-      this.stats.cacheHits = 0
     } catch (error) {
       console.warn('Cache clear failed:', error)
     }
@@ -227,46 +216,6 @@ export class CacheManager implements ICacheManager {
       console.log(`Cache cleanup completed: removed ${expiredKeys.length} expired entries`)
     } catch (error) {
       console.warn('Cache cleanup failed:', error)
-    }
-  }
-
-  async getStats(): Promise<CacheStats> {
-    try {
-      const keys = await this.storage.keys()
-      const totalSize = await this.storage.size()
-
-      let memoryEntries = 0
-      let storageEntries = 0
-
-      // 簡易的な分別（正確にはストレージレイヤーから情報取得が必要）
-      for (const key of keys) {
-        if (key.startsWith(this.config.storagePrefix)) {
-          storageEntries++
-        }
-      }
-      memoryEntries = keys.length - storageEntries
-
-      const hitRate =
-        this.stats.totalRequests > 0 ? this.stats.cacheHits / this.stats.totalRequests : 0
-
-      return {
-        memoryEntries,
-        storageEntries,
-        totalSize,
-        hitRate,
-        totalRequests: this.stats.totalRequests,
-        cacheHits: this.stats.cacheHits,
-      }
-    } catch (error) {
-      console.warn('Failed to get cache stats:', error)
-      return {
-        memoryEntries: 0,
-        storageEntries: 0,
-        totalSize: 0,
-        hitRate: 0,
-        totalRequests: this.stats.totalRequests,
-        cacheHits: this.stats.cacheHits,
-      }
     }
   }
 

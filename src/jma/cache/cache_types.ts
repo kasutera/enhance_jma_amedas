@@ -58,24 +58,6 @@ export interface CacheConfig {
 }
 
 /**
- * キャッシュ統計情報
- */
-export interface CacheStats {
-  /** メモリキャッシュのエントリ数 */
-  memoryEntries: number
-  /** localStorageのエントリ数 */
-  storageEntries: number
-  /** 総キャッシュサイズ（推定バイト） */
-  totalSize: number
-  /** ヒット率 */
-  hitRate: number
-  /** 総リクエスト数 */
-  totalRequests: number
-  /** キャッシュヒット数 */
-  cacheHits: number
-}
-
-/**
  * キャッシュエラーの種別
  */
 export enum CacheErrorType {
@@ -117,91 +99,4 @@ export interface TimeSlotInfo {
   isCurrent: boolean
   /** 3時間単位のスロット番号 (0, 3, 6, 9, 12, 15, 18, 21) */
   slotHour: number
-}
-
-/**
- * キャッシュマネージャーのインターフェース
- */
-export interface ICacheManager {
-  /**
-   * キャッシュから値を取得
-   * @param key キャッシュキー
-   * @returns キャッシュされた値、存在しないか期限切れの場合はundefined
-   */
-  get<T>(key: string): Promise<T | undefined>
-
-  /**
-   * キャッシュに値を保存
-   * @param key キャッシュキー
-   * @param value 保存する値
-   * @param ttl 有効期限（ms）、省略時はデフォルト値
-   */
-  set<T>(key: string, value: T, ttl?: number): Promise<void>
-
-  /**
-   * キャッシュにキーが存在するかチェック
-   * @param key キャッシュキー
-   * @returns 存在し、有効期限内の場合true
-   */
-  has(key: string): Promise<boolean>
-
-  /**
-   * キャッシュを削除
-   * @param key キャッシュキー
-   */
-  delete(key: string): Promise<void>
-
-  /**
-   * 全キャッシュをクリア
-   */
-  clear(): Promise<void>
-
-  /**
-   * 期限切れエントリのクリーンアップ
-   */
-  cleanup(): Promise<void>
-
-  /**
-   * キャッシュ統計情報を取得
-   */
-  getStats(): Promise<CacheStats>
-}
-
-/**
- * キャッシュストレージのインターフェース
- */
-export interface ICacheStorage {
-  /**
-   * データを読み込み
-   * @param key キー
-   */
-  getItem<T>(key: string): Promise<CacheEntry<T> | null>
-
-  /**
-   * データを保存
-   * @param key キー
-   * @param entry キャッシュエントリ
-   */
-  setItem<T>(key: string, entry: CacheEntry<T>): Promise<void>
-
-  /**
-   * データを削除
-   * @param key キー
-   */
-  removeItem(key: string): Promise<void>
-
-  /**
-   * 全データをクリア
-   */
-  clear(): Promise<void>
-
-  /**
-   * 全キーを取得
-   */
-  keys(): Promise<string[]>
-
-  /**
-   * ストレージサイズを取得（推定バイト）
-   */
-  size(): Promise<number>
 }

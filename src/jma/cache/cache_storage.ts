@@ -3,8 +3,8 @@
  * メモリキャッシュとlocalStorage永続化を組み合わせた2層キャッシュストレージ
  */
 
-import type { CacheEntry, ICacheStorage } from './cache_types'
-import { CacheError as CacheErrorImpl, CacheErrorType as ErrorType } from './cache_types'
+import type { CacheEntry } from './cache_types'
+import { CacheError, CacheErrorType } from './cache_types'
 
 /**
  * キャッシュストレージの設定
@@ -25,7 +25,7 @@ export interface CacheStorageConfig {
  * - 第1層: メモリキャッシュ（高速アクセス）
  * - 第2層: localStorage（永続化）
  */
-export class CacheStorage implements ICacheStorage {
+export class CacheStorage {
   private readonly memoryCache = new Map<string, CacheEntry<unknown>>()
   private readonly config: CacheStorageConfig
   private storageAvailable: boolean
@@ -82,7 +82,7 @@ export class CacheStorage implements ICacheStorage {
   private validateKey(key: string): void {
     const validKeyPattern = /^enhanced_jma:(map|point):/
     if (!validKeyPattern.test(key)) {
-      throw new CacheErrorImpl(ErrorType.INVALID_KEY, `Invalid cache key format: ${key}`)
+      throw new CacheError(CacheErrorType.INVALID_KEY, `Invalid cache key format: ${key}`)
     }
   }
 
@@ -91,7 +91,7 @@ export class CacheStorage implements ICacheStorage {
    */
   private sanitizeData<T>(data: unknown): T {
     if (data === null || data === undefined) {
-      throw new CacheErrorImpl(ErrorType.DATA_CORRUPTED, 'Cache data is null or undefined')
+      throw new CacheError(CacheErrorType.DATA_CORRUPTED, 'Cache data is null or undefined')
     }
 
     // プロトタイプ汚染対策
@@ -202,16 +202,16 @@ export class CacheStorage implements ICacheStorage {
 
       const parsed = this.safeJsonParse(item) as CacheEntry<T>
       if (!parsed || typeof parsed !== 'object') {
-        throw new CacheErrorImpl(
-          ErrorType.DATA_CORRUPTED,
+        throw new CacheError(
+          CacheErrorType.DATA_CORRUPTED,
           `Invalid cache entry structure for key: ${key}`,
         )
       }
 
       // 必要なプロパティの存在チェック
       if (typeof parsed.timestamp !== 'number' || typeof parsed.ttl !== 'number') {
-        throw new CacheErrorImpl(
-          ErrorType.DATA_CORRUPTED,
+        throw new CacheError(
+          CacheErrorType.DATA_CORRUPTED,
           `Invalid cache entry metadata for key: ${key}`,
         )
       }
@@ -221,7 +221,7 @@ export class CacheStorage implements ICacheStorage {
         data: this.sanitizeData<T>(parsed.data),
       }
     } catch (error) {
-      if (error instanceof CacheErrorImpl) throw error
+      if (error instanceof CacheError) throw error
 
       console.warn(`Failed to parse cache entry for key ${key}:`, error)
       // 破損データを削除
@@ -229,8 +229,8 @@ export class CacheStorage implements ICacheStorage {
         localStorage.removeItem(key)
       } catch {}
 
-      throw new CacheErrorImpl(
-        ErrorType.DATA_CORRUPTED,
+      throw new CacheError(
+        CacheErrorType.DATA_CORRUPTED,
         `Cache data corrupted for key: ${key}`,
         error as Error,
       )
@@ -254,8 +254,8 @@ export class CacheStorage implements ICacheStorage {
 
       // 再度容量チェック（削除後でも足りない場合）
       if (this.currentStorageSize + itemSize > this.config.maxStorageSize) {
-        throw new CacheErrorImpl(
-          ErrorType.QUOTA_EXCEEDED,
+        throw new CacheError(
+          CacheErrorType.QUOTA_EXCEEDED,
           'localStorage quota exceeded after cleanup',
         )
       }
@@ -266,14 +266,14 @@ export class CacheStorage implements ICacheStorage {
       localStorage.setItem(key, serialized)
       this.currentStorageSize += itemSize - existingSize
     } catch (error) {
-      if (error instanceof CacheErrorImpl) throw error
+      if (error instanceof CacheError) throw error
 
       if (error instanceof DOMException && error.name === 'QuotaExceededError') {
-        throw new CacheErrorImpl(ErrorType.QUOTA_EXCEEDED, 'localStorage quota exceeded', error)
+        throw new CacheError(CacheErrorType.QUOTA_EXCEEDED, 'localStorage quota exceeded', error)
       }
 
-      throw new CacheErrorImpl(
-        ErrorType.STORAGE_UNAVAILABLE,
+      throw new CacheError(
+        CacheErrorType.STORAGE_UNAVAILABLE,
         'Failed to write to localStorage',
         error as Error,
       )
