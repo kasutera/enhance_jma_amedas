@@ -105,9 +105,9 @@ export function toAmedasData(fetched: FetchedAmedasData, date: Date): AmedasData
   }
 }
 
-export class AmedasFetcher {
-  private readonly cache = new Map<string, FetchedAmedasData>()
+import { globalCacheManager } from '../cache/cache_manager'
 
+export class AmedasFetcher {
   async fetchAmedasData(code: string, date: Date): Promise<AmedasData> {
     /**
      * アメダスデータを取得する
@@ -116,16 +116,23 @@ export class AmedasFetcher {
      * @returns AmedasData
      */
     const url = dateToAmedasUrl(code, date)
-    const cached = this.cache.get(url)
+
+    // キャッシュから取得を試行
+    const cached = await globalCacheManager.getByUrl<FetchedAmedasData>(url)
     if (cached !== undefined) {
       return toAmedasData(cached, date)
     }
+
+    // キャッシュにない場合はフェッチ
     const response = await fetch(url)
     if (!response.ok) {
       throw new Error(`Failed to fetch data from ${url}`)
     }
     const json: FetchedAmedasData = await response.json()
-    this.cache.set(url, json)
+
+    // キャッシュに保存
+    await globalCacheManager.setByUrl(url, json)
+
     return toAmedasData(json, date)
   }
 }
