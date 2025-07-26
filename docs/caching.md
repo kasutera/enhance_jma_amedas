@@ -76,8 +76,14 @@ interface CacheKey {
 | データ種別 | TTL | 理由 |
 |-----------|-----|------|
 | マップデータ | 1時間 | アメダス更新間隔に合わせる |
-| ポイントデータ（最新スロット） | 0 | 最新スロットは10分間隔で更新される |
-| ポイントデータ（過去スロット） | 3日 | 過去データは更新されないため無期限キャッシュ可能 |
+| ポイントデータ（最新スロット） | CACHE_DISABLED (-1) | 最新スロットは10分間隔で更新されるためキャッシュしない |
+| ポイントデータ（過去スロット） | 3日 | 過去データは更新されないため長期キャッシュ可能 |
+
+**TTL値の意味:**
+
+- **負の値 (`CACHE_DISABLED = -1`)**: キャッシュしない
+- **0**: 永続キャッシュ（期限なし）
+- **正の値**: 指定ミリ秒でのキャッシュ期限
 
 ### 容量管理
 
@@ -92,11 +98,15 @@ interface CacheKey {
 1. **cache_types.ts** - 型定義
 
    ```typescript
+   // キャッシュ無効を表す定数
+   export const CACHE_DISABLED = -1
+   
    interface CacheEntry<T> {
      data: T
      timestamp: number
      ttl: number
      accessCount: number
+     lastAccessed: number
    }
    ```
 
@@ -107,39 +117,41 @@ interface CacheKey {
 
 3. **cache_manager.ts** - 統一マネージャー
    - get/set/has/clear API
-   - TTL有効期限チェック
+   - TTL有効期限チェック（TTL=0は永続、負の値はキャッシュしない）
    - 最新スロット判定機能（ポイントデータ用）
    - LRU削除機能
+   - URLベース便利メソッド（getByUrl/setByUrl/hasByUrl）
 
 ### Phase 2: 既存システム統合
 
-4. **Fetcherクラス修正**
+1. **Fetcherクラス修正**
    - Map → CacheManager移行
    - 既存APIの互換性維持
 
-5. **テスト修正**
+2. **テスト修正**
    - localStorage mockの統一
    - 既存テストケースの保護
 
 ### Phase 3: 品質保証
 
-6. **単体テスト**
+1. **単体テスト**
    - 各レイヤーの独立テスト
    - エッジケースカバレッジ
 
-7. **統合テスト**
+2. **統合テスト**
    - 実際のAmedasFetcher動作確認
    - パフォーマンス測定
 
 ## ファイル構成
 
-```
+```text
 src/jma/cache/
-├── cache_types.ts          # 型定義・インターフェース
+├── cache_types.ts          # 型定義・インターフェース・CACHE_DISABLED定数
 ├── cache_storage.ts        # localStorage永続化レイヤー
 ├── cache_manager.ts        # 統一キャッシュマネージャー
-├── cache_manager.test.ts   # CacheManager単体テスト
-└── cache_storage.test.ts   # CacheStorage単体テスト
+├── cache_types.test.ts     # cache_types単体テスト
+├── cache_storage.test.ts   # CacheStorage単体テスト
+└── cache_manager.test.ts   # CacheManager単体テスト
 ```
 
 ## 移行戦略
@@ -175,6 +187,7 @@ src/jma/cache/
 ### セキュリティ
 
 - XSS対策: キャッシュデータのサニタイズ
+- プロトタイプ汚染対策: 安全なJSON解析とオブジェクト生成
 
 ### エラーハンドリング
 

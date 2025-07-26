@@ -4,7 +4,7 @@
  */
 
 import { CacheStorage, type CacheStorageConfig } from './cache_storage'
-import type { CacheConfig, CacheType, TimeSlotInfo } from './cache_types'
+import { CACHE_DISABLED, type CacheConfig, type CacheType, type TimeSlotInfo } from './cache_types'
 
 /**
  * デフォルトキャッシュ設定
@@ -15,7 +15,7 @@ const DEFAULT_CONFIG: CacheConfig = {
   maxStorageSize: 5 * 1024 * 1024, // 5MB
   defaultTtl: {
     map: 60 * 60 * 1000, // 1時間
-    pointCurrent: 0, // 常に最新を取得
+    pointCurrent: CACHE_DISABLED, // キャッシュしない（常に最新を取得）
     pointPast: 3 * 24 * 60 * 60 * 1000, // 3日
   },
 }
@@ -104,7 +104,7 @@ export class CacheManager {
   /**
    * URLに基づいて適切なTTLを決定
    */
-  private determineTtl(url: string): number {
+  private determineTtlByUrl(url: string): number {
     const cacheType = this.getCacheType(this.generateCacheKey(url))
 
     switch (cacheType) {
@@ -126,9 +126,29 @@ export class CacheManager {
   }
 
   /**
+   * キーに基づいて適切なTTLを決定
+   */
+  private determineTtlByKey(key: string): number {
+    const cacheType = this.getCacheType(key)
+
+    switch (cacheType) {
+      case 'map':
+        return this.config.defaultTtl.map
+
+      case 'point':
+        // キーから直接判定するのは困難なので、デフォルトを返す
+        return this.config.defaultTtl.pointPast
+
+      default:
+        return this.config.defaultTtl.map
+    }
+  }
+
+  /**
    * キャッシュエントリが有効期限内かチェック
    */
   private isEntryValid<T>(entry: { data: T; timestamp: number; ttl: number }): boolean {
+    if (entry.ttl === 0) return true // TTL=0は永続
     return Date.now() - entry.timestamp < entry.ttl
   }
 
@@ -151,7 +171,13 @@ export class CacheManager {
 
   async set<T>(key: string, value: T, ttl?: number): Promise<void> {
     try {
-      const effectiveTtl = ttl ?? this.determineTtl(key)
+      const effectiveTtl = ttl ?? this.determineTtlByKey(key)
+
+      // TTLが負の値の場合はキャッシュしない
+      if (effectiveTtl < 0) {
+        return
+      }
+
       const entry = {
         data: value,
         timestamp: Date.now(),
@@ -234,7 +260,8 @@ export class CacheManager {
    */
   async setByUrl<T>(url: string, value: T): Promise<void> {
     const key = this.generateCacheKey(url)
-    await this.set(key, value)
+    const ttl = this.determineTtlByUrl(url)
+    await this.set(key, value, ttl)
   }
 
   /**
