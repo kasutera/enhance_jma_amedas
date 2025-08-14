@@ -1,6 +1,12 @@
 # Enhance JMA Amedas
 
 [![Run Tests](https://github.com/kasutera/enhance_jma_amedas/actions/workflows/run_tests.yml/badge.svg?branch=main)](https://github.com/kasutera/enhance_jma_amedas/actions/workflows/run_tests.yml)
+[![Code Format Check](https://github.com/kasutera/enhance_jma_amedas/actions/workflows/code_format.yml/badge.svg?branch=main)](https://github.com/kasutera/enhance_jma_amedas/actions/workflows/code_format.yml)
+[![Code Format Check](https://github.com/kasutera/enhance_jma_amedas/actions/workflows/code_format.yml/badge.svg)](https://github.com/kasutera/enhance_jma_amedas/actions/workflows/code_format.yml)
+[![Latest Release](https://img.shields.io/github/v/release/kasutera/enhance_jma_amedas)](https://github.com/kasutera/enhance_jma_amedas/releases/latest)
+[![Node.js Version](https://img.shields.io/badge/node-%3E%3D22.0.0-brightgreen)](https://nodejs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.7.2-blue)](https://www.typescriptlang.org/)
+[![Dependabot](https://img.shields.io/badge/Dependabot-enabled-brightgreen)](https://github.com/kasutera/enhance_jma_amedas/network/updates)
 ![Using screenshot](./docs/media/screenshot_01.png)
 ![Using screenshot 2](./docs/media/screenshot_02.png)
 
