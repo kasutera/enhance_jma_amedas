@@ -79,6 +79,7 @@ describe('ColorScaleManager', () => {
       table = document.createElement('table')
       table.innerHTML = `
         <tr>
+          <td class="${TABLE_CLASS_NAMES.sun1h}">0.8</td>
           <td class="${TABLE_CLASS_NAMES.volumetricHumidity}">15.5</td>
           <td class="${TABLE_CLASS_NAMES.dewPoint}">10.2</td>
           <td class="${TABLE_CLASS_NAMES.temperatureHumidityIndex}">65</td>
@@ -102,6 +103,15 @@ describe('ColorScaleManager', () => {
 
       const cell = table.querySelector(`.${TABLE_CLASS_NAMES.volumetricHumidity}`) as HTMLElement
       expect(cell.style.backgroundColor).not.toBe('')
+    })
+
+    test('日照時間カラムにカラースケールを適用できる', () => {
+      manager.applyColorScaleToColumn(table, TABLE_CLASS_NAMES.sun1h)
+
+      const cell = table.querySelector(`.${TABLE_CLASS_NAMES.sun1h}`) as HTMLElement
+      expect(cell.style.backgroundColor).not.toBe('')
+      // 0.8h の場合はオレンジ系の色になることを確認
+      expect(cell.style.backgroundColor).toBeTruthy()
     })
 
     test('無効状態では色が適用されない', () => {

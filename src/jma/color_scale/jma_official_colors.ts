@@ -76,6 +76,19 @@ export const JMA_OFFICIAL_COLOR_SCALES = {
       '#A52166', // 80mm+
     ],
   } as ColorScale,
+
+  // 1時間日照時間（h）
+  sunshine: {
+    values: [0, 0.2, 0.4, 0.6, 0.8, 1],
+    colors: [
+      '#1840F5', // 0h (濃い青)
+      '#C3EAFD', // 0.2h (薄い青)
+      '#F9F551', // 0.4h (薄い黄色)
+      '#F19E38', // 0.6h (黄色)
+      '#EA4225', // 0.8h (オレンジ)
+      '#A52166', // 1h (濃い紫)
+    ],
+  } as ColorScale,
 } as const
 
 /**

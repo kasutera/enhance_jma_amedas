@@ -161,6 +161,7 @@ export class ColorScaleManager {
         TABLE_CLASS_NAMES.humidity,
         TABLE_CLASS_NAMES.precipitation1h,
         TABLE_CLASS_NAMES.wind,
+        TABLE_CLASS_NAMES.sun1h,
         TABLE_CLASS_NAMES.volumetricHumidity,
         TABLE_CLASS_NAMES.dewPoint,
         TABLE_CLASS_NAMES.temperatureHumidityIndex,
@@ -223,6 +224,8 @@ export class ColorScaleManager {
         return JMA_OFFICIAL_COLOR_SCALES.precipitation
       case TABLE_CLASS_NAMES.wind:
         return JMA_OFFICIAL_COLOR_SCALES.windSpeed
+      case TABLE_CLASS_NAMES.sun1h:
+        return JMA_OFFICIAL_COLOR_SCALES.sunshine
       case TABLE_CLASS_NAMES.volumetricHumidity:
         return DERIVED_COLOR_SCALES.volumetricHumidity
       case TABLE_CLASS_NAMES.dewPoint:
@@ -266,6 +269,7 @@ export class ColorScaleManager {
         TABLE_CLASS_NAMES.humidity,
         TABLE_CLASS_NAMES.precipitation1h,
         TABLE_CLASS_NAMES.wind,
+        TABLE_CLASS_NAMES.sun1h,
         TABLE_CLASS_NAMES.volumetricHumidity,
         TABLE_CLASS_NAMES.dewPoint,
         TABLE_CLASS_NAMES.temperatureHumidityIndex,
