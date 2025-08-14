@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs'
 import typescript from '@rollup/plugin-typescript'
+import replace from '@rollup/plugin-replace'
 import glob from 'glob'
 import type { RollupOptions } from 'rollup'
 import cleanup from 'rollup-plugin-cleanup'
@@ -7,7 +8,23 @@ import watch from 'rollup-plugin-watch'
 import { stringify } from 'userscript-metadata'
 import type { Metadata } from 'userscript-metadata'
 
-const readMetadata = (path: string): Metadata => JSON.parse(readFileSync(path, 'utf8'))
+const getVersion = (): string => {
+  const version = process.env.VERSION
+  
+  if (!version) {
+    console.error('ERROR: VERSION environment variable is required for building userscript')
+    console.error('Please run: VERSION=YYYYMMDD npm run build')
+    process.exit(1)
+  }
+  
+  return version
+}
+
+const readMetadata = (path: string): Metadata => {
+  const content = readFileSync(path, 'utf8')
+  const version = getVersion()
+  return JSON.parse(content.replace('__VERSION__', version))
+}
 const rootDir = process.cwd()
 const entryPaths = glob.sync('src/**/main.ts')
 const configs: RollupOptions[] = entryPaths.flatMap(entryPath => {
@@ -39,6 +56,10 @@ const configs: RollupOptions[] = entryPaths.flatMap(entryPath => {
       banner: () => `${stringify(readMetadata(manifestPath))}\n`
     },
     plugins: [
+      replace({
+        __VERSION__: getVersion(),
+        preventAssignment: true
+      }),
       typescript(),
       cleanup({
         extensions: [
@@ -57,6 +78,10 @@ const configs: RollupOptions[] = entryPaths.flatMap(entryPath => {
       banner: () => `${stringify(devify(readMetadata(manifestPath)))}\n`
     },
     plugins: [
+      replace({
+        __VERSION__: getVersion(),
+        preventAssignment: true
+      }),
       typescript(),
       cleanup({
         extensions: [

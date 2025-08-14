@@ -1,13 +1,13 @@
 {
   "name": "Enhance JMA Amedas",
   "namespace": "https://github.com/kasutera",
-  "version": "1.0.0",
+  "version": "__VERSION__",
   "description": "Enhance JMA Amedas",
   "author": "https://github.com/kasutera",
   "homepage": "https://github.com/kasutera/enhance_jma_amedas",
   "homepageURL": "https://github.com/kasutera/enhance_jma_amedas",
-  "updateURL": "https://github.com/kasutera/enhance_jma_amedas/raw/refs/heads/main/dist/jma.user.js",
-  "downloadURL": "https://github.com/kasutera/enhance_jma_amedas/raw/refs/heads/main/dist/jma.user.js",
+  "updateURL": "https://github.com/kasutera/enhance_jma_amedas/releases/latest/download/jma.user.js",
+  "downloadURL": "https://github.com/kasutera/enhance_jma_amedas/releases/latest/download/jma.user.js",
   "supportURL": "https://github.com/kasutera/enhance_jma_amedas/issues",
   "match": "*://www.jma.go.jp/bosai/amedas/*",
   "grant": "none"

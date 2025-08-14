@@ -1,5 +1,5 @@
 # ビルドされたユーザスクリプト
-/dist/**/*.dev.user.js
+/dist/
 
 # Logs
 logs
