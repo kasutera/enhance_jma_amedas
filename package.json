@@ -30,7 +30,6 @@
   "scripts": {
     "prebuild": "npm run clean",
     "build": "rollup --config rollup.config.ts --configPlugin @rollup/plugin-typescript --bundleConfigAsCjs",
-    "postbuild": "npm run format:userscripts",
     "clean": "rimraf dist",
     "predev": "npm run clean",
     "dev": "rollup --config rollup.config.ts --configPlugin typescript --bundleConfigAsCjs --watch",
