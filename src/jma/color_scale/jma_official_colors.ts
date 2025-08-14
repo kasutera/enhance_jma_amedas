@@ -81,7 +81,8 @@ export const JMA_OFFICIAL_COLOR_SCALES = {
   sunshine: {
     values: [0, 0.2, 0.4, 0.6, 0.8, 1],
     colors: [
-      '#1840F5', // 0h (濃い青)
+      // '#1840F5',
+      '#FFFFFF', // 0h 本来は濃い青だが、視認性のため白に変更
       '#C3EAFD', // 0.2h (薄い青)
       '#F9F551', // 0.4h (薄い黄色)
       '#F19E38', // 0.6h (黄色)
