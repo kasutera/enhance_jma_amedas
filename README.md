@@ -9,7 +9,7 @@
 ## インストール
 
 1. [Tampermonkey](https://www.tampermonkey.net/), [Violentmonkey](https://violentmonkey.github.io/) などのユーザースクリプトマネージャーを利用してください。
-2. このリポジトリの [dist/jma.user.js](https://github.com/kasutera/enhance_jma_amedas/releases/latest/download/jma.user.js) を開き、ダイアログに従ってインストールしてください。
+2. ユーザスクリプト [jma.user.js](https://github.com/kasutera/enhance_jma_amedas/releases/latest/download/jma.user.js) を開き、ダイアログに従ってインストールしてください。
 
 ## 計算式
 
@@ -75,7 +75,7 @@ npm run release
 このコマンドにより：
 
 1. 今日の日付（YYYYMMDD形式）でGitタグが作成されます
-2. GitHub ActionsがYYYYMMDD.user.jsファイルを自動ビルドします
+2. GitHub Actionsが jma.user.js ファイルを自動ビルドします
 3. GitHub Releaseが自動作成され、ユーザーがダウンロード可能になります
 
 **注意**: VERSION環境変数が設定されていない場合、ビルドはエラーで停止します。
