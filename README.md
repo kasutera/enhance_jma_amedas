@@ -9,7 +9,7 @@
 ## インストール
 
 1. [Tampermonkey](https://www.tampermonkey.net/), [Violentmonkey](https://violentmonkey.github.io/) などのユーザースクリプトマネージャーを利用してください。
-2. このリポジトリの [dist/jma.user.js](https://github.com/kasutera/enhance_jma_amedas/raw/refs/heads/main/dist/jma.user.js) を開き、ダイアログに従ってインストールしてください。
+2. このリポジトリの [dist/jma.user.js](https://github.com/kasutera/enhance_jma_amedas/releases/latest/download/jma.user.js) を開き、ダイアログに従ってインストールしてください。
 
 ## 計算式
 
