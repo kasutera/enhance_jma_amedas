@@ -23,6 +23,7 @@
     "rollup-plugin-cleanup": "^3.2.1",
     "rollup-plugin-watch": "^1.0.4",
     "ts-jest": "^29.2.5",
+    "ts-node": "^10.9.2",
     "typescript": "^5.7.2",
     "userscript-metadata": "^1.1.0"
   },
