@@ -63,6 +63,25 @@ $$DI = 0.81 \times T + 0.01 \times RH \times (0.99 \times T - 14.3) + 46.3$$
 
 ## 開発
 
+### リリース方法
+
+本プロジェクトは自動リリース機能を使用しています。以下のコマンドでリリースを作成できます：
+
+```bash
+# 本日の日付でリリースを作成
+npm run release
+```
+
+このコマンドにより：
+
+1. 今日の日付（YYYYMMDD形式）でGitタグが作成されます
+2. GitHub ActionsがYYYYMMDD.user.jsファイルを自動ビルドします
+3. GitHub Releaseが自動作成され、ユーザーがダウンロード可能になります
+
+**注意**: VERSION環境変数が設定されていない場合、ビルドはエラーで停止します。
+
+詳細な仕組みについては [`docs/autorelease.md`](docs/autorelease.md) をご覧ください。
+
 ### pre-commit フック
 
 - [lefthook](https://github.com/evilmartians/lefthook) をインストールします。
