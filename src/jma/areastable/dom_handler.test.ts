@@ -51,14 +51,9 @@ describe('Areastable の行を追加する関数のテスト', () => {
       appendColumnToAreastable(seriestable, column)
       const dstPath = `${__dirname}/testcases/dom_handler/column_added.html`
 
-      // 構造的な検証に変更（Jest 30のHTMLシリアライゼーション変更対応）
-      const newColumn = seriestable.querySelector(`.${TABLE_CLASS_NAMES.volumetricHumidity}`)
-      expect(newColumn).not.toBeNull()
-      expect(newColumn?.textContent).toBe('value1')
-
-      // ヘッダーが追加されているか確認
-      const headers = seriestable.querySelectorAll('.contents-header th')
-      expect(headers.length).toBeGreaterThan(10) // 元々の列数 + 追加された列
+      expect(normalizeHTML(seriestable.outerHTML)).toBe(
+        normalizeHTML(fs.readFileSync(dstPath, { encoding: 'utf8' })),
+      )
     })
   })
 })
