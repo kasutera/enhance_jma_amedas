@@ -4,7 +4,6 @@ import replace from '@rollup/plugin-replace'
 import glob from 'glob'
 import type { RollupOptions } from 'rollup'
 import cleanup from 'rollup-plugin-cleanup'
-import watch from 'rollup-plugin-watch'
 import { stringify } from 'userscript-metadata'
 import type { Metadata } from 'userscript-metadata'
 
@@ -65,9 +64,6 @@ const configs: RollupOptions[] = entryPaths.flatMap(entryPath => {
         extensions: [
           'ts'
         ]
-      }),
-      watch({
-        dir: 'src'
       })
     ]
   }
@@ -87,9 +83,6 @@ const configs: RollupOptions[] = entryPaths.flatMap(entryPath => {
         extensions: [
           'ts'
         ]
-      }),
-      watch({
-        dir: 'src'
       })
     ]
   }
