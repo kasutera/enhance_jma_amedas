@@ -18,6 +18,7 @@ const normalizeHTML = (html: string): string => {
     .replaceAll('" >', '">')
     .replaceAll('</a >', '</a>')
     .replaceAll('=" ', '="')
+    .replaceAll(/border-bottom:\s*hidden;?/gi, '') // Jest 30対応の追加正規化
     .trim() // 前後の空白を削除
 }
 
