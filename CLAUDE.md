@@ -139,7 +139,7 @@ src/jma/{feature}/
 ## コア技術
 
 - **TypeScript** - 主要開発言語
-- **Node.js 22** - ランタイム環境（@tsconfig/node22を拡張）
+- **Node.js 24** - ランタイム環境（@tsconfig/node24を拡張）
 - **ES2022 modules** - モジュールシステム
 - **Rollup** - ビルドシステムとバンドラー
 - **Jest** - jsdom環境でのテストフレームワーク
