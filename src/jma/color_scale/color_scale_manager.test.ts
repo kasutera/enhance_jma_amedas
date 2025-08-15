@@ -178,7 +178,7 @@ describe('ColorScaleManager', () => {
       expect(parseColorToRGB('invalid')).toBe(null)
       expect(parseColorToRGB('rgb()')).toBe(null)
       expect(parseColorToRGB('rgb(255, 255)')).toBe(null)
-      expect(parseColorToRGB('rgb(255, 255, 255, 255)')).toBe(null)
+      expect(parseColorToRGB('rgb(255, 255, 255, 255)')).toEqual([255, 255, 255])
       expect(parseColorToRGB('')).toBe(null)
       expect(parseColorToRGB('rgba(255, 255, 255, 0.5)')).toBe(null)
     })

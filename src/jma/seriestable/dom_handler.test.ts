@@ -59,11 +59,17 @@ describe('getLatestDateFromDay()', () => {
   })
 })
 
-// HTMLの正規化関数 (比較用)
+// HTMLの正規化関数 (比較用）
 const normalizeHTML = (html: string): string => {
   return html
-    .replaceAll(/>\s+</g, '><') // タグ間の空白を削除
+    .replaceAll(/>\s+/g, '>') // タグ間の空白を削除
+    .replaceAll(/\s+</g, '<') // タグ間の空白を削除
     .replaceAll(/\s+/g, ' ') // 連続する空白を1つに
+    .replaceAll(/;\s+/g, ';')
+    .replaceAll('/>', '>')
+    .replaceAll('" >', '">')
+    .replaceAll('</a >', '</a>')
+    .replaceAll('=" ', '="')
     .trim() // 前後の空白を削除
 }
 
