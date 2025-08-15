@@ -1,15 +1,15 @@
 {
   "devDependencies": {
-    "@biomejs/biome": "^2.1.4",
+    "@biomejs/biome": "^2.2.0",
     "@jest/globals": "^29.7.0",
     "@munierujp/eslint-config-typescript": "^47.1.1",
     "@rollup/plugin-replace": "^6.0.2",
-    "@rollup/plugin-typescript": "^12.1.1",
+    "@rollup/plugin-typescript": "^12.1.4",
     "@tsconfig/node16": "^16.1.4",
-    "@tsconfig/node22": "^22.0.0",
+    "@tsconfig/node22": "^22.0.2",
     "@types/glob": "^8.1.0",
     "@types/jest": "^29.5.14",
-    "@types/node": "^22.17.1",
+    "@types/node": "^24.2.1",
     "@types/node-fetch": "^3.0.2",
     "eslint": "^8.57.1",
     "eslint-plugin-jest": "^28.14.0",
@@ -37,6 +37,6 @@
     "release": "git tag $(date '+%Y%m%d') && git push --tags"
   },
   "dependencies": {
-    "undici": "^6.21.2"
+    "undici": "^7.13.0"
   }
 }
