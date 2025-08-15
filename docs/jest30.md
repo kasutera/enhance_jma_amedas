@@ -82,10 +82,10 @@ Jest 30では`innerHTML`や`outerHTML`の出力形式が変更されました。
 expect(element.outerHTML).toBe(expectedHTML)
 ```
 
-**対応**: シンプルな正規化関数による解決
+**対応**: 期待ファイル更新による根本的解決
 
 ```typescript
-// 実用的なアプローチ（Jest 30差分を効率的に吸収）
+// シンプルな正規化関数（従来通り）
 const normalizeHTML = (html: string): string => {
   return html
     .replaceAll(/>\s+/g, '>') // タグ間の空白を削除
@@ -96,20 +96,19 @@ const normalizeHTML = (html: string): string => {
     .replaceAll('" >', '">')
     .replaceAll('</a >', '</a>')
     .replaceAll('=" ', '="')
-    .replaceAll(/border-bottom:\s*hidden;?/gi, '') // Jest 30対応：消失したCSS属性を削除
     .trim() // 前後の空白を削除
 }
 
-// 双方向正規化による比較
+// 通常のHTML比較（複雑な正規化不要）
 expect(normalizeHTML(element.outerHTML)).toBe(
   normalizeHTML(expectedHTML)
 )
 ```
 
-**重要なポイント**:
-- Jest 30では`border-bottom: hidden`が空文字列になるため、期待ファイルからも**完全に削除**
-- 複雑なCSS正規化ではなく、消失した属性の削除というシンプルなアプローチ
-- 既存の期待ファイル（testcases）を変更せずに済む効果的な解決策
+**採用したアプローチ**:
+- **期待ファイルの直接更新**: testcasesディレクトリのHTMLファイルから`border-bottom: hidden;`を削除
+- **正規化関数はシンプルに維持**: Jest 30専用の複雑な正規化ロジックは不要
+- **根本的解決**: Jest 30の出力形式に期待値を合わせる明確なアプローチ
 
 ### 4. Expectマッチャーの変更
 
@@ -148,23 +147,24 @@ Jest 30では未処理のPromise rejectionsの検出がより正確になりま�
 
 ### 1. HTML比較方式の継続とテスト堅牢性向上
 
-HTMLシリアライゼーション変更への対応として、効果的なHTML正規化関数を実装しました。これにより：
+HTMLシリアライゼーション変更への対応として、期待ファイルの直接更新による根本的解決を採用しました。これにより：
 
-- **既存のHTML比較方式を維持**: testcasesディレクトリの期待ファイルをそのまま使用可能
-- **双方向正規化**: 実際の出力（Jest 30）と期待ファイル（Jest 29形式）の両方に同じ正規化を適用
-- **シンプルな差分吸収**: 消失したCSS属性を両側から削除するシンプルなアプローチ
+- **HTML比較方式を完全に維持**: 従来の`normalizeHTML`関数をそのまま使用
+- **期待ファイルの一回限りの更新**: Jest 30の出力形式に合わせてtestcasesを更新
+- **シンプルで明確な解決**: 複雑な正規化ロジックではなく、直接的なアプローチ
 
-**実装のキーポイント**:
+**更新された期待ファイル**:
 
-```typescript
-.replaceAll(/border-bottom:\s*hidden;?/gi, '') // 消失したCSS属性を削除
-```
+- `src/jma/areastable/testcases/dom_handler/column_added.html`
+- `src/jma/seriestable/testcases/dom_handler/column_added.html`
+
+**変更内容**: `border-bottom: hidden;` 属性を完全に削除
 
 **メリット**:
 
-- 期待ファイルの更新が不要
-- 複雑なCSS解析が不要でシンプル
-- Jest 30特有の変更に的確に対応
+- 正規化関数の複雑化を回避
+- Jest 30との完全な互換性
+- 将来のメンテナンス負荷軽減
 
 ### 2. ts-jestの互換性
 
