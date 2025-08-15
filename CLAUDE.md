@@ -140,7 +140,7 @@ src/jma/{feature}/
 
 - **TypeScript** - 主要開発言語
 - **Node.js 24** - ランタイム環境（@tsconfig/node24を拡張）
-- **ES2022 modules** - モジュールシステム
+- **ES2022 modules** - モジュールシステム（bundlerによるmoduleResolution）
 - **Rollup** - ビルドシステムとバンドラー
 - **Jest** - jsdom環境でのテストフレームワーク
 - **Biome** - コードフォーマットとリント
@@ -148,16 +148,20 @@ src/jma/{feature}/
 ## ビルドシステム
 
 - **Rollup** TypeScriptプラグイン付きでバンドル
+- **@rollup/plugin-replace** 環境変数置換
+- **rollup-plugin-cleanup** ビルド後クリーンアップ
 - **userscript-metadata** ユーザースクリプトヘッダー生成
+- **rimraf** ビルド成果物クリーンアップ
 - 本番版（`*.user.js`）と開発版（`*.dev.user.js`）の両方をビルド
-- ビルド後の自動クリーンアップとフォーマット
 
 ## 開発ツール
 
 - **Biome** - 統合フォーマッターとリンター
 - **Lefthook** - プリコミットチェック用Gitフック
-- **Jest** DOM テスト用jsdom付き
-- **TypeScript** 厳格設定
+- **rimraf** - クロスプラットフォーム削除ツール
+- **Jest** DOM テスト用jsdom付き（jest-environment-jsdom）
+- **ts-jest** TypeScript/Jest統合
+- **TypeScript** 厳格設定（isolatedModules、bundler resolution）
 
 ## 一般的なコマンド
 
@@ -190,6 +194,8 @@ npm run release
 - lefthookによるプリコミットフック
 - Biomeフォーマット：2スペースインデント、100文字行幅
 - シングルクォート、末尾カンマ、必要に応じてセミコロン
+- snake_case命名規則、default export許可設定
+- VCS統合でgitignore使用、import自動整理機能
 
 # 重要な注意事項
 
