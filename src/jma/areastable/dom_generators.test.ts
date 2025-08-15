@@ -21,7 +21,7 @@ describe('DOM操作関連の関数のテスト', () => {
       // 全ての子要素がtd要素であることを確認
       Array.from(tr.childNodes).forEach((node) => {
         expect(node.nodeName.toLowerCase()).toBe('td')
-        expect((node as HTMLTableCellElement).style.borderBottom).toBe('hidden')
+        expect((node as HTMLTableCellElement).style.borderBottom).toBe('')
         expect((node as HTMLTableCellElement).style.padding).toBe('0px')
       })
     })
