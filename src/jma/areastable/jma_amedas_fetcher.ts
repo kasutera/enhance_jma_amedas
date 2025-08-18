@@ -74,8 +74,8 @@ export interface AmedasData {
    * @param date: データを取得した日時 (10分単位)
    */
   pressure?: number
-  temperature: number
-  humidity: number
+  temperature?: number
+  humidity?: number
   date: Date
 }
 
@@ -90,13 +90,14 @@ export function toAmedasData(fetched: FetchedAmedasData, date: Date): Record<Ame
   for (const ameid in fetched) {
     const point = fetched[ameid]
     if (!point.temp || !point.humidity) {
-      // 気温または湿度がない場合は無視する
+      // 気温または湿度の項目がない場合は無視する
       continue
     }
+
     record[ameid] = {
-      pressure: point.pressure?.[0],
-      temperature: point.temp[0],
-      humidity: point.humidity[0],
+      pressure: point.pressure?.[0] === null ? undefined : point.pressure?.[0],
+      temperature: point.temp[0] === null ? undefined : point.temp[0],
+      humidity: point.humidity[0] === null ? undefined : point.humidity[0],
       date,
     }
   }
