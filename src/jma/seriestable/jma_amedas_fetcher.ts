@@ -72,8 +72,8 @@ export type FetchedAmedasData = Record<Timestamp, AmedasTimePoint>
 
 export interface AmedasData {
   pressure?: number
-  temperature: number
-  humidity: number
+  temperature?: number
+  humidity?: number
   date: Date
 }
 
@@ -97,10 +97,21 @@ export function toAmedasData(fetched: FetchedAmedasData, date: Date): AmedasData
     '00'
   const timestamp: Timestamp = `${yyyymmdd}${hhmmss}`
   const timePoint = fetched[timestamp]
+
+  // タイムスタンプが存在しない場合の処理
+  if (!timePoint) {
+    return {
+      pressure: undefined,
+      temperature: undefined,
+      humidity: undefined,
+      date,
+    }
+  }
+
   return {
-    pressure: timePoint.pressure?.[0],
-    temperature: timePoint.temp[0],
-    humidity: timePoint.humidity[0],
+    pressure: timePoint.pressure?.[0] === null ? undefined : timePoint.pressure?.[0],
+    temperature: timePoint.temp[0] === null ? undefined : timePoint.temp[0],
+    humidity: timePoint.humidity[0] === null ? undefined : timePoint.humidity[0],
     date,
   }
 }
