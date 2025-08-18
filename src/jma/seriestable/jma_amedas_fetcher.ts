@@ -97,7 +97,7 @@ export function toAmedasData(fetched: FetchedAmedasData, date: Date): AmedasData
     '00'
   const timestamp: Timestamp = `${yyyymmdd}${hhmmss}`
   const timePoint = fetched[timestamp]
-  
+
   // タイムスタンプが存在しない場合の処理
   if (!timePoint) {
     return {
@@ -107,7 +107,7 @@ export function toAmedasData(fetched: FetchedAmedasData, date: Date): AmedasData
       date,
     }
   }
-  
+
   return {
     pressure: timePoint.pressure?.[0] === null ? undefined : timePoint.pressure?.[0],
     temperature: timePoint.temp[0] === null ? undefined : timePoint.temp[0],

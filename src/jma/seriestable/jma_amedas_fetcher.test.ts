@@ -1,7 +1,7 @@
 import { dateToAmedasUrl, type FetchedAmedasData, toAmedasData } from './jma_amedas_fetcher'
 import amedasDataJson from './testcases/jma_amedas_fetcher/amedas_data.json'
-import amedasDataWithNullJson from './testcases/jma_amedas_fetcher/with_null_values.json'
 import amedasDataMissingTimestamp from './testcases/jma_amedas_fetcher/missing_timestamp.json'
+import amedasDataWithNullJson from './testcases/jma_amedas_fetcher/with_null_values.json'
 
 describe('jma_amedas_fetcher', () => {
   it('dateToAmedasUrl', () => {
@@ -140,7 +140,7 @@ describe('jma_amedas_fetcher', () => {
       const fetched = amedasDataWithNullJson as FetchedAmedasData
       const date = new Date('2024-11-23T18:00:00')
       const amedasData = toAmedasData(fetched, date)
-      
+
       expect(amedasData).toEqual({
         pressure: undefined,
         temperature: undefined,
@@ -153,7 +153,7 @@ describe('jma_amedas_fetcher', () => {
       const fetched = amedasDataWithNullJson as FetchedAmedasData
       const date = new Date('2024-11-23T18:10:00')
       const amedasData = toAmedasData(fetched, date)
-      
+
       expect(amedasData).toEqual({
         pressure: 1016.5,
         temperature: 12.5,
@@ -168,7 +168,7 @@ describe('jma_amedas_fetcher', () => {
       const fetched = amedasDataWithNullJson as FetchedAmedasData
       const date = new Date('2024-11-23T18:00:00')
       const amedasData = toAmedasData(fetched, date)
-      
+
       // null値はundefinedとして扱われるべき
       expect(amedasData.temperature).toBeUndefined()
       expect(amedasData.humidity).toBeUndefined()
@@ -180,7 +180,7 @@ describe('jma_amedas_fetcher', () => {
     it('指定したタイムスタンプが存在しない場合、すべてundefinedで返される', () => {
       const fetched = amedasDataMissingTimestamp as FetchedAmedasData
       const date = new Date('2024-11-23T18:10:00') // このタイムスタンプは存在しない
-      
+
       const amedasData = toAmedasData(fetched, date)
       expect(amedasData).toEqual({
         pressure: undefined,
@@ -194,7 +194,7 @@ describe('jma_amedas_fetcher', () => {
       const fetched = amedasDataMissingTimestamp as FetchedAmedasData
       const date = new Date('2024-11-23T18:00:00') // このタイムスタンプは存在する
       const amedasData = toAmedasData(fetched, date)
-      
+
       expect(amedasData).toEqual({
         pressure: 1016.3,
         temperature: 12,
