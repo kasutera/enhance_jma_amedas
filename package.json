@@ -1,6 +1,6 @@
 {
   "devDependencies": {
-    "@biomejs/biome": "^2.2.2",
+    "@biomejs/biome": "^2.2.4",
     "@rollup/plugin-replace": "^6.0.2",
     "@rollup/plugin-typescript": "^12.1.4",
     "@tsconfig/node24": "^24.0.1",
