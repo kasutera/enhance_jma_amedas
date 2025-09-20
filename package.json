@@ -23,8 +23,9 @@
     "build": "rollup --config rollup.config.ts --configPlugin @rollup/plugin-typescript --bundleConfigAsCjs",
     "clean": "rimraf dist",
     "predev": "npm run clean",
+    "ci": "npx @biomejs/biome ci --error-on-warnings",
     "dev": "rollup --config rollup.config.ts --configPlugin typescript --bundleConfigAsCjs --watch",
-    "format": "npx @biomejs/biome check --write",
+    "format": "npx @biomejs/biome check --write --error-on-warnings",
     "test": "jest --passWithNoTests",
     "release": "git tag $(date '+%Y%m%d') && git push --tags"
   },
