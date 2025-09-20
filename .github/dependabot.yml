@@ -13,21 +13,3 @@ updates:
       prefix: "deps"
       prefix-development: "deps-dev"
       include: "scope"
-
-  # npm の依存関係を自動更新
-  - package-ecosystem: "npm"
-    directory: "/"
-    schedule:
-      interval: "weekly"
-      day: "friday"
-      time: "12:34"
-      timezone: "Asia/Tokyo"
-    open-pull-requests-limit: 5
-    commit-message:
-      prefix: "deps"
-      prefix-development: "deps-dev"
-      include: "scope"
-    ignore:
-      # メジャーバージョンアップデートは手動で確認
-      - dependency-name: "*"
-        update-types: ["version-update:semver-major"]
