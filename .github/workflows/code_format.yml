@@ -27,4 +27,4 @@ jobs:
         run: npm install
 
       - name: Run format check (Biome)
-        run: npm run format
+        run: npm run ci
