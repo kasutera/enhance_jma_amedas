@@ -3,7 +3,7 @@ name: Create Release
 on:
   push:
     tags:
-      - '[0-9]+'
+      - "[0-9]+"
 
 permissions:
   contents: write
@@ -11,30 +11,30 @@ permissions:
 jobs:
   release:
     runs-on: ubuntu-latest
-    
+
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v5
+      - name: Checkout code
+        uses: actions/checkout@v5
 
-    - name: Setup Node.js
-      uses: actions/setup-node@v5
-      with:
-        node-version: '24'
-        cache: 'npm'
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: "24"
+          cache: "npm"
 
-    - name: Install dependencies
-      run: npm install
+      - name: Install dependencies
+        run: npm install
 
-    - name: Build userscript
-      run: npm run build
-      env:
-        VERSION: ${{ github.ref_name }}
+      - name: Build userscript
+        run: npm run build
+        env:
+          VERSION: ${{ github.ref_name }}
 
-    - name: Create Release
-      uses: softprops/action-gh-release@v2
-      with:
-        files: |
-          dist/jma.user.js
-        generate_release_notes: true
-        draft: false
-        prerelease: false
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/jma.user.js
+          generate_release_notes: true
+          draft: false
+          prerelease: false
