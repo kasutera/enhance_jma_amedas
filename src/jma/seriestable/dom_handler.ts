@@ -27,7 +27,7 @@ function getTimeSeries(seriestable: HTMLTableElement, now: Date | undefined = un
     if (dayTd !== null) {
       const dayOfMonth = dayTd.textContent?.match(/\d{1,2}日/)?.[0]
       if (dayOfMonth !== undefined) {
-        date = getLatestDateFromDay(Number.parseInt(dayOfMonth), now)
+        date = getLatestDateFromDay(Number.parseInt(dayOfMonth, 10), now)
       }
     }
     const timeTd = tr.querySelector('td:not([rowspan])')
