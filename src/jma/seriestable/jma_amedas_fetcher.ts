@@ -28,11 +28,11 @@ export function dateToAmedasUrl(code: string, date: Date): string {
 }
 
 interface TimeData {
-  hour: number
-  minute: number
+  hour: number | null
+  minute: number | null
 }
 
-type MeasurementValue = number[]
+type MeasurementValue = Array<number | null>
 
 /**
  * アメダスの特定時刻における観測結果
@@ -42,8 +42,8 @@ interface AmedasTimePoint {
   observationNumber: number
   pressure?: MeasurementValue
   normalPressure?: MeasurementValue
-  temp: MeasurementValue
-  humidity: MeasurementValue
+  temp?: MeasurementValue
+  humidity?: MeasurementValue
   snow?: MeasurementValue
   snow1h?: MeasurementValue
   snow6h?: MeasurementValue
@@ -75,6 +75,11 @@ export interface AmedasData {
   temperature?: number
   humidity?: number
   date: Date
+}
+
+function getMeasurementValue(value: MeasurementValue | undefined): number | undefined {
+  const measured = value?.[0]
+  return measured === null || measured === undefined ? undefined : measured
 }
 
 export function toAmedasData(fetched: FetchedAmedasData, date: Date): AmedasData {
@@ -109,9 +114,9 @@ export function toAmedasData(fetched: FetchedAmedasData, date: Date): AmedasData
   }
 
   return {
-    pressure: timePoint.pressure?.[0] === null ? undefined : timePoint.pressure?.[0],
-    temperature: timePoint.temp[0] === null ? undefined : timePoint.temp[0],
-    humidity: timePoint.humidity[0] === null ? undefined : timePoint.humidity[0],
+    pressure: getMeasurementValue(timePoint.pressure),
+    temperature: getMeasurementValue(timePoint.temp),
+    humidity: getMeasurementValue(timePoint.humidity),
     date,
   }
 }
