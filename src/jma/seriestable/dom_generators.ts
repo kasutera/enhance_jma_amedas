@@ -93,8 +93,8 @@ function generateAmdTableTdElement(className: string, value: string): HTMLTableC
 }
 
 export {
-  generateSimpleTableHiddenTr,
   generate1stContentsHeaderElement,
   generate2ndContentsHeaderElement,
   generateAmdTableTdElement,
+  generateSimpleTableHiddenTr,
 }

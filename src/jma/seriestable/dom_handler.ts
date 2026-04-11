@@ -86,9 +86,9 @@ function appendColumnToSeriestable(seriestable: HTMLTableElement, row: Seriestab
 }
 
 export {
-  getSeriestables,
   appendColumnToSeriestable,
-  type SeriestableRow,
   getLatestDateFromDay,
+  getSeriestables,
   getTimeSeries,
+  type SeriestableRow,
 }
