@@ -4,13 +4,11 @@
         "module": "ES2022",
         "moduleResolution": "bundler",
         "isolatedModules": true,
-        "allowJs": true,
         "resolveJsonModule": true
     },
     "include": [
         "src/**/*",
         "rollup.config.ts",
-        "jest.config.ts",
-        "jest.setup.js"
+        "jest.config.ts"
     ]
 }
