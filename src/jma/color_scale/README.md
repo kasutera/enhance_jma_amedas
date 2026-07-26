@@ -4,7 +4,7 @@
 
 ## 概要
 
-気象データテーブルの数値を気象庁公式の色彩基準に基づいて色付けし、データの読み取りやすさを向上させる機能です。ユーザーはUIコントロールから簡単にカラースケール機能のON/OFFを切り替えることができます。
+気象データテーブルの数値を気象庁公式の色彩基準に基づいて常に色付けし、データの読み取りやすさを向上させる機能です。
 
 ## ファイル構成
 
@@ -18,14 +18,8 @@
   - 線形補間による滑らかな色変化
 
 - **`color_scale_manager.ts`** - カラースケール管理システム
-  - テーブル全体のカラースケール適用・削除
+  - テーブル全体へのカラースケール適用
   - 背景色に応じた文字色の自動調整（可読性向上）
-  - LocalStorageを使用したユーザー設定の永続化
-
-- **`color_scale_ui.ts`** - ユーザーインターフェース
-  - 画面右下に配置される切り替えコントロール
-  - チェックボックスによるON/OFF操作
-  - テーブル存在確認と自動再試行機能
 
 - **`color_scale_global.ts`** - グローバルインスタンス
   - アプリケーション全体で共有するマネージャーインスタンス
@@ -55,8 +49,7 @@
 
 ### 4. ユーザビリティ
 
-- ワンクリックでのON/OFF切り替え
-- 設定の自動保存・復元
+- カラースケールを常時適用
 - エラー時の既存機能への影響を最小化
 
 ## 使用方法
@@ -65,11 +58,6 @@
 
 ```typescript
 import { globalColorScaleManager } from './color_scale_global'
-import { ColorScaleUI } from './color_scale_ui'
-
-// カラースケール機能を初期化
-const ui = new ColorScaleUI(globalColorScaleManager)
-ui.initialize()
 
 // テーブルにカラースケールを適用
 globalColorScaleManager.registerTable(tableElement)
