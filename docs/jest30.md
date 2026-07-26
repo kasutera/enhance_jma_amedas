@@ -17,7 +17,7 @@ Jest 30は3年ぶりのメジャーリリースで、パフォーマンス向上
 }
 ```
 
-**注意**: `ts-jest`は30未対応のため29.4.1のまま維持
+**注意**: `ts-jest`は29系のままですが、29.4系はJest 30をpeer dependencyとしてサポートしています。
 
 ## Jest 30の主要な変更点
 
@@ -168,10 +168,10 @@ HTMLシリアライゼーション変更への対応として、期待ファイ�
 
 ### 2. ts-jestの互換性
 
-Jest 30対応のts-jestが未リリースのため、29.4.1を継続使用しています。将来的には以下を監視：
+`ts-jest`自体は29系ですが、29.4系ではJest 30をpeer dependencyとしてサポートしています。Jestと`ts-jest`を更新する際は、次のコマンドでpeer dependencyの整合性を確認します。
 
 ```bash
-npm view ts-jest versions --json | grep "30\."
+npm view ts-jest version peerDependencies --json
 ```
 
 ### 3. CIパイプラインへの影響
@@ -214,7 +214,7 @@ Received: [255, 255, 255]
 
 ### 監視すべき項目
 
-1. **ts-jest 30対応**: リリース次第更新予定
+1. **ts-jestの更新**: Jest 30とのpeer dependency互換性を確認
 2. **Jest 30.1以降**: バグフィックスとマイナー改善
 3. **依存関係**: 他のテストツールとの互換性
 
