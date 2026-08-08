@@ -5,7 +5,6 @@ Enhance JMA Amedasは、気象庁（JMA）のアメダス気象データウェ�
 ## 重要な設計制約
 
 - **カラースケール配色**: 気象庁公式の色を使用すること。勝手に変更してはならない
-- **Target Website**: JMA Amedas website (`www.jma.go.jp/bosai/amedas/`) のみ対応
 - **Userscript Compatibility**: Tampermonkey/Violentmonkey環境での動作を保証すること
 - **Language**: ユーザー向けドキュメントは日本語で記述すること
 
@@ -18,10 +17,6 @@ Enhance JMA Amedasは、気象庁（JMA）のアメダス気象データウェ�
 
 - **気象計算の精度**: 科学的に正確な計算式を使用すること
 - **UI一貫性**: JMAサイトの既存デザインと調和すること
-
-## カラースケール実装
-
-- **公式配色の厳守**: `jma_official_colors.ts`で定義された配色のみ使用
 
 ## モジュール構成
 
