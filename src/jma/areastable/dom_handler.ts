@@ -91,9 +91,13 @@ export function appendColumnToAreastable(
   for (let i = 0; i < trContentsHeaders.length; i += 2) {
     // contents-header はデータの途中にペアで挟まれていることがあるため、その全てに対して処理を行う
     const trContentsHeader1st = trContentsHeaders[i]
-    trContentsHeader1st.append(generate1stContentsHeaderElement(column.headerValue))
+    const header1st = generate1stContentsHeaderElement(column.headerValue)
+    header1st.classList.add(column.class)
+    trContentsHeader1st.append(header1st)
     const trContentsHeader2nd = trContentsHeaders[i + 1]
-    trContentsHeader2nd.append(generate2ndContentsHeaderElement(column.headerUnit))
+    const header2nd = generate2ndContentsHeaderElement(column.headerUnit)
+    header2nd.classList.add(column.class)
+    trContentsHeader2nd.append(header2nd)
   }
 
   const amdTableTrs: HTMLTableRowElement[] = Array.from(
