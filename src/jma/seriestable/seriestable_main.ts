@@ -3,6 +3,10 @@
 // 3. 算出したデータを、DOM操作によってテーブルに挿入する
 
 import { globalColorScaleManager } from '../color_scale/color_scale_global'
+import {
+  applyEnhancedObservationVisibility,
+  ensureEnhancedObservationSelector,
+} from '../enhanced_observation_selector'
 import { getAmdnoFromUrl } from '../jma_urls'
 import { TABLE_CLASS_NAMES } from '../table_classes_definition'
 import { appendColumnToSeriestable, getTimeSeries } from './dom_handler'
@@ -11,9 +15,14 @@ import { convertAmedasDataToSeriestableRow } from './presentation'
 
 export function seriestable_main() {
   const fetcher = new AmedasFetcher()
+  ensureEnhancedObservationSelector()
 
   // dom が更新された時に以下を実行する
   async function render(seriestable: HTMLTableElement): Promise<void> {
+    // JMAの表再生成時にも派生要素の選択UIを復元する。
+    // JMA側の地点別ビットマスクには触れない。
+    ensureEnhancedObservationSelector()
+
     const code = getAmdnoFromUrl(window.location.href)
     const timeseries = getTimeSeries(seriestable)
     const amedasDatas: AmedasData[] = []
@@ -37,6 +46,8 @@ export function seriestable_main() {
       seriestable,
       TABLE_CLASS_NAMES.temperatureHumidityIndex,
     )
+
+    applyEnhancedObservationVisibility(seriestable)
   }
 
   const observationTarget = document.querySelector('#amd-table')

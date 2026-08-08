@@ -1,6 +1,10 @@
 // areastable 用の監視・編集処理
 
 import { globalColorScaleManager } from '../color_scale/color_scale_global'
+import {
+  applyEnhancedObservationVisibility,
+  ensureEnhancedObservationSelector,
+} from '../enhanced_observation_selector'
 import { fetchLatestTime } from '../latest_amedas_date'
 import { TABLE_CLASS_NAMES } from '../table_classes_definition'
 import { appendColumnToAreastable, getAmdnos } from './dom_handler'
@@ -9,8 +13,13 @@ import { convertAmedasDataToSeriestableRow as convertAmedasDataToAreastableRow }
 
 export function areastable_main() {
   const fetcher = new AmedasFetcher()
+  ensureEnhancedObservationSelector()
 
   async function renderAreastable(areastable: HTMLTableElement): Promise<void> {
+    // JMAの表再生成時にも派生要素の選択UIを復元する。
+    // JMA側の地点別ビットマスクには触れない。
+    ensureEnhancedObservationSelector()
+
     // areastableは全観測所分を一度に表示するため、時系列は1つ（最新時刻）で良い
     // ここではテーブル内の観測所リストを取得し、最新時刻のデータを全観測所分取得する
     const amdnos = getAmdnos()
@@ -33,6 +42,8 @@ export function areastable_main() {
       areastable,
       TABLE_CLASS_NAMES.temperatureHumidityIndex,
     )
+
+    applyEnhancedObservationVisibility(areastable)
   }
 
   const observationTarget = document.querySelector('#amd-table')

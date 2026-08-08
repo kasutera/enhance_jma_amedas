@@ -9,7 +9,9 @@
 ![Using screenshot](./docs/media/screenshot_01.png)
 ![Using screenshot 2](./docs/media/screenshot_02.png)
 
-- [気象庁のアメダスページ](https://www.jma.go.jp/bosai/amedas/)に、容積絶対湿度と露点温度を表示するユーザースクリプトです。
+- [気象庁のアメダスページ](https://www.jma.go.jp/bosai/amedas/)に、容積絶対湿度、露点温度、不快指数を表示するユーザースクリプトです。
+- これらの派生要素は、観測要素選択UIから個別に表示・非表示を切り替えられます。
+- JMA標準の観測要素選択は地点ごとの初期表示設定を維持し、派生要素の選択状態は独立して管理します。
 
 ## インストール
 
