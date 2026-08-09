@@ -180,7 +180,7 @@ describe('お気に入り地点とキーボードナビゲーション', () => {
     }
   })
 
-  test('地点一覧へ戻るとお気に入り行を除去し、非表示の表示形式を操作しない', () => {
+  test('履歴APIで地点一覧へ戻るとお気に入り行を除去し、非表示の表示形式を操作しない', async () => {
     const formatRow = document.querySelector<HTMLTableRowElement>('[data-testid="format-row"]')
     const table1h = document.querySelector<HTMLElement>('[data-type="table1h"]')
     const table1hClick = jest.fn()
@@ -190,11 +190,11 @@ describe('お気に入り地点とキーボードナビゲーション', () => {
     try {
       expect(document.querySelector('#enhanced-favorite-stations-row')).not.toBeNull()
 
-      window.location.hash = 'area_type=offices&area_code=130000&elems=5361c'
+      window.history.replaceState(null, '', '#area_type=offices&area_code=130000&elems=5361c')
       if (formatRow !== null) {
         formatRow.style.display = 'none'
       }
-      window.dispatchEvent(new HashChangeEvent('hashchange'))
+      await new Promise((resolve) => setTimeout(resolve, 0))
 
       expect(document.querySelector('#enhanced-favorite-stations-row')).toBeNull()
       expect(document.querySelector('#enhanced-favorite-navigation-style')).toBeNull()

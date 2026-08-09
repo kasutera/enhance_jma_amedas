@@ -407,7 +407,12 @@ export function favorite_navigation_main(): () => void {
   ensureFavoriteNavigationUi()
 
   const observer = new MutationObserver(() => ensureFavoriteNavigationUi())
-  observer.observe(document.body, { childList: true, subtree: true })
+  observer.observe(document.body, {
+    attributeFilter: ['hidden', 'style'],
+    attributes: true,
+    childList: true,
+    subtree: true,
+  })
   const handleHashChange = () => ensureFavoriteNavigationUi()
   const handleStorage = (event: StorageEvent) => {
     if (event.key === FAVORITES_STORAGE_KEY) {
