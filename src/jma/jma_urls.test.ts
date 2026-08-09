@@ -1,4 +1,4 @@
-import { getAmdnoFromUrl } from './jma_urls'
+import { getAmdnoFromUrl, jstDateToAmedasUrl } from './jma_urls'
 
 describe('jma_urls', () => {
   describe('getAmdnoFromUrl', () => {
@@ -16,5 +16,11 @@ describe('jma_urls', () => {
         'amdno not found in URL',
       )
     })
+  })
+
+  test('JSTの実時刻からアメダスデータURLを生成できること', () => {
+    expect(jstDateToAmedasUrl('44132', new Date('2026-08-08T15:20:00Z'))).toBe(
+      'https://www.jma.go.jp/bosai/amedas/data/point/44132/20260809_00.json',
+    )
   })
 })

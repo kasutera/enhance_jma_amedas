@@ -1,4 +1,5 @@
 import { areastable_main } from './areastable/areastable_main'
+import { graph_main } from './graph/graph_main'
 import { seriestable_main } from './seriestable/seriestable_main'
 
 /**
@@ -9,6 +10,7 @@ function initializeApplication(): void {
   try {
     seriestable_main()
     areastable_main()
+    graph_main()
   } catch (error) {
     console.error('アプリケーション初期化中にエラーが発生しました:', error)
     // エラーが発生しても既存機能は動作するようにする
