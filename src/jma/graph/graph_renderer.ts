@@ -26,6 +26,9 @@ function createGraphSvg(graphContainer: HTMLElement, divId: string, svgId: strin
   svg.setAttribute('viewBox', `0 0 ${WIDTH} ${HEIGHT}`)
   svg.setAttribute('preserveAspectRatio', 'xMidYMid')
   svg.setAttribute('id', svgId)
+  svg.style.display = 'block'
+  svg.style.maxWidth = '100%'
+  svg.style.height = 'auto'
   graphDiv.append(svg)
   graphContainer.append(graphDiv)
   return svg

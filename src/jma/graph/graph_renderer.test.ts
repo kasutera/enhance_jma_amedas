@@ -21,7 +21,10 @@ describe('派生観測要素グラフ', () => {
     expect(document.querySelector('.amd-content-graph-title')?.textContent).toBe(
       '10分毎の露点温度時系列図',
     )
-    expect(container.querySelector('#enhanced-amd-graph')).not.toBeNull()
+    const svg = container.querySelector<SVGElement>('#enhanced-amd-graph')
+    expect(svg).not.toBeNull()
+    expect(svg?.style.maxWidth).toBe('100%')
+    expect(svg?.style.height).toBe('auto')
     expect(container.querySelector('.amd-graph-path-data')?.getAttribute('d')).toContain('M')
     expect(container.querySelector('.amd-graph-legend')?.textContent).toBe('露点温度')
     expect(container.textContent).toContain('08/09 00:00')
@@ -48,8 +51,9 @@ describe('派生観測要素グラフ', () => {
 
     renderEnhancedGraphError(container)
 
-    expect(container.querySelector('#enhanced-amd-graph-error')?.textContent).toContain(
-      '観測要素を選び直してください',
-    )
+    const svg = container.querySelector<SVGElement>('#enhanced-amd-graph-error')
+    expect(svg?.style.maxWidth).toBe('100%')
+    expect(svg?.style.height).toBe('auto')
+    expect(svg?.textContent).toContain('観測要素を選び直してください')
   })
 })
