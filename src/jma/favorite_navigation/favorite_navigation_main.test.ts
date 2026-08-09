@@ -1,4 +1,4 @@
-import { favorite_navigation_main } from './favorite_navigation'
+import { favorite_navigation_main } from './favorite_navigation_main'
 
 const FAVORITES_STORAGE_KEY = 'enhance-jma-amedas-favorite-stations-v1'
 
@@ -90,6 +90,23 @@ describe('お気に入り地点とキーボードナビゲーション', () => {
       const parameters = new URLSearchParams(window.location.hash.slice(1))
       expect(parameters.get('amdno')).toBe('47772')
       expect(parameters.get('area_code')).toBe('270000')
+      expect(parameters.get('format')).toBe('graph')
+      expect(parameters.get('elem')).toBe('temp')
+    } finally {
+      stop()
+    }
+  })
+
+  test('地域情報のないお気に入りへ移動したとき、以前の地域情報を引き継がない', () => {
+    localStorage.setItem(FAVORITES_STORAGE_KEY, JSON.stringify([{ amdno: '62078', name: '大阪' }]))
+    const stop = favorite_navigation_main()
+    try {
+      document.querySelector<HTMLElement>('[data-enhanced-favorite-amdno="62078"]')?.click()
+
+      const parameters = new URLSearchParams(window.location.hash.slice(1))
+      expect(parameters.get('amdno')).toBe('62078')
+      expect(parameters.has('area_type')).toBe(false)
+      expect(parameters.has('area_code')).toBe(false)
       expect(parameters.get('format')).toBe('graph')
       expect(parameters.get('elem')).toBe('temp')
     } finally {

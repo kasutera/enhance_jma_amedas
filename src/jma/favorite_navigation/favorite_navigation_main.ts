@@ -144,9 +144,13 @@ function navigateToFavorite(station: FavoriteStation): void {
   parameters.set('amdno', station.amdno)
   if (station.areaType !== undefined) {
     parameters.set('area_type', station.areaType)
+  } else {
+    parameters.delete('area_type')
   }
   if (station.areaCode !== undefined) {
     parameters.set('area_code', station.areaCode)
+  } else {
+    parameters.delete('area_code')
   }
   window.location.hash = parameters.toString()
 }
