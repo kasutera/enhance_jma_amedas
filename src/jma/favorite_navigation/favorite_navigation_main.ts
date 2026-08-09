@@ -87,12 +87,18 @@ function getControllerRows(): HTMLTableRowElement[] {
   )
 }
 
+function isVisibleControllerRow(row: HTMLTableRowElement): boolean {
+  return !row.hidden && window.getComputedStyle(row).display !== 'none'
+}
+
 function getFormatRow(): HTMLTableRowElement | null {
   return (
-    getControllerRows().find((row) =>
-      FORMAT_TYPES.every(
-        (type) => row.querySelector(`.contents-radio-button[data-type="${type}"]`) !== null,
-      ),
+    getControllerRows().find(
+      (row) =>
+        isVisibleControllerRow(row) &&
+        FORMAT_TYPES.every(
+          (type) => row.querySelector(`.contents-radio-button[data-type="${type}"]`) !== null,
+        ),
     ) ?? null
   )
 }
@@ -104,7 +110,7 @@ function getGraphObservationRow(): HTMLTableRowElement | null {
   return (
     getControllerRows().find(
       (row) =>
-        row.style.display !== 'none' &&
+        isVisibleControllerRow(row) &&
         normalizeText(row.querySelector('th')?.textContent) === '観測要素' &&
         row.querySelector('.contents-radio-button') !== null &&
         !FORMAT_TYPES.some(
@@ -252,8 +258,18 @@ function installStyle(): void {
 
 function ensureFavoriteNavigationUi(): void {
   const current = getCurrentStation()
+  if (current === null) {
+    document.querySelector(`#${FAVORITES_ROW_ID}`)?.remove()
+    document.querySelector(`#${STYLE_ID}`)?.remove()
+    document.querySelectorAll<HTMLTableRowElement>(`tr[${ACTIVE_ROW_ATTRIBUTE}]`).forEach((row) => {
+      row.removeAttribute(ACTIVE_ROW_ATTRIBUTE)
+    })
+    activeNavigationRow = 'format'
+    keyboardNavigationStarted = false
+    return
+  }
   const formatRow = getFormatRow()
-  if (current === null || formatRow === null) {
+  if (formatRow === null) {
     return
   }
   installStyle()
