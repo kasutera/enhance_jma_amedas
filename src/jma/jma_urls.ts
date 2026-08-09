@@ -17,3 +17,13 @@ export function getAmdnoFromUrl(url: string): string {
   }
   return matched[1]
 }
+
+/** 指定時刻を含む3時間分のアメダス観測データURLを返す。 */
+export function dateToAmedasUrl(code: string, date: Date): string {
+  const yyyymmdd =
+    `${date.getFullYear()}` +
+    `${(date.getMonth() + 1).toString().padStart(2, '0')}` +
+    `${date.getDate().toString().padStart(2, '0')}`
+  const hour = Math.floor(date.getHours() / 3) * 3
+  return `https://www.jma.go.jp/bosai/amedas/data/point/${code}/${yyyymmdd}_${`${hour}`.padStart(2, '0')}.json`
+}

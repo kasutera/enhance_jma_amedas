@@ -39,6 +39,10 @@ const selectedEnhancedObservationKeys = new Set<EnhancedObservationKey>(
   ENHANCED_OBSERVATION_ELEMENTS.map(({ key }) => key),
 )
 
+function isGraphFormat(): boolean {
+  return new URLSearchParams(window.location.hash.slice(1)).get('format') === 'graph'
+}
+
 function isEnhancedObservationKey(value: string | null): value is EnhancedObservationKey {
   return ENHANCED_OBSERVATION_ELEMENTS.some(({ key }) => key === value)
 }
@@ -159,6 +163,10 @@ function createEnhancedSelectorItem(block: HTMLElement, key: EnhancedObservation
  * JMAの地点別初期ビットマスクや既存チェック状態には触れない。
  */
 export function ensureEnhancedObservationSelector(): void {
+  // グラフ画面ではgraph_mainが専用の選択UIを生成する。
+  if (isGraphFormat()) {
+    return
+  }
   const block = document.querySelector<HTMLElement>(ENHANCED_SELECTOR_BLOCK_SELECTOR)
   if (block === null) {
     return
