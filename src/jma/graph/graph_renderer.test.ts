@@ -1,4 +1,4 @@
-import { renderEnhancedGraph } from './graph_renderer'
+import { renderEnhancedGraph, renderEnhancedGraphError } from './graph_renderer'
 
 describe('派生観測要素グラフ', () => {
   beforeEach(() => {
@@ -24,6 +24,7 @@ describe('派生観測要素グラフ', () => {
     expect(container.querySelector('#enhanced-amd-graph')).not.toBeNull()
     expect(container.querySelector('.amd-graph-path-data')?.getAttribute('d')).toContain('M')
     expect(container.querySelector('.amd-graph-legend')?.textContent).toBe('露点温度')
+    expect(container.textContent).toContain('08/09 00:00')
   })
 
   test('有効な観測値がない場合は理由を表示する', () => {
@@ -37,5 +38,18 @@ describe('派生観測要素グラフ', () => {
     ])
 
     expect(container.textContent).toContain('グラフを作成できる観測値がありません')
+  })
+
+  test('取得失敗時は再選択を促すメッセージを表示する', () => {
+    const container = document.querySelector<HTMLElement>('#amd-graph')
+    if (container === null) {
+      throw new Error('グラフコンテナーがありません')
+    }
+
+    renderEnhancedGraphError(container)
+
+    expect(container.querySelector('#enhanced-amd-graph-error')?.textContent).toContain(
+      '観測要素を選び直してください',
+    )
   })
 })

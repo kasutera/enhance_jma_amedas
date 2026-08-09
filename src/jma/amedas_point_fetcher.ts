@@ -1,4 +1,5 @@
-import { dateToAmedasUrl } from './jma_urls'
+import { getJstDateParts, jstDateToTimestamp } from './jma_datetime'
+import { dateToAmedasUrl, jstDateToAmedasUrl } from './jma_urls'
 
 interface TimeData {
   hour: number | null
@@ -52,6 +53,25 @@ function getMeasurementValue(value: MeasurementValue | undefined): number | unde
   return measured === null || measured === undefined ? undefined : measured
 }
 
+function toAmedasDataAtTimestamp(
+  fetched: FetchedAmedasData,
+  date: Date,
+  timestamp: string,
+): AmedasData {
+  const timePoint = fetched[timestamp]
+
+  if (timePoint === undefined) {
+    return { pressure: undefined, temperature: undefined, humidity: undefined, date }
+  }
+
+  return {
+    pressure: getMeasurementValue(timePoint.pressure),
+    temperature: getMeasurementValue(timePoint.temp),
+    humidity: getMeasurementValue(timePoint.humidity),
+    date,
+  }
+}
+
 export function toAmedasData(fetched: FetchedAmedasData, date: Date): AmedasData {
   if (date.getMinutes() % 10 !== 0) {
     throw new Error(`date must be 10 minutes unit: ${date.toISOString()}`)
@@ -64,18 +84,14 @@ export function toAmedasData(fetched: FetchedAmedasData, date: Date): AmedasData
     date.getHours().toString().padStart(2, '0') +
     date.getMinutes().toString().padStart(2, '0') +
     '00'
-  const timePoint = fetched[`${yyyymmdd}${hhmmss}`]
+  return toAmedasDataAtTimestamp(fetched, date, `${yyyymmdd}${hhmmss}`)
+}
 
-  if (timePoint === undefined) {
-    return { pressure: undefined, temperature: undefined, humidity: undefined, date }
+function toJstAmedasData(fetched: FetchedAmedasData, date: Date): AmedasData {
+  if (getJstDateParts(date).minute % 10 !== 0) {
+    throw new Error(`date must be 10 minutes unit: ${date.toISOString()}`)
   }
-
-  return {
-    pressure: getMeasurementValue(timePoint.pressure),
-    temperature: getMeasurementValue(timePoint.temp),
-    humidity: getMeasurementValue(timePoint.humidity),
-    date,
-  }
+  return toAmedasDataAtTimestamp(fetched, date, jstDateToTimestamp(date))
 }
 
 export class AmedasFetcher {
@@ -101,14 +117,14 @@ export class AmedasFetcher {
   }
 
   async fetchAmedasDataRange(code: string, dates: Date[]): Promise<AmedasData[]> {
-    const urls = [...new Set(dates.map((date) => dateToAmedasUrl(code, date)))]
+    const urls = [...new Set(dates.map((date) => jstDateToAmedasUrl(code, date)))]
     await Promise.all(urls.map((url) => this.fetchFile(url)))
     return dates.map((date) => {
-      const fetched = this.cache.get(dateToAmedasUrl(code, date))
+      const fetched = this.cache.get(jstDateToAmedasUrl(code, date))
       if (fetched === undefined) {
         throw new Error(`Amedas data was not cached: ${date.toISOString()}`)
       }
-      return toAmedasData(fetched, date)
+      return toJstAmedasData(fetched, date)
     })
   }
 }

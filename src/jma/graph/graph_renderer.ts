@@ -1,3 +1,5 @@
+import { getJstDateParts } from '../jma_datetime'
+
 export interface GraphDataPoint {
   date: Date
   value: number | null
@@ -12,6 +14,21 @@ const PLOT_HEIGHT = HEIGHT - MARGIN.top - MARGIN.bottom
 
 function createSvgElement(name: string): SVGElement {
   return document.createElementNS(SVG_NAMESPACE, name)
+}
+
+function createGraphSvg(graphContainer: HTMLElement, divId: string, svgId: string): SVGElement {
+  graphContainer.replaceChildren()
+  const graphDiv = document.createElement('div')
+  graphDiv.id = divId
+  const svg = createSvgElement('svg')
+  svg.setAttribute('width', `${WIDTH}`)
+  svg.setAttribute('height', `${HEIGHT}`)
+  svg.setAttribute('viewBox', `0 0 ${WIDTH} ${HEIGHT}`)
+  svg.setAttribute('preserveAspectRatio', 'xMidYMid')
+  svg.setAttribute('id', svgId)
+  graphDiv.append(svg)
+  graphContainer.append(graphDiv)
+  return svg
 }
 
 function appendText(
@@ -32,10 +49,11 @@ function appendText(
 }
 
 function formatDate(date: Date): string {
-  const month = `${date.getMonth() + 1}`.padStart(2, '0')
-  const day = `${date.getDate()}`.padStart(2, '0')
-  const hour = `${date.getHours()}`.padStart(2, '0')
-  const minute = `${date.getMinutes()}`.padStart(2, '0')
+  const parts = getJstDateParts(date)
+  const month = `${parts.month}`.padStart(2, '0')
+  const day = `${parts.day}`.padStart(2, '0')
+  const hour = `${parts.hour}`.padStart(2, '0')
+  const minute = `${parts.minute}`.padStart(2, '0')
   return `${month}/${day} ${hour}:${minute}`
 }
 
@@ -54,23 +72,12 @@ export function renderEnhancedGraph(
   unit: string,
   data: GraphDataPoint[],
 ): void {
-  graphContainer.replaceChildren()
-
   const titleElement = document.querySelector<HTMLElement>('.amd-content-graph-title')
   if (titleElement !== null) {
     titleElement.textContent = `10分毎の${title}時系列図`
   }
 
-  const graphDiv = document.createElement('div')
-  graphDiv.id = 'enhanced-amd-graph-div'
-  const svg = createSvgElement('svg')
-  svg.setAttribute('width', `${WIDTH}`)
-  svg.setAttribute('height', `${HEIGHT}`)
-  svg.setAttribute('viewBox', `0 0 ${WIDTH} ${HEIGHT}`)
-  svg.setAttribute('preserveAspectRatio', 'xMidYMid')
-  svg.setAttribute('id', 'enhanced-amd-graph')
-  graphDiv.append(svg)
-  graphContainer.append(graphDiv)
+  const svg = createGraphSvg(graphContainer, 'enhanced-amd-graph-div', 'enhanced-amd-graph')
 
   const values = data.flatMap(({ value }) => (value === null ? [] : [value]))
   if (values.length === 0) {
@@ -147,4 +154,19 @@ export function renderEnhancedGraph(
   legendLine.className = 'amd-graph-legend-line'
   legend.append(legendLine, title)
   graphContainer.append(legend)
+}
+
+export function renderEnhancedGraphError(graphContainer: HTMLElement): void {
+  const svg = createGraphSvg(
+    graphContainer,
+    'enhanced-amd-graph-error-div',
+    'enhanced-amd-graph-error',
+  )
+  appendText(
+    svg,
+    'グラフデータの取得に失敗しました。観測要素を選び直してください。',
+    WIDTH / 2,
+    HEIGHT / 2,
+    { 'text-anchor': 'middle' },
+  )
 }
