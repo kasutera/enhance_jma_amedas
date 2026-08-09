@@ -1,4 +1,5 @@
 import { areastable_main } from './areastable/areastable_main'
+import { favorite_navigation_main } from './favorite_navigation/favorite_navigation_main'
 import { graph_main } from './graph/graph_main'
 import { seriestable_main } from './seriestable/seriestable_main'
 
@@ -8,6 +9,7 @@ import { seriestable_main } from './seriestable/seriestable_main'
  */
 function initializeApplication(): void {
   try {
+    favorite_navigation_main()
     seriestable_main()
     areastable_main()
     graph_main()

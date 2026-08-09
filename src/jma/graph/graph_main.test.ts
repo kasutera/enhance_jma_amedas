@@ -127,6 +127,31 @@ describe('派生観測要素のグラフ選択', () => {
     }
   })
 
+  test('観測要素行の外にある同じ形式のボタンを観測要素として扱わない', async () => {
+    const unrelatedButton = document.createElement('div')
+    unrelatedButton.classList.add('contents-radio-button')
+    unrelatedButton.textContent = '現在地をお気に入りへ追加'
+    document.body.prepend(unrelatedButton)
+
+    const stop = graph_main()
+    try {
+      const enhancedButton = document.querySelector<HTMLElement>(
+        '[data-enhanced-graph-key="dewPoint"]',
+      )
+      if (enhancedButton === null) {
+        throw new Error('露点温度のグラフ選択肢がありません')
+      }
+      enhancedButton.click()
+      await flushPromises()
+      unrelatedButton.click()
+
+      expect(enhancedButton.classList.contains('contents-radio-button-on')).toBe(true)
+      expect(document.querySelector('#enhanced-amd-graph')).not.toBeNull()
+    } finally {
+      stop()
+    }
+  })
+
   test('一覧表用の観測要素行にはグラフボタンを追加しない', async () => {
     document.body.innerHTML = `
       <div id="amd-table">

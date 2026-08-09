@@ -191,19 +191,19 @@ async function renderSelectedGraph(): Promise<void> {
 
 function handleOriginalGraphElement(event: Event): void {
   const target = event.target
+  const container = getGraphControlContainer()
   if (
     !(target instanceof HTMLElement) ||
     !target.classList.contains('contents-radio-button') ||
-    target.hasAttribute(GRAPH_SELECTOR_ATTRIBUTE)
+    target.hasAttribute(GRAPH_SELECTOR_ATTRIBUTE) ||
+    container === null ||
+    !container.contains(target)
   ) {
     return
   }
   activeGraphKey = undefined
   graphRenderVersion++
-  const container = getGraphControlContainer()
-  if (container !== null) {
-    synchronizeGraphButtons(container)
-  }
+  synchronizeGraphButtons(container)
 }
 
 /** グラフ表示時の観測要素リストと派生値グラフを管理する。 */
