@@ -51,6 +51,7 @@ describe('お気に入り地点とキーボードナビゲーション', () => {
     const stop = favorite_navigation_main()
     try {
       const favoriteRow = document.querySelector('#enhanced-favorite-stations-row')
+      expect(favoriteRow?.querySelector('th')?.textContent).toBe('お気に入り')
       expect(favoriteRow?.nextElementSibling).toBe(
         document.querySelector('[data-testid="format-row"]'),
       )

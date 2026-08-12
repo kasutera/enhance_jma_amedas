@@ -200,7 +200,7 @@ function renderFavoriteRow(
   const heading = document.createElement('th')
   heading.classList.add('amd-content-controller-item-head')
   heading.scope = 'row'
-  heading.textContent = 'お気に入り地点'
+  heading.textContent = 'お気に入り'
 
   const cell = document.createElement('td')
   const list = document.createElement('div')
