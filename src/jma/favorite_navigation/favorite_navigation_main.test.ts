@@ -8,7 +8,12 @@ function createController(format = 'graph'): void {
     <div id="amd-table">
       <table>
         <tr class="contents-title">
-          <th colspan="2"><div class="amd-content-amdname">東京(トウキョウ)</div></th>
+          <th colspan="2">
+            <div>
+              <div class="amd-content-amdname">東京(トウキョウ)</div>
+              <div class="amd-content-location">北緯: 35度41.5分 東経: 139度45.0分 標高: 25m</div>
+            </div>
+          </th>
         </tr>
         <tr data-testid="format-row">
           <th class="amd-content-controller-item-head">表示形式</th>
@@ -47,18 +52,20 @@ describe('お気に入り地点とキーボードナビゲーション', () => {
     createController()
   })
 
-  test('現在地点をお気に入りへ追加し、表示形式の上へ一覧を表示する', () => {
+  test('地点ヘッダーの星だけで現在地点をお気に入りへ追加・解除できる', () => {
     const stop = favorite_navigation_main()
     try {
-      const favoriteRow = document.querySelector('#enhanced-favorite-stations-row')
-      expect(favoriteRow?.querySelector('th')?.textContent).toBe('お気に入り')
-      expect(favoriteRow?.nextElementSibling).toBe(
-        document.querySelector('[data-testid="format-row"]'),
-      )
+      const titleCell = document.querySelector('.contents-title th')
+      const toggle = document.querySelector<HTMLButtonElement>('#enhanced-favorite-toggle')
+      const style = document.querySelector<HTMLStyleElement>('#enhanced-favorite-navigation-style')
+      expect(titleCell?.querySelector('#enhanced-favorite-toggle')).toBe(toggle)
+      expect(style?.textContent).toContain('border: 2px solid #ffd700')
+      expect(style?.textContent).toContain('background: rgba(0, 0, 0, 0.28)')
+      expect(toggle?.textContent).toBe('☆')
+      expect(toggle?.textContent).not.toContain('現在地')
+      expect(toggle?.getAttribute('aria-pressed')).toBe('false')
+      expect(document.querySelector('#enhanced-favorite-stations-row')).toBeNull()
 
-      const toggle = Array.from(
-        favoriteRow?.querySelectorAll<HTMLElement>('[role="button"]') ?? [],
-      ).find((button) => button.textContent === '☆ 現在地を追加')
       toggle?.click()
 
       const stored = JSON.parse(localStorage.getItem(FAVORITES_STORAGE_KEY) ?? '[]')
@@ -70,7 +77,14 @@ describe('お気に入り地点とキーボードナビゲーション', () => {
           areaCode: '130000',
         },
       ])
+      expect(toggle?.textContent).toBe('★')
+      expect(toggle?.getAttribute('aria-pressed')).toBe('true')
       expect(document.querySelector('[data-enhanced-favorite-amdno="44132"]')).not.toBeNull()
+
+      toggle?.click()
+      expect(JSON.parse(localStorage.getItem(FAVORITES_STORAGE_KEY) ?? '[]')).toEqual([])
+      expect(toggle?.textContent).toBe('☆')
+      expect(document.querySelector('#enhanced-favorite-stations-row')).toBeNull()
     } finally {
       stop()
     }
@@ -182,6 +196,10 @@ describe('お気に入り地点とキーボードナビゲーション', () => {
   })
 
   test('履歴APIで地点一覧へ戻るとお気に入り行を除去し、非表示の表示形式を操作しない', async () => {
+    localStorage.setItem(
+      FAVORITES_STORAGE_KEY,
+      JSON.stringify([{ amdno: '44132', name: '東京', areaType: 'offices', areaCode: '130000' }]),
+    )
     const formatRow = document.querySelector<HTMLTableRowElement>('[data-testid="format-row"]')
     const table1h = document.querySelector<HTMLElement>('[data-type="table1h"]')
     const table1hClick = jest.fn()

@@ -2,6 +2,8 @@ const FAVORITES_STORAGE_KEY = 'enhance-jma-amedas-favorite-stations-v1'
 const FAVORITES_ROW_ID = 'enhanced-favorite-stations-row'
 const FAVORITES_LIST_ID = 'enhanced-favorite-stations'
 const FAVORITE_AMDNO_ATTRIBUTE = 'data-enhanced-favorite-amdno'
+const FAVORITE_TOGGLE_ID = 'enhanced-favorite-toggle'
+const FAVORITE_TITLE_LAYOUT_CLASS = 'enhanced-favorite-title-layout'
 const FAVORITES_STATE_ATTRIBUTE = 'data-enhanced-favorites-state'
 const ACTIVE_ROW_ATTRIBUTE = 'data-enhanced-keyboard-active'
 const STYLE_ID = 'enhanced-favorite-navigation-style'
@@ -67,7 +69,7 @@ function saveFavoriteStations(stations: FavoriteStation[]): boolean {
 function getCurrentStation(): FavoriteStation | null {
   const parameters = new URLSearchParams(window.location.hash.slice(1))
   const amdno = parameters.get('amdno')
-  const nameElement = document.querySelector<HTMLElement>('.amd-content-amdname')
+  const nameElement = document.querySelector<HTMLElement>('.contents-title .amd-content-amdname')
   if (amdno === null || nameElement === null) {
     return null
   }
@@ -167,9 +169,59 @@ function updateCurrentFavorite(current: FavoriteStation, isFavorite: boolean): v
     ? favorites.filter(({ amdno }) => amdno !== current.amdno)
     : [...favorites.filter(({ amdno }) => amdno !== current.amdno), current]
   if (saveFavoriteStations(updated)) {
+    renderFavoriteToggle(current, updated)
     renderFavoriteRow(getFormatRow(), current, updated)
     synchronizeNavigationHighlight()
   }
+}
+
+function renderFavoriteToggle(current: FavoriteStation, favorites: FavoriteStation[]): void {
+  const titleCell = document
+    .querySelector<HTMLElement>('.contents-title .amd-content-amdname')
+    ?.closest('th')
+  if (!(titleCell instanceof HTMLTableCellElement)) {
+    return
+  }
+
+  let layout = Array.from(titleCell.children).find((child) =>
+    child.classList.contains(FAVORITE_TITLE_LAYOUT_CLASS),
+  )
+  if (!(layout instanceof HTMLElement)) {
+    const content = Array.from(titleCell.children).find(
+      (child) =>
+        child instanceof HTMLElement && child.querySelector('.amd-content-amdname') !== null,
+    )
+    if (!(content instanceof HTMLElement)) {
+      return
+    }
+    layout = document.createElement('div')
+    layout.classList.add(FAVORITE_TITLE_LAYOUT_CLASS)
+    titleCell.append(layout)
+    layout.append(content)
+  }
+
+  let toggle = layout.querySelector<HTMLButtonElement>(`#${FAVORITE_TOGGLE_ID}`)
+  if (toggle === null) {
+    toggle = document.createElement('button')
+    toggle.id = FAVORITE_TOGGLE_ID
+    toggle.type = 'button'
+    toggle.classList.add('enhanced-favorite-toggle')
+    layout.append(toggle)
+  }
+
+  const isFavorite = favorites.some(({ amdno }) => amdno === current.amdno)
+  const symbol = isFavorite ? '★' : '☆'
+  const label = isFavorite ? 'お気に入りから解除' : 'お気に入りに追加'
+  if (toggle.textContent !== symbol) {
+    toggle.textContent = symbol
+  }
+  if (toggle.getAttribute('aria-label') !== label) {
+    toggle.setAttribute('aria-label', label)
+  }
+  if (toggle.getAttribute('aria-pressed') !== `${isFavorite}`) {
+    toggle.setAttribute('aria-pressed', `${isFavorite}`)
+  }
+  toggle.onclick = () => updateCurrentFavorite(current, isFavorite)
 }
 
 function renderFavoriteRow(
@@ -178,6 +230,10 @@ function renderFavoriteRow(
   favorites: FavoriteStation[],
 ): void {
   if (formatRow === null) {
+    return
+  }
+  if (favorites.length === 0) {
+    document.querySelector(`#${FAVORITES_ROW_ID}`)?.remove()
     return
   }
   let row = document.querySelector<HTMLTableRowElement>(`#${FAVORITES_ROW_ID}`)
@@ -217,16 +273,24 @@ function renderFavoriteRow(
     list.append(button)
   })
 
-  const isFavorite = favorites.some(({ amdno }) => amdno === current.amdno)
-  const toggleLabel = isFavorite ? '★ 現在地を解除' : '☆ 現在地を追加'
-  const toggle = createRadioButton(toggleLabel)
-  toggle.classList.add('enhanced-favorite-toggle')
-  toggle.setAttribute('aria-pressed', `${isFavorite}`)
-  installKeyboardActivation(toggle, () => updateCurrentFavorite(current, isFavorite))
-  list.append(toggle)
-
   cell.append(list)
   row.replaceChildren(heading, cell)
+}
+
+function removeFavoriteToggle(): void {
+  document.querySelectorAll<HTMLButtonElement>(`#${FAVORITE_TOGGLE_ID}`).forEach((toggle) => {
+    const layout = toggle.parentElement
+    if (layout?.classList.contains(FAVORITE_TITLE_LAYOUT_CLASS)) {
+      const titleCell = layout.parentElement
+      const content = Array.from(layout.children).find((child) => child !== toggle)
+      if (titleCell !== null && content !== undefined) {
+        titleCell.insertBefore(content, layout)
+      }
+      layout.remove()
+      return
+    }
+    toggle.remove()
+  })
 }
 
 function installStyle(): void {
@@ -245,8 +309,47 @@ function installStyle(): void {
     #${FAVORITES_LIST_ID} .contents-radio-button {
       margin: 0;
     }
-    #${FAVORITES_LIST_ID} .enhanced-favorite-toggle {
-      opacity: 0.8;
+    .${FAVORITE_TITLE_LAYOUT_CLASS} {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+    }
+    .${FAVORITE_TITLE_LAYOUT_CLASS} > :first-child {
+      min-width: 0;
+    }
+    #${FAVORITE_TOGGLE_ID} {
+      flex: 0 0 auto;
+      min-width: 3.5rem;
+      min-height: 3.5rem;
+      padding: 0.25rem 0.5rem;
+      border: 2px solid #ffd700;
+      border-radius: 0.375rem;
+      background: rgba(0, 0, 0, 0.28);
+      color: #ffd700;
+      cursor: pointer;
+      font: inherit;
+      font-size: 2.5rem;
+      line-height: 1;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+      transition:
+        background-color 120ms ease,
+        box-shadow 120ms ease,
+        transform 120ms ease;
+    }
+    #${FAVORITE_TOGGLE_ID}:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+    #${FAVORITE_TOGGLE_ID}[aria-pressed="true"] {
+      background: rgba(255, 215, 0, 0.22);
+    }
+    #${FAVORITE_TOGGLE_ID}:active {
+      transform: translateY(1px);
+      box-shadow: 0 0 1px rgba(0, 0, 0, 0.35);
+    }
+    #${FAVORITE_TOGGLE_ID}:focus-visible {
+      outline: 3px solid #fff;
+      outline-offset: 2px;
     }
     tr[${ACTIVE_ROW_ATTRIBUTE}="true"] > th,
     tr[${ACTIVE_ROW_ATTRIBUTE}="true"] > td {
@@ -259,6 +362,7 @@ function installStyle(): void {
 function ensureFavoriteNavigationUi(): void {
   const current = getCurrentStation()
   if (current === null) {
+    removeFavoriteToggle()
     document.querySelector(`#${FAVORITES_ROW_ID}`)?.remove()
     document.querySelector(`#${STYLE_ID}`)?.remove()
     document.querySelectorAll<HTMLTableRowElement>(`tr[${ACTIVE_ROW_ATTRIBUTE}]`).forEach((row) => {
@@ -273,7 +377,9 @@ function ensureFavoriteNavigationUi(): void {
     return
   }
   installStyle()
-  renderFavoriteRow(formatRow, current, loadFavoriteStations())
+  const favorites = loadFavoriteStations()
+  renderFavoriteToggle(current, favorites)
+  renderFavoriteRow(formatRow, current, favorites)
   synchronizeNavigationHighlight()
 }
 
@@ -428,6 +534,7 @@ export function favorite_navigation_main(): () => void {
     window.removeEventListener('hashchange', handleHashChange)
     window.removeEventListener('storage', handleStorage)
     document.removeEventListener('keydown', handleKeyboardNavigation)
+    removeFavoriteToggle()
     document.querySelector(`#${FAVORITES_ROW_ID}`)?.remove()
     document.querySelector(`#${STYLE_ID}`)?.remove()
     if (activeStop === stop) {
