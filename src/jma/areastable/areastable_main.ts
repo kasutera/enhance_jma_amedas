@@ -70,5 +70,14 @@ export function areastable_main() {
     })
     const observeOptions = { attributes: true, childList: true, subtree: true }
     observer.observe(observationTarget, observeOptions)
+
+    // コンテナと表が一括挿入された場合、監視開始前の表も描画する。
+    for (const table of observationTarget.querySelectorAll<HTMLTableElement>(
+      '.amd-areastable.amd-table-responsive',
+    )) {
+      if (table.parentElement?.style.display !== 'none') {
+        void renderAreastable(table)
+      }
+    }
   }
 }
