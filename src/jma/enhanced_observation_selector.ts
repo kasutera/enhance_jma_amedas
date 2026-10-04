@@ -1,30 +1,7 @@
-import { TABLE_CLASS_NAMES } from './table_classes_definition'
+import { DERIVED_OBSERVATION_DEFINITIONS, type DerivedObservationKey } from './derived_observations'
 
-/**
- * JMAの観測要素選択とは独立して管理する、派生観測要素の定義。
- *
- * JMAは地点ごとに異なるビットマスクで表示要素を管理しているため、
- * これらを `name="table-elem"` のチェックボックスとして扱わない。
- */
-export const ENHANCED_OBSERVATION_ELEMENTS = [
-  {
-    key: 'volumetricHumidity',
-    label: '容積絶対湿度',
-    className: TABLE_CLASS_NAMES.volumetricHumidity,
-  },
-  {
-    key: 'dewPoint',
-    label: '露点温度',
-    className: TABLE_CLASS_NAMES.dewPoint,
-  },
-  {
-    key: 'temperatureHumidityIndex',
-    label: '不快指数',
-    className: TABLE_CLASS_NAMES.temperatureHumidityIndex,
-  },
-] as const
-
-export type EnhancedObservationKey = (typeof ENHANCED_OBSERVATION_ELEMENTS)[number]['key']
+// JMAは地点ごとのビットマスクで標準要素を管理する。
+// 派生要素は独立した状態と name="enhanced-table-elem" で扱う。
 
 const ENHANCED_SELECTOR_KEY_ATTRIBUTE = 'data-enhanced-observation-key'
 const ENHANCED_SELECTOR_NAME = 'enhanced-table-elem'
@@ -35,29 +12,29 @@ const ENHANCED_DATA_ROW_SELECTOR =
 const BULK_HANDLER_ATTRIBUTE = 'data-enhanced-bulk-handler-installed'
 
 // 現在のuserscriptの挙動（派生3列を表示）を初期状態とする。
-const selectedEnhancedObservationKeys = new Set<EnhancedObservationKey>(
-  ENHANCED_OBSERVATION_ELEMENTS.map(({ key }) => key),
+const selectedEnhancedObservationKeys = new Set<DerivedObservationKey>(
+  DERIVED_OBSERVATION_DEFINITIONS.map(({ key }) => key),
 )
 
 function isGraphFormat(): boolean {
   return new URLSearchParams(window.location.hash.slice(1)).get('format') === 'graph'
 }
 
-function isEnhancedObservationKey(value: string | null): value is EnhancedObservationKey {
-  return ENHANCED_OBSERVATION_ELEMENTS.some(({ key }) => key === value)
+function isEnhancedObservationKey(value: string | null): value is DerivedObservationKey {
+  return DERIVED_OBSERVATION_DEFINITIONS.some(({ key }) => key === value)
 }
 
 function getEnhancedObservationDefinition(
-  key: EnhancedObservationKey,
-): (typeof ENHANCED_OBSERVATION_ELEMENTS)[number] {
-  const definition = ENHANCED_OBSERVATION_ELEMENTS.find((element) => element.key === key)
+  key: DerivedObservationKey,
+): (typeof DERIVED_OBSERVATION_DEFINITIONS)[number] {
+  const definition = DERIVED_OBSERVATION_DEFINITIONS.find((element) => element.key === key)
   if (definition === undefined) {
     throw new Error(`未知の派生観測要素です: ${key}`)
   }
   return definition
 }
 
-export function isEnhancedObservationEnabled(key: EnhancedObservationKey): boolean {
+export function isEnhancedObservationEnabled(key: DerivedObservationKey): boolean {
   return selectedEnhancedObservationKeys.has(key)
 }
 
@@ -74,7 +51,7 @@ function synchronizeEnhancedSelectorInputs(block: HTMLElement): void {
 }
 
 function setAllEnhancedObservationEnabled(enabled: boolean): void {
-  ENHANCED_OBSERVATION_ELEMENTS.forEach(({ key }) => {
+  DERIVED_OBSERVATION_DEFINITIONS.forEach(({ key }) => {
     if (enabled) {
       selectedEnhancedObservationKeys.add(key)
     } else {
@@ -126,7 +103,7 @@ function installBulkButtonHandler(block: HTMLElement): void {
   selectorContainer.setAttribute(BULK_HANDLER_ATTRIBUTE, 'true')
 }
 
-function createEnhancedSelectorItem(block: HTMLElement, key: EnhancedObservationKey): void {
+function createEnhancedSelectorItem(block: HTMLElement, key: DerivedObservationKey): void {
   const definition = getEnhancedObservationDefinition(key)
   const item = document.createElement('div')
   item.classList.add('amd-selector-div-block-item')
@@ -172,7 +149,7 @@ export function ensureEnhancedObservationSelector(): void {
     return
   }
 
-  ENHANCED_OBSERVATION_ELEMENTS.forEach(({ key }) => {
+  DERIVED_OBSERVATION_DEFINITIONS.forEach(({ key }) => {
     const item = block.querySelector<HTMLElement>(`[${ENHANCED_SELECTOR_KEY_ATTRIBUTE}="${key}"]`)
     if (item === null) {
       createEnhancedSelectorItem(block, key)
@@ -218,7 +195,7 @@ function setEnhancedColumnVisibility(
 }
 
 export function applyEnhancedObservationVisibility(table: HTMLTableElement): void {
-  ENHANCED_OBSERVATION_ELEMENTS.forEach(({ key, className }) => {
+  DERIVED_OBSERVATION_DEFINITIONS.forEach(({ key, className }) => {
     setEnhancedColumnVisibility(table, className, isEnhancedObservationEnabled(key))
   })
 }
@@ -229,7 +206,7 @@ export function applyEnhancedObservationVisibilityToAllTables(): void {
   })
 }
 
-export function setEnhancedObservationEnabled(key: EnhancedObservationKey, enabled: boolean): void {
+export function setEnhancedObservationEnabled(key: DerivedObservationKey, enabled: boolean): void {
   if (enabled) {
     selectedEnhancedObservationKeys.add(key)
   } else {

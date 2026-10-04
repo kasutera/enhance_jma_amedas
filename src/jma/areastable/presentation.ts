@@ -1,63 +1,22 @@
-import { calculateDerivedObservations } from '../math'
-import { TABLE_CLASS_NAMES } from '../table_classes_definition'
-import type { AreastableColumn } from './dom_handler'
+import {
+  type DerivedObservationColumns,
+  toDerivedObservationColumns,
+} from '../derived_observations'
 import type { AmedasData, Ameid } from './jma_amedas_fetcher'
 
-const VALUES_PRECISION = 1
-
-// AmedasData の配列を SeriestableRow (容積湿度, 露点温度, 不快指数) に変換する
-export function convertAmedasDataToSeriestableRow(
-  amdnos: Ameid[],
-  amedasDatas: Record<Ameid, AmedasData>,
-): [AreastableColumn, AreastableColumn, AreastableColumn] {
-  const volumetricHumidityValues: Array<number | null> = []
-  const dewPointValues: Array<number | null> = []
-  const temperatureHumidityIndexValues: Array<number | null> = []
-
+function* observationsForStations(
+  amdnos: readonly Ameid[],
+  amedasDatas: Readonly<Record<Ameid, AmedasData>>,
+): Generator<AmedasData | undefined> {
   for (const amdno of amdnos) {
-    const amedasData = amedasDatas[amdno]
-
-    // 気温または湿度が欠損している場合は"---"を表示
-    if (
-      amedasData === undefined ||
-      amedasData.temperature === undefined ||
-      amedasData.humidity === undefined
-    ) {
-      volumetricHumidityValues.push(null)
-      dewPointValues.push(null)
-      temperatureHumidityIndexValues.push(null)
-      continue
-    }
-
-    const derived = calculateDerivedObservations(amedasData.temperature, amedasData.humidity)
-
-    volumetricHumidityValues.push(derived.volumetricHumidity)
-    dewPointValues.push(derived.dewPoint)
-    temperatureHumidityIndexValues.push(derived.temperatureHumidityIndex)
+    yield amedasDatas[amdno]
   }
+}
 
-  const volumetricHumidityRow: AreastableColumn = {
-    class: TABLE_CLASS_NAMES.volumetricHumidity,
-    headerValue: '容積絶対湿度',
-    headerUnit: 'g/㎥',
-    values: volumetricHumidityValues.map((value) => value?.toFixed(VALUES_PRECISION) || '---'),
-  }
-
-  const dewPointRow: AreastableColumn = {
-    class: TABLE_CLASS_NAMES.dewPoint,
-    headerValue: '露点温度',
-    headerUnit: '℃',
-    values: dewPointValues.map((value) => value?.toFixed(VALUES_PRECISION) || '---'),
-  }
-
-  const temperatureHumidityIndexRow: AreastableColumn = {
-    class: TABLE_CLASS_NAMES.temperatureHumidityIndex,
-    headerValue: '不快指数',
-    headerUnit: '',
-    values: temperatureHumidityIndexValues.map(
-      (value) => value?.toFixed(VALUES_PRECISION) || '---',
-    ),
-  }
-
-  return [volumetricHumidityRow, dewPointRow, temperatureHumidityIndexRow]
+/** 地点行の順序で派生観測値の3列を生成する。 */
+export function convertAmedasDataToAreastableColumns(
+  amdnos: readonly Ameid[],
+  amedasDatas: Readonly<Record<Ameid, AmedasData>>,
+): DerivedObservationColumns {
+  return toDerivedObservationColumns(observationsForStations(amdnos, amedasDatas))
 }

@@ -1,10 +1,10 @@
 import * as fs from 'node:fs'
+import type { DerivedObservationColumn } from '../derived_observations'
 import {
   appendColumnToSeriestable,
   getLatestDateFromDay,
   getSeriestables,
   getTimeSeries,
-  type SeriestableRow,
 } from './dom_handler'
 
 // TODO: column_to_be_added.html は 1時間おきのデータであるため、10分おきのケースを追加する
@@ -154,7 +154,7 @@ describe('Seriestable の行を追加する関数のテスト', () => {
       const srcPath = `${__dirname}/testcases/dom_handler/column_to_be_added.html`
       document.body.innerHTML = fs.readFileSync(srcPath, { encoding: 'utf8' })
 
-      const row: SeriestableRow = {
+      const row: DerivedObservationColumn = {
         class: 'new-class',
         headerValue: 'headerValue',
         headerUnit: 'headerUnit',

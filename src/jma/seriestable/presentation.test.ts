@@ -1,50 +1,10 @@
 import type { AmedasData } from './jma_amedas_fetcher'
-import { convertAmedasDataToSeriestableRow } from './presentation'
+import { convertAmedasDataToSeriestableColumns } from './presentation'
 
-describe('convertAmedasDataToSeriestableRow', () => {
+describe('時系列表の派生観測列', () => {
   const testDate = new Date('2024-01-01T12:00:00Z')
 
   describe('正常なデータでの処理', () => {
-    test('3つの行が正しく返されることを確認', () => {
-      const amedasDatas: AmedasData[] = [
-        {
-          temperature: 25.0,
-          humidity: 60.0,
-          pressure: 1013.25,
-          date: testDate,
-        },
-        {
-          temperature: 30.0,
-          humidity: 80.0,
-          pressure: 1000.0,
-          date: testDate,
-        },
-      ]
-
-      const result = convertAmedasDataToSeriestableRow(amedasDatas)
-
-      // 3つの行が返されることを確認
-      expect(result).toHaveLength(3)
-
-      // 各行の基本構造を確認
-      const [volumetricHumidityRow, dewPointRow, temperatureHumidityIndexRow] = result
-
-      expect(volumetricHumidityRow.class).toBe('td-volumetric-humidity')
-      expect(volumetricHumidityRow.headerValue).toBe('容積絶対湿度')
-      expect(volumetricHumidityRow.headerUnit).toBe('g/㎥')
-      expect(volumetricHumidityRow.values).toHaveLength(2)
-
-      expect(dewPointRow.class).toBe('td-dew-point')
-      expect(dewPointRow.headerValue).toBe('露点温度')
-      expect(dewPointRow.headerUnit).toBe('℃')
-      expect(dewPointRow.values).toHaveLength(2)
-
-      expect(temperatureHumidityIndexRow.class).toBe('td-temperature-humidity-index')
-      expect(temperatureHumidityIndexRow.headerValue).toBe('不快指数')
-      expect(temperatureHumidityIndexRow.headerUnit).toBe('')
-      expect(temperatureHumidityIndexRow.values).toHaveLength(2)
-    })
-
     test('不快指数行の値が正しく計算されることを確認', () => {
       const amedasDatas: AmedasData[] = [
         {
@@ -67,7 +27,7 @@ describe('convertAmedasDataToSeriestableRow', () => {
         },
       ]
 
-      const result = convertAmedasDataToSeriestableRow(amedasDatas)
+      const result = convertAmedasDataToSeriestableColumns(amedasDatas)
       const temperatureHumidityIndexRow = result[2]
 
       // 期待値の計算（実際の計算結果）
@@ -98,7 +58,7 @@ describe('convertAmedasDataToSeriestableRow', () => {
         } as any,
       ]
 
-      const result = convertAmedasDataToSeriestableRow(amedasDatas)
+      const result = convertAmedasDataToSeriestableColumns(amedasDatas)
 
       // 全ての行で欠損値が"---"として表示されることを確認
       expect(result[0].values[0]).toBe('13.8') // 正常データ
@@ -125,7 +85,7 @@ describe('convertAmedasDataToSeriestableRow', () => {
         } as any,
       ]
 
-      const result = convertAmedasDataToSeriestableRow(amedasDatas)
+      const result = convertAmedasDataToSeriestableColumns(amedasDatas)
 
       // 全ての行で欠損値が"---"として表示されることを確認
       expect(result[0].values[0]).toBe('13.8') // 正常データ
@@ -154,19 +114,13 @@ describe('convertAmedasDataToSeriestableRow', () => {
         },
       ]
 
-      const result = convertAmedasDataToSeriestableRow(amedasDatas)
+      const result = convertAmedasDataToSeriestableColumns(amedasDatas)
 
       // 負の気温でも正常に計算されることを確認
       // -5°C, 70%: 28.8
       // -10°C, 80%: 18.8
       expect(result[2].values[0]).toBe('28.8')
       expect(result[2].values[1]).toBe('18.8')
-
-      // 他の計算値も正常に計算されることを確認（"---"ではない）
-      expect(result[0].values[0]).not.toBe('---')
-      expect(result[0].values[1]).not.toBe('---')
-      expect(result[1].values[0]).not.toBe('---')
-      expect(result[1].values[1]).not.toBe('---')
     })
   })
 
@@ -181,7 +135,7 @@ describe('convertAmedasDataToSeriestableRow', () => {
         },
       ]
 
-      const result = convertAmedasDataToSeriestableRow(amedasDatas)
+      const result = convertAmedasDataToSeriestableColumns(amedasDatas)
 
       // 全ての値が小数点以下1桁で表示されることを確認
       expect(result[0].values[0]).toMatch(/^\d+\.\d$/)

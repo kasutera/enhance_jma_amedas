@@ -17,7 +17,7 @@
 - `jma_amedas_fetcher.ts`  
   アメダスデータの URL 生成・データ変換・取得ロジックを提供します。取得日時は実時刻の `Date` として受け取り、共有の `jstDateToTimestamp()` でJSTのファイル名へ変換します。端末のタイムゾーンに依存せず、日付・月・年の境界でも同じ観測時刻のデータを取得します。
 - `presentation.ts`  
-  アメダスデータから areastable 用の行データ（例：容積絶対湿度、露点温度）を生成します。`jma_amedas_fetcher.ts` の型や `../math` の純粋な計算関数を利用します。
+  地点行の順序で観測データを取り出し、`../derived_observations.ts` の共通処理で派生値の3列を生成します。時系列表と同じ欠損判定、小数1桁の表示、指標定義を使用します。
 
 ## 更新の動作
 
@@ -40,15 +40,16 @@ graph TD
   end
 
   dom_handler --> dom_generators
-  presentation --> dom_handler
+  presentation --> derived_observations["../derived_observations.ts"]
   presentation --> jma_amedas_fetcher
-  presentation --> math["../math"]
+  dom_handler --> derived_observations
+  derived_observations --> math["../math"]
 ```
 
 ---
 
 ### 補足
 
-- `presentation.ts` は `dom_handler.ts` の型（AreastableRow）や `jma_amedas_fetcher.ts` の型（AmedasData）を参照します。
+- `presentation.ts` は共有の列型（DerivedObservationColumns）と `jma_amedas_fetcher.ts` の観測データ型（AmedasData）を参照します。`dom_handler.ts` も共有の列型（DerivedObservationColumn）を受け取ります。
 - `dom_handler.ts` は `dom_generators.ts` の DOM 生成関数を利用します。
 - `jma_amedas_fetcher.ts` はデータ取得・変換のロジックを提供し、`presentation.ts` で利用されます。
