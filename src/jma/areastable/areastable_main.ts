@@ -1,15 +1,15 @@
 // areastable 用の監視・編集処理
 
 import { globalColorScaleManager } from '../color_scale/color_scale_global'
+import { DERIVED_OBSERVATION_DEFINITIONS } from '../derived_observations'
 import {
   applyEnhancedObservationVisibility,
   ensureEnhancedObservationSelector,
 } from '../enhanced_observation_selector'
-import { TABLE_CLASS_NAMES } from '../table_classes_definition'
 import { _getAmdnos, appendColumnToAreastable } from './dom_handler'
 import { AmedasFetcher } from './jma_amedas_fetcher'
 import { getAreastableObservationTime } from './observation_time'
-import { convertAmedasDataToSeriestableRow as convertAmedasDataToAreastableRow } from './presentation'
+import { convertAmedasDataToAreastableColumns } from './presentation'
 
 export function areastable_main() {
   const fetcher = new AmedasFetcher()
@@ -23,11 +23,6 @@ export function areastable_main() {
 
   const renderingTables = new WeakSet<HTMLTableElement>()
   const renderedObservationTimes = new WeakMap<HTMLTableElement, number | null>()
-  const derivedColumnClasses = [
-    TABLE_CLASS_NAMES.volumetricHumidity,
-    TABLE_CLASS_NAMES.dewPoint,
-    TABLE_CLASS_NAMES.temperatureHumidityIndex,
-  ]
 
   function isCurrentTable(areastable: HTMLTableElement): boolean {
     return (
@@ -44,7 +39,7 @@ export function areastable_main() {
       return false
     }
     for (const row of rows) {
-      for (const className of derivedColumnClasses) {
+      for (const { className } of DERIVED_OBSERVATION_DEFINITIONS) {
         if (row.querySelector(`.${className}`) === null) {
           return false
         }
@@ -90,29 +85,22 @@ export function areastable_main() {
       }
 
       // 同じDOM表で見出し時刻だけが更新された場合、以前の値を残さず再描画する。
-      for (const className of derivedColumnClasses) {
+      for (const { className } of DERIVED_OBSERVATION_DEFINITIONS) {
         for (const oldCell of areastable.querySelectorAll(`.${className}`)) {
           oldCell.remove()
         }
       }
 
-      const [volumetricHumidityRow, dewPointRow, temperatureHumidityIndexRow] =
-        convertAmedasDataToAreastableRow(amdnos, fetched)
-      appendColumnToAreastable(areastable, volumetricHumidityRow)
-      appendColumnToAreastable(areastable, dewPointRow)
-      appendColumnToAreastable(areastable, temperatureHumidityIndexRow)
+      const columns = convertAmedasDataToAreastableColumns(amdnos, fetched)
+      for (const column of columns) {
+        appendColumnToAreastable(areastable, column)
+      }
       renderedObservationTimes.set(areastable, observationTimeValue)
 
       // カラースケールを適用（全ての対象列）
-      globalColorScaleManager.applyColorScaleToColumn(
-        areastable,
-        TABLE_CLASS_NAMES.volumetricHumidity,
-      )
-      globalColorScaleManager.applyColorScaleToColumn(areastable, TABLE_CLASS_NAMES.dewPoint)
-      globalColorScaleManager.applyColorScaleToColumn(
-        areastable,
-        TABLE_CLASS_NAMES.temperatureHumidityIndex,
-      )
+      for (const column of columns) {
+        globalColorScaleManager.applyColorScaleToColumn(areastable, column.class)
+      }
 
       applyEnhancedObservationVisibility(areastable)
     } finally {

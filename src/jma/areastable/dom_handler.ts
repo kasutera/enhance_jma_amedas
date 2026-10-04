@@ -1,3 +1,4 @@
+import type { DerivedObservationColumn } from '../derived_observations'
 import {
   generate1stContentsHeaderElement,
   generate2ndContentsHeaderElement,
@@ -5,13 +6,6 @@ import {
   generateSimpleTableHiddenTr,
 } from './dom_generators'
 import type { Ameid } from './jma_amedas_fetcher'
-
-export interface AreastableColumn {
-  class: string
-  headerValue: string
-  headerUnit: string
-  values: string[]
-}
 
 const TARGET_TABLE_CLASS = 'contents-wide-table-scroll'
 
@@ -39,7 +33,7 @@ export function _getAmdnos(obj: HTMLAmdAreastableAPointLink): Ameid {
 
 export function appendColumnToAreastable(
   areastable: HTMLTableElement,
-  column: AreastableColumn,
+  column: DerivedObservationColumn,
 ): void {
   if (!areastable.classList.contains('amd-areastable')) {
     throw new Error('areastable is not class of amd-areastable')

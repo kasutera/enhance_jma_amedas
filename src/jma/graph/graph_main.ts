@@ -1,15 +1,11 @@
-import { type AmedasData, AmedasFetcher } from '../amedas_point_fetcher'
+import { AmedasFetcher } from '../amedas_point_fetcher'
 import {
-  ENHANCED_OBSERVATION_ELEMENTS,
-  type EnhancedObservationKey,
-} from '../enhanced_observation_selector'
+  DERIVED_OBSERVATION_DEFINITIONS,
+  type DerivedObservationKey,
+  getDerivedObservationValue,
+} from '../derived_observations'
 import { getAmdnoFromUrl } from '../jma_urls'
 import { fetchLatestTime } from '../latest_amedas_date'
-import {
-  calculateDewPoint,
-  calculateTemperatureHumidityIndex,
-  calculateVolumetricHumidity,
-} from '../math'
 import {
   type GraphDataPoint,
   renderEnhancedGraph,
@@ -24,26 +20,13 @@ const GRAPH_OBSERVATION_BUTTON_SELECTOR =
   ':not([data-type="table1h"]):not([data-type="table10min"]):not([data-type="graph"])'
 const TEN_MINUTES_MILLISECONDS = 10 * 60 * 1000
 
-let activeGraphKey: EnhancedObservationKey | undefined
+let activeGraphKey: DerivedObservationKey | undefined
 let graphIsRendering = false
 let graphRenderVersion = 0
 let graphMainIsActive = false
 
 function isGraphFormat(): boolean {
   return new URLSearchParams(window.location.hash.slice(1)).get('format') === 'graph'
-}
-
-function getGraphValue(data: AmedasData, key: EnhancedObservationKey): number | null {
-  if (data.temperature === undefined || data.humidity === undefined) {
-    return null
-  }
-  if (key === 'volumetricHumidity') {
-    return calculateVolumetricHumidity(data.temperature, data.humidity)
-  }
-  if (key === 'dewPoint') {
-    return calculateDewPoint(data.temperature, data.humidity)
-  }
-  return calculateTemperatureHumidityIndex(data.temperature, data.humidity)
 }
 
 function getGraphDates(end: Date): Date[] {
@@ -70,8 +53,8 @@ function synchronizeGraphButtons(container: HTMLElement): void {
   })
 }
 
-function createGraphSelectorItem(container: HTMLElement, key: EnhancedObservationKey): void {
-  const definition = ENHANCED_OBSERVATION_ELEMENTS.find((element) => element.key === key)
+function createGraphSelectorItem(container: HTMLElement, key: DerivedObservationKey): void {
+  const definition = DERIVED_OBSERVATION_DEFINITIONS.find((element) => element.key === key)
   if (definition === undefined) {
     return
   }
@@ -109,7 +92,7 @@ function ensureEnhancedGraphSelector(): void {
   if (container === null) {
     return
   }
-  ENHANCED_OBSERVATION_ELEMENTS.forEach(({ key }) => {
+  DERIVED_OBSERVATION_DEFINITIONS.forEach(({ key }) => {
     if (container.querySelector(`[${GRAPH_SELECTOR_ATTRIBUTE}="${key}"]`) === null) {
       createGraphSelectorItem(container, key)
     }
@@ -145,17 +128,16 @@ async function renderSelectedGraph(): Promise<void> {
     ) {
       return
     }
-    const definition = ENHANCED_OBSERVATION_ELEMENTS.find((element) => element.key === key)
+    const definition = DERIVED_OBSERVATION_DEFINITIONS.find((element) => element.key === key)
     const target = document.querySelector<HTMLElement>(GRAPH_CONTAINER_SELECTOR)
     if (definition === undefined || target === null) {
       return
     }
-    const unit = key === 'volumetricHumidity' ? 'g/㎥' : key === 'dewPoint' ? '℃' : ''
     const points: GraphDataPoint[] = data.map((point) => ({
       date: point.date,
-      value: getGraphValue(point, key),
+      value: getDerivedObservationValue(point, definition),
     }))
-    renderEnhancedGraph(target, definition.label, unit, points)
+    renderEnhancedGraph(target, definition.label, definition.unit, points)
   } catch (error) {
     console.error('派生観測要素のグラフ生成中にエラーが発生しました:', error)
     if (

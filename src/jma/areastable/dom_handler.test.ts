@@ -1,11 +1,7 @@
 import * as fs from 'node:fs'
+import type { DerivedObservationColumn } from '../derived_observations'
 import { TABLE_CLASS_NAMES } from '../table_classes_definition'
-import {
-  _getAmdnos,
-  type AreastableColumn,
-  appendColumnToAreastable,
-  getAreastables,
-} from './dom_handler'
+import { _getAmdnos, appendColumnToAreastable, getAreastables } from './dom_handler'
 
 // HTMLの正規化関数 (比較用)
 const normalizeHTML = (html: string): string => {
@@ -40,7 +36,7 @@ describe('Areastable の行を追加する関数のテスト', () => {
       const srcPath = `${__dirname}/testcases/dom_handler/column_to_be_added.html`
       document.body.innerHTML = fs.readFileSync(srcPath, { encoding: 'utf8' })
 
-      const column: AreastableColumn = {
+      const column: DerivedObservationColumn = {
         class: TABLE_CLASS_NAMES.volumetricHumidity,
         headerValue: 'headerValue',
         headerUnit: 'headerUnit',

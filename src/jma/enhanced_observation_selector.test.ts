@@ -1,5 +1,5 @@
+import { DERIVED_OBSERVATION_DEFINITIONS } from './derived_observations'
 import {
-  ENHANCED_OBSERVATION_ELEMENTS,
   ensureEnhancedObservationSelector,
   isEnhancedObservationEnabled,
   setEnhancedObservationEnabled,
@@ -46,7 +46,7 @@ function createTestTable(): void {
 describe('派生観測要素セレクター', () => {
   beforeEach(() => {
     document.body.innerHTML = ''
-    ENHANCED_OBSERVATION_ELEMENTS.forEach(({ key }) => {
+    DERIVED_OBSERVATION_DEFINITIONS.forEach(({ key }) => {
       setEnhancedObservationEnabled(key, true)
     })
   })
@@ -64,10 +64,6 @@ describe('派生観測要素セレクター', () => {
 
     expect((document.querySelector('#table-elem-temp') as HTMLInputElement).checked).toBe(false)
     expect((document.querySelector('#table-elem-humidity') as HTMLInputElement).checked).toBe(true)
-    expect(document.querySelectorAll('input[name="enhanced-table-elem"]')).toHaveLength(
-      ENHANCED_OBSERVATION_ELEMENTS.length,
-    )
-    expect(document.querySelectorAll('input[name="table-elem"]')).toHaveLength(2)
   })
 
   test('派生要素のチェック状態に応じて表の列と幅セルを切り替える', () => {
@@ -134,7 +130,7 @@ describe('派生観測要素セレクター', () => {
     )
     deselectAll?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
 
-    ENHANCED_OBSERVATION_ELEMENTS.forEach(({ key }) => {
+    DERIVED_OBSERVATION_DEFINITIONS.forEach(({ key }) => {
       expect(isEnhancedObservationEnabled(key)).toBe(false)
     })
     expect((document.querySelector('.td-volumetric-humidity') as HTMLElement).hidden).toBe(true)

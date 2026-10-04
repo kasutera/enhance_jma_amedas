@@ -1,3 +1,4 @@
+import type { DerivedObservationColumn } from '../derived_observations'
 import {
   generate1stContentsHeaderElement,
   generate2ndContentsHeaderElement,
@@ -45,14 +46,10 @@ function getTimeSeries(seriestable: HTMLTableElement, now: Date | undefined = un
   return timeSeries
 }
 
-interface SeriestableRow {
-  class: string
-  headerValue: string
-  headerUnit: string
-  values: string[]
-}
-
-function appendColumnToSeriestable(seriestable: HTMLTableElement, row: SeriestableRow): void {
+function appendColumnToSeriestable(
+  seriestable: HTMLTableElement,
+  row: DerivedObservationColumn,
+): void {
   const old = seriestable.querySelector('.simple-table-hidden-tr')
   const length = old === null ? row.values.length : old.children.length - 1 // 「日時」を除くが、そこに新しく追加されるので -2 + 1 = -1
 
@@ -86,10 +83,4 @@ function appendColumnToSeriestable(seriestable: HTMLTableElement, row: Seriestab
   })
 }
 
-export {
-  appendColumnToSeriestable,
-  getLatestDateFromDay,
-  getSeriestables,
-  getTimeSeries,
-  type SeriestableRow,
-}
+export { appendColumnToSeriestable, getLatestDateFromDay, getSeriestables, getTimeSeries }

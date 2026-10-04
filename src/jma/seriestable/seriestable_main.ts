@@ -8,10 +8,9 @@ import {
   ensureEnhancedObservationSelector,
 } from '../enhanced_observation_selector'
 import { getAmdnoFromUrl } from '../jma_urls'
-import { TABLE_CLASS_NAMES } from '../table_classes_definition'
 import { appendColumnToSeriestable, getTimeSeries } from './dom_handler'
 import { type AmedasData, AmedasFetcher } from './jma_amedas_fetcher'
-import { convertAmedasDataToSeriestableRow } from './presentation'
+import { convertAmedasDataToSeriestableColumns } from './presentation'
 
 export function seriestable_main() {
   const fetcher = new AmedasFetcher()
@@ -30,22 +29,15 @@ export function seriestable_main() {
       const data = await fetcher.fetchAmedasData(code, date)
       amedasDatas.push(data)
     }
-    const [volumetricHumidityRow, dewPointRow, temperatureHumidityIndexRow] =
-      convertAmedasDataToSeriestableRow(amedasDatas)
-    appendColumnToSeriestable(seriestable, volumetricHumidityRow)
-    appendColumnToSeriestable(seriestable, dewPointRow)
-    appendColumnToSeriestable(seriestable, temperatureHumidityIndexRow)
+    const columns = convertAmedasDataToSeriestableColumns(amedasDatas)
+    for (const column of columns) {
+      appendColumnToSeriestable(seriestable, column)
+    }
 
     // カラースケールを適用（全ての対象列）
-    globalColorScaleManager.applyColorScaleToColumn(
-      seriestable,
-      TABLE_CLASS_NAMES.volumetricHumidity,
-    )
-    globalColorScaleManager.applyColorScaleToColumn(seriestable, TABLE_CLASS_NAMES.dewPoint)
-    globalColorScaleManager.applyColorScaleToColumn(
-      seriestable,
-      TABLE_CLASS_NAMES.temperatureHumidityIndex,
-    )
+    for (const column of columns) {
+      globalColorScaleManager.applyColorScaleToColumn(seriestable, column.class)
+    }
 
     applyEnhancedObservationVisibility(seriestable)
   }
