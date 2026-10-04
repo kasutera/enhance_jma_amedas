@@ -21,25 +21,6 @@ export function getAreastables(): HTMLTableElement[] {
 
 export type HTMLAmdAreastableAPointLink = HTMLAnchorElement
 
-function getAmdAreastableLinks(): HTMLAmdAreastableAPointLink[] {
-  /**
-   * 下記のようなリンクを持つ要素を取得する
-   * <a href="#amdno=44207" title="ニイジマ：新島空港" class="amd-areastable-a-pointlink">新島</a>
-   */
-  const objs = Array.from(
-    document.querySelectorAll(`.${TARGET_TABLE_CLASS} .amd-areastable-a-pointlink`),
-  )
-  for (const obj of objs) {
-    if (!(obj instanceof HTMLAnchorElement)) {
-      throw new Error('amd-areastable-a-pointlink is not an HTMLAnchorElement')
-    }
-    if (!obj.href.includes('#amdno=')) {
-      throw new Error(`amd-areastable-a-pointlink href does not include #amdno= ${obj}`)
-    }
-  }
-  return objs as HTMLAmdAreastableAPointLink[]
-}
-
 export function _getAmdnos(obj: HTMLAmdAreastableAPointLink): Ameid {
   /**
    * amd-areastable-a-pointlink クラスを持つリンクの href 属性から amdno を取得する
@@ -54,13 +35,6 @@ export function _getAmdnos(obj: HTMLAmdAreastableAPointLink): Ameid {
     throw new Error(`amd-areastable-a-pointlink href does not contain amdno: ${obj.href}`)
   }
   return amdno[1]
-}
-
-export function getAmdnos(): Ameid[] {
-  /**
-   * amd-areastable-a-pointlink クラスを持つリンクの href 属性から amdno を取得する
-   */
-  return getAmdAreastableLinks().map(_getAmdnos)
 }
 
 export function appendColumnToAreastable(

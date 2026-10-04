@@ -74,6 +74,19 @@ const normalizeHTML = (html: string): string => {
 }
 
 describe('getTimeSeries()', () => {
+  test('英語の日付と年またぎの24:00を読み取る', () => {
+    const table = document.createElement('table')
+    table.innerHTML = `
+      <tbody>
+        <tr class="amd-table-tr-onthedot"><td rowspan="2">12/31</td><td>24:00</td></tr>
+        <tr class="amd-table-tr-notonthedot"><td>23:50</td></tr>
+      </tbody>`
+    expect(getTimeSeries(table, new Date(2026, 0, 1))).toEqual([
+      new Date(2026, 0, 1, 0, 0),
+      new Date(2025, 11, 31, 23, 50),
+    ])
+  })
+
   test('時系列を取得できる（同月のデータ）', () => {
     // given
     // 22日1時から23日18時までのデータ
