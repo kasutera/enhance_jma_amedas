@@ -5,18 +5,43 @@ import { seriestable_main } from './seriestable/seriestable_main'
 
 /**
  * メインアプリケーションの初期化
- * 既存機能との競合を避けるため、適切な順序で初期化を行う
+ * JMA側のDOM生成が遅れても、各機能を独立して初期化する。
  */
-function initializeApplication(): void {
+function initializeFeature(name: string, initialize: () => unknown): void {
   try {
-    favorite_navigation_main()
-    seriestable_main()
-    areastable_main()
-    graph_main()
+    initialize()
   } catch (error) {
-    console.error('アプリケーション初期化中にエラーが発生しました:', error)
-    // エラーが発生しても既存機能は動作するようにする
+    console.error(`${name}の初期化中にエラーが発生しました:`, error)
   }
+}
+
+function initializeTableFeatures(): void {
+  const initialize = () => {
+    initializeFeature('時系列表拡張', seriestable_main)
+    initializeFeature('地域表拡張', areastable_main)
+  }
+
+  if (document.querySelector('#amd-table') !== null) {
+    initialize()
+    return
+  }
+
+  // iOS SafariのUserscriptsでは、document-end後にもJMA側の#amd-table生成が
+  // 完了していないことがある。出現後に一度だけ表機能を初期化する。
+  const observer = new MutationObserver(() => {
+    if (document.querySelector('#amd-table') === null) {
+      return
+    }
+    observer.disconnect()
+    initialize()
+  })
+  observer.observe(document.documentElement, { childList: true, subtree: true })
+}
+
+export function initializeApplication(): void {
+  initializeFeature('お気に入り操作', favorite_navigation_main)
+  initializeFeature('派生グラフ', graph_main)
+  initializeTableFeatures()
 }
 
 // ページ読み込み完了後にアプリケーションを初期化
