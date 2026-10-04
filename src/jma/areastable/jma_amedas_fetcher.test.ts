@@ -3,25 +3,15 @@ import amedasDataJson from './testcases/jma_amedas_fetcher/20250628180000.json'
 import amedasDataWithNullJson from './testcases/jma_amedas_fetcher/with_null_values.json'
 
 describe('jma_amedas_fetcher', () => {
-  it('dateToAmedasUrl', () => {
-    const testCases = [
-      {
-        date: new Date('2024-11-23T00:00:00'),
-        url: 'https://www.jma.go.jp/bosai/amedas/data/map/20241123000000.json',
-      },
-      {
-        date: new Date('2024-11-23T20:50:00'),
-        url: 'https://www.jma.go.jp/bosai/amedas/data/map/20241123205000.json',
-      },
-    ]
-    testCases.forEach((testCase) => {
-      const url = dateToAmedasUrl(testCase.date)
-      try {
-        expect(url).toBe(testCase.url)
-      } catch {
-        throw new Error(`${testCase.date} -> ${url}`)
-      }
-    })
+  it.each([
+    ['2024-11-22T15:00:00Z', '20241123000000'],
+    ['2024-11-23T11:50:00Z', '20241123205000'],
+    ['2024-12-31T15:00:00Z', '20250101000000'],
+    ['2024-02-29T15:00:00Z', '20240301000000'],
+  ])('実時刻 %s のJST観測データURLを生成する', (instant, timestamp) => {
+    expect(dateToAmedasUrl(new Date(instant))).toBe(
+      `https://www.jma.go.jp/bosai/amedas/data/map/${timestamp}.json`,
+    )
   })
 
   it('toAmedasData', () => {
