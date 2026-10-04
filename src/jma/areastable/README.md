@@ -11,7 +11,7 @@
 - `dom_handler.ts`  
   areastable の DOM 検索・列追加など、DOM 操作のロジックをまとめています。`dom_generators.ts` の関数を利用します。
 - `jma_amedas_fetcher.ts`  
-  アメダスデータの URL 生成・データ変換・取得ロジックを提供します。
+  アメダスデータの URL 生成・データ変換・取得ロジックを提供します。取得日時は実時刻の `Date` として受け取り、共有の `jstDateToTimestamp()` でJSTのファイル名へ変換します。端末のタイムゾーンに依存せず、日付・月・年の境界でも同じ観測時刻のデータを取得します。
 - `presentation.ts`  
   アメダスデータから areastable 用の行データ（例：容積絶対湿度、露点温度）を生成します。`jma_amedas_fetcher.ts` の型や `../math` の計算クラスを利用します。
 

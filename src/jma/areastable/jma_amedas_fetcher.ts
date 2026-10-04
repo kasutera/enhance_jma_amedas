@@ -1,21 +1,8 @@
-/**
- * @param date
- * @returns アメダスデータのURL
- */
+import { jstDateToTimestamp } from '../jma_datetime'
+
+/** 指定された実時刻の全国観測データURLを、端末のタイムゾーンによらずJSTで生成する。 */
 export function dateToAmedasUrl(date: Date): string {
-  /**
-   * アメダスデータの URL を生成する
-   * @param date - データを取得した日時 (10分単位)
-   * @returns アメダスデータの URL
-   */
-  const yyyymmddhhmmss =
-    `${date.getFullYear()}` +
-    `${(date.getMonth() + 1).toString().padStart(2, '0')}` +
-    `${date.getDate().toString().padStart(2, '0')}` +
-    `${date.getHours().toString().padStart(2, '0')}` +
-    `${date.getMinutes().toString().padStart(2, '0')}` +
-    '00'
-  return `https://www.jma.go.jp/bosai/amedas/data/map/${yyyymmddhhmmss}.json`
+  return `https://www.jma.go.jp/bosai/amedas/data/map/${jstDateToTimestamp(date)}.json`
 }
 
 type MeasurementValue = number[]
