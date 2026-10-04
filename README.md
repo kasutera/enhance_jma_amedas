@@ -74,6 +74,12 @@ $$DI = 0.81 \times T + 0.01 \times RH \times (0.99 \times T - 14.3) + 46.3$$
 
 ## 開発
 
+### 計算処理
+
+- [`src/jma/math.ts`](src/jma/math.ts) の純粋関数で、気温と相対湿度から派生値を計算します。これらの計算に気圧は使用しません。
+- 表では `calculateDerivedObservations` で3指標の中間値を共有し、グラフでは選択した指標の計算関数だけを呼び出します。
+- 配色の計算は [`color_scale_calculator.ts`](src/jma/color_scale/color_scale_calculator.ts) の純粋関数、DOMへの適用は `ColorScaleManager` が担当します。公式配色と補間方法は変更しません。
+
 ### リリース方法
 
 本プロジェクトは自動リリース機能を使用しています。以下のコマンドでリリースを作成できます：

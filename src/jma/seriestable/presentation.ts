@@ -1,9 +1,7 @@
-import { HumidCalculator } from '../math'
+import { calculateDerivedObservations } from '../math'
 import { TABLE_CLASS_NAMES } from '../table_classes_definition'
 import type { SeriestableRow } from './dom_handler'
 import type { AmedasData } from './jma_amedas_fetcher'
-
-const STANDARD_PRESSURE = 1013.25
 
 const VALUES_PRECISION = 1
 
@@ -24,16 +22,11 @@ export function convertAmedasDataToSeriestableRow(
       continue
     }
 
-    const pressure = amedasData.pressure ?? STANDARD_PRESSURE
-    const humidCalculator = new HumidCalculator(
-      amedasData.temperature,
-      amedasData.humidity,
-      pressure,
-    )
+    const derived = calculateDerivedObservations(amedasData.temperature, amedasData.humidity)
 
-    volumetricHumidityValues.push(humidCalculator.volumetricHumidity)
-    dewPointValues.push(humidCalculator.dewPoint)
-    temperatureHumidityIndexValues.push(humidCalculator.temperatureHumidityIndex)
+    volumetricHumidityValues.push(derived.volumetricHumidity)
+    dewPointValues.push(derived.dewPoint)
+    temperatureHumidityIndexValues.push(derived.temperatureHumidityIndex)
   }
 
   const volumetricHumidityRow: SeriestableRow = {

@@ -5,7 +5,11 @@ import {
 } from '../enhanced_observation_selector'
 import { getAmdnoFromUrl } from '../jma_urls'
 import { fetchLatestTime } from '../latest_amedas_date'
-import { HumidCalculator } from '../math'
+import {
+  calculateDewPoint,
+  calculateTemperatureHumidityIndex,
+  calculateVolumetricHumidity,
+} from '../math'
 import {
   type GraphDataPoint,
   renderEnhancedGraph,
@@ -18,7 +22,6 @@ const GRAPH_RADIO_BUTTON_SELECTOR = '.contents-radio-button'
 const GRAPH_OBSERVATION_BUTTON_SELECTOR =
   `${GRAPH_RADIO_BUTTON_SELECTOR}[data-type]` +
   ':not([data-type="table1h"]):not([data-type="table10min"]):not([data-type="graph"])'
-const STANDARD_PRESSURE = 1013.25
 const TEN_MINUTES_MILLISECONDS = 10 * 60 * 1000
 
 let activeGraphKey: EnhancedObservationKey | undefined
@@ -34,18 +37,13 @@ function getGraphValue(data: AmedasData, key: EnhancedObservationKey): number | 
   if (data.temperature === undefined || data.humidity === undefined) {
     return null
   }
-  const calculator = new HumidCalculator(
-    data.temperature,
-    data.humidity,
-    data.pressure ?? STANDARD_PRESSURE,
-  )
   if (key === 'volumetricHumidity') {
-    return calculator.volumetricHumidity
+    return calculateVolumetricHumidity(data.temperature, data.humidity)
   }
   if (key === 'dewPoint') {
-    return calculator.dewPoint
+    return calculateDewPoint(data.temperature, data.humidity)
   }
-  return calculator.temperatureHumidityIndex
+  return calculateTemperatureHumidityIndex(data.temperature, data.humidity)
 }
 
 function getGraphDates(end: Date): Date[] {

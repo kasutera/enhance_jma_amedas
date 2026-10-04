@@ -3,7 +3,7 @@
  */
 
 import { TABLE_CLASS_NAMES } from '../table_classes_definition'
-import { ColorScaleCalculator } from './color_scale_calculator'
+import { calculateColorFromScale, parseNumericValue } from './color_scale_calculator'
 import { DERIVED_COLOR_SCALES, JMA_OFFICIAL_COLOR_SCALES } from './jma_official_colors'
 
 /**
@@ -76,12 +76,6 @@ export function calculateTextColor(
 }
 
 export class ColorScaleManager {
-  private calculator: ColorScaleCalculator
-
-  constructor() {
-    this.calculator = new ColorScaleCalculator()
-  }
-
   /**
    * テーブルを登録してカラースケールを適用する
    */
@@ -142,9 +136,9 @@ export class ColorScaleManager {
       // 各セルにカラースケールを適用
       cells.forEach((cell) => {
         if (cell instanceof HTMLElement) {
-          const value = this.calculator.parseNumericValue(cell.textContent || '')
+          const value = parseNumericValue(cell.textContent || '')
           if (value !== null) {
-            const color = this.calculator.calculateColorFromScale(value, colorScale)
+            const color = calculateColorFromScale(value, colorScale)
             if (color !== 'transparent') {
               cell.style.backgroundColor = color
               // 文字の可読性を確保するため、背景の明度に基づいて文字色を調整

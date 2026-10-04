@@ -1,96 +1,59 @@
-export class HumidCalculator {
-  /**
-   * 絶対湿度等の計算を行うクラス
-   * @param temperature - 温度 (℃)
-   * @param relativeHumidity - 相対湿度 (%, 0-100)
-   * @param pressure - 現地気圧 (hPa)
-   */
-  readonly temperature: number
-  readonly relativeHumidity: number
-  readonly pressure: number
-  readonly saturatedWaterVaporPressure: number
-  readonly waterVaporPressure: number
-  readonly saturatedWaterVaporAmount: number
+export interface DerivedObservations {
   readonly volumetricHumidity: number
   readonly dewPoint: number
   readonly temperatureHumidityIndex: number
-  constructor(temperature: number, relativeHumidity: number, pressure: number) {
-    // input
-    this.temperature = temperature
-    this.relativeHumidity = relativeHumidity
-    this.pressure = pressure
+}
 
-    // calc
-    this.saturatedWaterVaporPressure = this.calcSaturatedWaterVaporPressure(temperature)
-    this.waterVaporPressure = this.calcWaterVaporPressure(this.relativeHumidity)
-    this.saturatedWaterVaporAmount = this.calcSaturatedWaterVaporAmount(
-      this.saturatedWaterVaporPressure,
-      temperature,
-    )
-    this.volumetricHumidity = this.calcVolumetricHumidity(
-      this.saturatedWaterVaporAmount,
-      this.relativeHumidity,
-    )
-    this.dewPoint = this.calcDewPoint(this.waterVaporPressure)
-    this.temperatureHumidityIndex = this.calcTemperatureHumidityIndex(temperature, relativeHumidity)
-  }
+/** 飽和水蒸気圧 (hPa)。気温 (℃) からTetensの式で計算する。 */
+export function calculateSaturatedWaterVaporPressure(temperature: number): number {
+  return 6.1078 * 10 ** ((7.5 * temperature) / (237.3 + temperature))
+}
 
-  calcSaturatedWaterVaporPressure(temperature: number): number {
-    /**
-     * 飽和水蒸気圧の計算 (Tetens の式)
-     * @param temperature - 温度 (℃)
-     * @returns 飽和水蒸気圧 (hPa)
-     */
-    const a = 6.1078
-    const b = 7.5
-    const c = 237.3
-    return a * 10 ** ((b * temperature) / (c + temperature))
-  }
+function calculateSaturatedWaterVaporAmount(
+  saturatedWaterVaporPressure: number,
+  temperature: number,
+): number {
+  return (217 * saturatedWaterVaporPressure) / (273.15 + temperature)
+}
 
-  calcWaterVaporPressure(relativeHumidity: number): number {
-    /**
-     * 水蒸気圧の計算
-     * @param relativeHumidity - 相対湿度 (%, 0-100)
-     * @returns 水蒸気圧 (hPa)
-     */
-    return (relativeHumidity / 100) * this.saturatedWaterVaporPressure
-  }
+function dewPointFromWaterVaporPressure(waterVaporPressure: number): number {
+  const logRatio = Math.log10(waterVaporPressure / 6.1078)
+  return (237.3 * logRatio) / (7.5 - logRatio)
+}
 
-  calcSaturatedWaterVaporAmount(saturatedWaterVaporPressure: number, temperature: number): number {
-    /**
-     * 飽和水蒸気量の計算
-     * @param saturatedWaterVaporPressure - 飽和水蒸気圧 (hPa)
-     * @param temperature - 温度 (℃)
-     * @returns 飽和水蒸気量 (g/m^3)
-     */
-    return (217 * saturatedWaterVaporPressure) / (273.15 + temperature)
-  }
+/** 気温 (℃) と相対湿度 (%) から容積絶対湿度 (g/㎥) を計算する。 */
+export function calculateVolumetricHumidity(temperature: number, relativeHumidity: number): number {
+  const saturatedPressure = calculateSaturatedWaterVaporPressure(temperature)
+  return (
+    (relativeHumidity / 100) * calculateSaturatedWaterVaporAmount(saturatedPressure, temperature)
+  )
+}
 
-  calcVolumetricHumidity(saturatedWaterVaporAmount: number, relativeHumidity: number): number {
-    /**
-     * 容積絶対湿度の計算
-     * @param saturatedWaterVaporAmount - 飽和水蒸気量 (g/m^3)
-     * @param relativeHumidity - 相対湿度 (%, 0-100)
-     * @returns 容積絶対湿度 (g/m^3)
-     */
-    return (relativeHumidity / 100) * saturatedWaterVaporAmount
-  }
+/** 気温 (℃) と相対湿度 (%) から露点温度 (℃) を計算する。 */
+export function calculateDewPoint(temperature: number, relativeHumidity: number): number {
+  return dewPointFromWaterVaporPressure(
+    (relativeHumidity / 100) * calculateSaturatedWaterVaporPressure(temperature),
+  )
+}
 
-  calcDewPoint(waterVaporPressure: number): number {
-    /**
-     * 露点温度の計算
-     */
-    const a = Math.log10(waterVaporPressure / 6.1078)
-    return (237.3 * a) / (7.5 - a)
-  }
+/** 気温 (℃) と相対湿度 (%) から不快指数を計算する。 */
+export function calculateTemperatureHumidityIndex(
+  temperature: number,
+  relativeHumidity: number,
+): number {
+  return 0.81 * temperature + 0.01 * relativeHumidity * (0.99 * temperature - 14.3) + 46.3
+}
 
-  calcTemperatureHumidityIndex(temperature: number, relativeHumidity: number): number {
-    /**
-     * 不快指数の計算
-     * @param temperature - 温度 (℃)
-     * @param relativeHumidity - 相対湿度 (%, 0-100)
-     * @returns 不快指数
-     */
-    return 0.81 * temperature + 0.01 * relativeHumidity * (0.99 * temperature - 14.3) + 46.3
+/** 表の3指標を、共通の飽和水蒸気圧を一度だけ計算して求める。 */
+export function calculateDerivedObservations(
+  temperature: number,
+  relativeHumidity: number,
+): DerivedObservations {
+  const saturatedPressure = calculateSaturatedWaterVaporPressure(temperature)
+  return {
+    volumetricHumidity:
+      (relativeHumidity / 100) * calculateSaturatedWaterVaporAmount(saturatedPressure, temperature),
+    dewPoint: dewPointFromWaterVaporPressure((relativeHumidity / 100) * saturatedPressure),
+    temperatureHumidityIndex: calculateTemperatureHumidityIndex(temperature, relativeHumidity),
   }
 }
