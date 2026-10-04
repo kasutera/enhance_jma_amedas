@@ -1,20 +1,21 @@
-import { HumidCalculator } from './math'
+import {
+  calculateDewPoint,
+  calculateSaturatedWaterVaporPressure,
+  calculateTemperatureHumidityIndex,
+  calculateVolumetricHumidity,
+} from './math'
 
-describe('HumidCalculator', () => {
-  it('calcSaturatedWaterVaporPressure', () => {
-    const humidCalculator = new HumidCalculator(20, 57, 1000)
-    expect(humidCalculator.saturatedWaterVaporPressure).toBeCloseTo(23.3809, 4)
+describe('気象計算', () => {
+  it('Tetensの式で飽和水蒸気圧を求める', () => {
+    expect(calculateSaturatedWaterVaporPressure(20)).toBeCloseTo(23.3809, 4)
   })
-  it('calcVolumetricHumidity', () => {
-    const humidCalculator = new HumidCalculator(20, 57, 1000)
-    expect(humidCalculator.volumetricHumidity).toBeCloseTo(9.8652, 4)
+  it('容積絶対湿度を求める', () => {
+    expect(calculateVolumetricHumidity(20, 57)).toBeCloseTo(9.8652, 4)
   })
-  it('calcDewPoint', () => {
-    const humidCalculator = new HumidCalculator(20, 57, 1000)
-    expect(humidCalculator.dewPoint).toBeCloseTo(11.22858, 4)
+  it('露点温度を求める', () => {
+    expect(calculateDewPoint(20, 57)).toBeCloseTo(11.22858, 4)
   })
-  it('calcTemperatureHumidityIndex', () => {
-    const humidCalculator = new HumidCalculator(20, 57, 1000)
-    expect(humidCalculator.temperatureHumidityIndex).toBeCloseTo(65.6, 1)
+  it('不快指数を求める', () => {
+    expect(calculateTemperatureHumidityIndex(20, 57)).toBeCloseTo(65.6, 1)
   })
 })

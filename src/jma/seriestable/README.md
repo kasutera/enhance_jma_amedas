@@ -17,7 +17,7 @@
 - `jma_amedas_fetcher.ts`  
   アメダスデータの URL 生成・データ変換・取得ロジックを提供します。
 - `presentation.ts`  
-  アメダスデータから seriestable 用の行データ（例：容積絶対湿度、露点温度）を生成します。`jma_amedas_fetcher.ts` の型や `../math` の計算クラスを利用します。
+  アメダスデータから seriestable 用の行データ（例：容積絶対湿度、露点温度）を生成します。`jma_amedas_fetcher.ts` の型や `../math` の純粋な計算関数を利用します。
 
 ## 更新の動作
 
