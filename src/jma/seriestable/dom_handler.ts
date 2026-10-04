@@ -25,7 +25,8 @@ function getTimeSeries(seriestable: HTMLTableElement, now: Date | undefined = un
   for (const tr of amdTableTrs) {
     const dayTd = tr.querySelector('td[rowspan]')
     if (dayTd !== null) {
-      const dayOfMonth = dayTd.textContent?.match(/\d{1,2}日/)?.[0]
+      const day = dayTd.textContent?.trim().match(/^(?:(\d{1,2})日|\d{1,2}\/(\d{1,2}))$/)
+      const dayOfMonth = day?.[1] ?? day?.[2]
       if (dayOfMonth !== undefined) {
         date = getLatestDateFromDay(Number.parseInt(dayOfMonth, 10), now)
       }

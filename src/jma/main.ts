@@ -1,4 +1,5 @@
 import { areastable_main } from './areastable/areastable_main'
+import { initializeTableAutoRefresh } from './auto_refresh'
 import { favorite_navigation_main } from './favorite_navigation/favorite_navigation_main'
 import { graph_main } from './graph/graph_main'
 import { seriestable_main } from './seriestable/seriestable_main'
@@ -41,6 +42,7 @@ function initializeTableFeatures(): void {
 export function initializeApplication(): void {
   initializeFeature('お気に入り操作', favorite_navigation_main)
   initializeFeature('派生グラフ', graph_main)
+  initializeFeature('表の自動更新', initializeTableAutoRefresh)
   initializeTableFeatures()
 }
 
