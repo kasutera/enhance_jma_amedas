@@ -129,51 +129,59 @@ describe('お気に入り地点とキーボードナビゲーション', () => {
     }
   })
 
-  test('上下で行を、左右で行内の選択肢を切り替える', () => {
-    localStorage.setItem(
-      FAVORITES_STORAGE_KEY,
-      JSON.stringify([
-        { amdno: '44132', name: '東京', areaType: 'offices', areaCode: '130000' },
-        { amdno: '47772', name: '大阪', areaType: 'offices', areaCode: '270000' },
-      ]),
-    )
-    const humidity = document.querySelector<HTMLElement>('[data-type="humidity"]')
-    const humidityClick = jest.fn(() => {
-      document
-        .querySelectorAll('[data-testid="graph-observation-row"] .contents-radio-button')
-        .forEach((button) => {
-          button.classList.remove('contents-radio-button-on')
-        })
-      humidity?.classList.add('contents-radio-button-on')
-    })
-    humidity?.addEventListener('click', humidityClick)
-
-    const stop = favorite_navigation_main()
-    try {
-      expect(pressArrow('ArrowDown').defaultPrevented).toBe(true)
-      expect(
+  test.each(['観測要素', 'Observation data'])(
+    '見出しが%sでも上下で行を、左右で行内の選択肢を切り替える',
+    (heading) => {
+      const observationHead = document.querySelector('[data-testid="graph-observation-row"] th')
+      if (observationHead === null) {
+        throw new Error('観測要素行がありません')
+      }
+      observationHead.textContent = heading
+      localStorage.setItem(
+        FAVORITES_STORAGE_KEY,
+        JSON.stringify([
+          { amdno: '44132', name: '東京', areaType: 'offices', areaCode: '130000' },
+          { amdno: '47772', name: '大阪', areaType: 'offices', areaCode: '270000' },
+        ]),
+      )
+      const humidity = document.querySelector<HTMLElement>('[data-type="humidity"]')
+      humidity?.addEventListener('click', () => {
         document
-          .querySelector('[data-testid="graph-observation-row"]')
-          ?.getAttribute('data-enhanced-keyboard-active'),
-      ).toBe('true')
+          .querySelectorAll('[data-testid="graph-observation-row"] .contents-radio-button')
+          .forEach((button) => {
+            button.classList.remove('contents-radio-button-on')
+          })
+        humidity?.classList.add('contents-radio-button-on')
+      })
 
-      pressArrow('ArrowRight')
-      expect(humidityClick).toHaveBeenCalledTimes(1)
+      const stop = favorite_navigation_main()
+      try {
+        expect(pressArrow('ArrowDown').defaultPrevented).toBe(true)
+        expect(
+          document
+            .querySelector('[data-testid="graph-observation-row"]')
+            ?.getAttribute('data-enhanced-keyboard-active'),
+        ).toBe('true')
 
-      pressArrow('ArrowUp')
-      expect(
-        document
-          .querySelector('[data-testid="format-row"]')
-          ?.getAttribute('data-enhanced-keyboard-active'),
-      ).toBe('true')
+        pressArrow('ArrowRight')
+        expect(humidity?.classList.contains('contents-radio-button-on')).toBe(true)
+        expect(new URLSearchParams(window.location.hash.slice(1)).get('format')).toBe('graph')
 
-      pressArrow('ArrowUp')
-      pressArrow('ArrowRight')
-      expect(new URLSearchParams(window.location.hash.slice(1)).get('amdno')).toBe('47772')
-    } finally {
-      stop()
-    }
-  })
+        pressArrow('ArrowUp')
+        expect(
+          document
+            .querySelector('[data-testid="format-row"]')
+            ?.getAttribute('data-enhanced-keyboard-active'),
+        ).toBe('true')
+
+        pressArrow('ArrowUp')
+        pressArrow('ArrowRight')
+        expect(new URLSearchParams(window.location.hash.slice(1)).get('amdno')).toBe('47772')
+      } finally {
+        stop()
+      }
+    },
+  )
 
   test('一覧表では観測要素を上下左右ナビゲーションの対象にしない', () => {
     createController('table10min')

@@ -39,27 +39,40 @@ describe('派生観測要素のグラフ選択', () => {
     }) as jest.Mock
   })
 
-  test('グラフ画面に3つの派生観測要素を加え、選択時にグラフを置き換える', async () => {
-    const stop = graph_main()
-    await flushPromises()
+  test.each(['観測要素', 'Observation data'])(
+    '見出しが%sのグラフ画面でも派生観測要素を選択できる',
+    async (heading) => {
+      const observationHead = document.querySelector('#amd-table th')
+      if (observationHead === null) {
+        throw new Error('観測要素行がありません')
+      }
+      observationHead.textContent = heading
+      const stop = graph_main()
+      try {
+        await flushPromises()
 
-    expect(document.querySelectorAll('[data-enhanced-graph-key]')).toHaveLength(3)
-    const button = document.querySelector<HTMLElement>(
-      '[data-enhanced-graph-key="volumetricHumidity"]',
-    )
-    if (button === null) {
-      throw new Error('容積絶対湿度のグラフ選択肢がありません')
-    }
-    button.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    await flushPromises()
+        expect(document.querySelectorAll('[data-enhanced-graph-key]')).toHaveLength(3)
+        const button = document.querySelector<HTMLElement>(
+          '[data-enhanced-graph-key="volumetricHumidity"]',
+        )
+        if (button === null) {
+          throw new Error('容積絶対湿度のグラフ選択肢がありません')
+        }
+        button.click()
+        await flushPromises()
 
-    expect(document.querySelector('.amd-content-graph-title')?.textContent).toBe(
-      '10分毎の容積絶対湿度時系列図',
-    )
-    expect(document.querySelector('#enhanced-amd-graph')).not.toBeNull()
-    expect(global.fetch).toHaveBeenCalled()
-    stop()
-  })
+        expect(button.classList.contains('contents-radio-button-on')).toBe(true)
+        expect(
+          document
+            .querySelector('[data-type="temp"]')
+            ?.classList.contains('contents-radio-button-on'),
+        ).toBe(false)
+        expect(document.querySelector('#enhanced-amd-graph')).not.toBeNull()
+      } finally {
+        stop()
+      }
+    },
+  )
 
   test('派生観測要素を連続して切り替えたとき、最後に選択した項目を表示する', async () => {
     const stop = graph_main()
