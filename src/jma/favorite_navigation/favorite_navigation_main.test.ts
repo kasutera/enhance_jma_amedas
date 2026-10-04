@@ -183,6 +183,61 @@ describe('お気に入り地点とキーボードナビゲーション', () => {
     },
   )
 
+  test.each(['観測要素', 'Observation data'])(
+    '気温を観測しない地点でも%s行へ移動して降水量を切り替える',
+    (heading) => {
+      window.location.hash = 'amdno=12066&format=graph&elem=precipitation10m'
+      const row = document.querySelector('[data-testid="graph-observation-row"]')
+      const head = row?.querySelector('th')
+      const cell = row?.querySelector('td')
+      if (
+        row === null ||
+        head === null ||
+        head === undefined ||
+        cell === null ||
+        cell === undefined
+      ) {
+        throw new Error('観測要素行がありません')
+      }
+      head.textContent = heading
+      cell.innerHTML = `
+        <div class="contents-radio-button contents-radio-button-on" data-type="precipitation10m">降水量(前10分間)</div>
+        <div class="contents-radio-button contents-radio-button-off" data-type="precipitation1h">降水量(前1時間)</div>
+      `
+      const buttons = cell.querySelectorAll<HTMLElement>('.contents-radio-button')
+      buttons.forEach((button) => {
+        button.addEventListener('click', () => {
+          buttons.forEach((item) => {
+            item.classList.toggle('contents-radio-button-on', item === button)
+          })
+        })
+      })
+
+      const stop = favorite_navigation_main()
+      try {
+        pressArrow('ArrowDown')
+        expect(row.getAttribute('data-enhanced-keyboard-active')).toBe('true')
+        pressArrow('ArrowRight')
+        expect(cell.querySelector('.contents-radio-button-on')?.getAttribute('data-type')).toBe(
+          'precipitation1h',
+        )
+        expect(new URLSearchParams(window.location.hash.slice(1)).get('format')).toBe('graph')
+        pressArrow('ArrowLeft')
+        expect(cell.querySelector('.contents-radio-button-on')?.getAttribute('data-type')).toBe(
+          'precipitation10m',
+        )
+        pressArrow('ArrowUp')
+        expect(
+          document
+            .querySelector('[data-testid="format-row"]')
+            ?.getAttribute('data-enhanced-keyboard-active'),
+        ).toBe('true')
+      } finally {
+        stop()
+      }
+    },
+  )
+
   test('一覧表では観測要素を上下左右ナビゲーションの対象にしない', () => {
     createController('table10min')
     const observation = document.querySelector<HTMLElement>('[data-type="humidity"]')

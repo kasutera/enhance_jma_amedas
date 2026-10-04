@@ -74,6 +74,76 @@ describe('派生観測要素のグラフ選択', () => {
     },
   )
 
+  test.each(['観測要素', 'Observation data'])(
+    '気温を観測しない地点でも%s行に派生グラフを追加し、欠測値を描画しない',
+    async (heading) => {
+      window.location.hash = 'amdno=12066&format=graph&elem=precipitation10m'
+      document.body.innerHTML = `
+        <div id="amd-table">
+          <table>
+            <tr data-testid="format-row">
+              <th>表示形式</th>
+              <td>
+                <div class="contents-radio-button" data-type="table1h">一覧表(1時間毎)</div>
+                <div class="contents-radio-button" data-type="table10min">一覧表(10分毎)</div>
+                <div class="contents-radio-button contents-radio-button-on" data-type="graph">グラフ</div>
+              </td>
+            </tr>
+            <tr data-testid="rain-observation-row">
+              <th>${heading}</th>
+              <td>
+                <div class="contents-radio-button contents-radio-button-on" data-type="precipitation10m">降水量(前10分間)</div>
+                <div class="contents-radio-button contents-radio-button-off" data-type="precipitation1h">降水量(前1時間)</div>
+              </td>
+            </tr>
+          </table>
+          <div class="amd-content-graph-title"></div>
+          <div id="amd-graph"></div>
+        </div>
+      `
+      global.fetch = jest.fn(async (url: string) => {
+        if (url.endsWith('latest_time.txt')) {
+          return { ok: true, text: async () => '2026-08-09T00:00:00+09:00' } as Response
+        }
+        return {
+          ok: true,
+          json: async () => ({
+            '20260809000000': { precipitation10m: [1, 0], precipitation1h: [2, 0] },
+          }),
+        } as Response
+      }) as jest.Mock
+
+      const stop = graph_main()
+      try {
+        expect(
+          document.querySelectorAll(
+            '[data-testid="rain-observation-row"] [data-enhanced-graph-key]',
+          ),
+        ).toHaveLength(3)
+        expect(
+          document.querySelectorAll('[data-testid="format-row"] [data-enhanced-graph-key]'),
+        ).toHaveLength(0)
+        const dewPoint = document.querySelector<HTMLElement>('[data-enhanced-graph-key="dewPoint"]')
+        if (dewPoint === null) {
+          throw new Error('露点温度のグラフ選択肢がありません')
+        }
+        dewPoint.click()
+        await flushPromises()
+
+        expect(dewPoint.classList.contains('contents-radio-button-on')).toBe(true)
+        expect(
+          document
+            .querySelector('[data-type="precipitation10m"]')
+            ?.classList.contains('contents-radio-button-on'),
+        ).toBe(false)
+        expect(document.querySelector('#enhanced-amd-graph')).not.toBeNull()
+        expect(document.querySelector('#enhanced-amd-graph .amd-graph-path-data')).toBeNull()
+      } finally {
+        stop()
+      }
+    },
+  )
+
   test('派生観測要素を連続して切り替えたとき、最後に選択した項目を表示する', async () => {
     const stop = graph_main()
     try {

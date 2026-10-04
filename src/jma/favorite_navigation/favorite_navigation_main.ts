@@ -9,6 +9,9 @@ const ACTIVE_ROW_ATTRIBUTE = 'data-enhanced-keyboard-active'
 const STYLE_ID = 'enhanced-favorite-navigation-style'
 
 const FORMAT_TYPES = ['table1h', 'table10min', 'graph'] as const
+const GRAPH_OBSERVATION_BUTTON_SELECTOR =
+  '.contents-radio-button[data-type]' +
+  ':not([data-type="table1h"]):not([data-type="table10min"]):not([data-type="graph"])'
 
 type NavigationRow = 'favorites' | 'format' | 'observation'
 
@@ -109,7 +112,7 @@ function getGraphObservationRow(): HTMLTableRowElement | null {
     getControllerRows().find(
       (row) =>
         isVisibleControllerRow(row) &&
-        row.querySelector('.contents-radio-button[data-type="temp"]') !== null,
+        row.querySelector(GRAPH_OBSERVATION_BUTTON_SELECTOR) !== null,
     ) ?? null
   )
 }
