@@ -94,11 +94,8 @@ function createGraphSelectorItem(container: HTMLElement, key: EnhancedObservatio
 }
 
 function getGraphControlContainer(): HTMLElement | null {
-  const graphControlRows = Array.from(document.querySelectorAll<HTMLTableRowElement>('tr')).filter(
-    (row) => row.querySelector('th')?.textContent?.replaceAll(/\s+/g, '') === '観測要素',
-  )
-  const graphControlRow = graphControlRows.find(
-    (row) => row.querySelector(`${GRAPH_RADIO_BUTTON_SELECTOR}[data-type]`) !== null,
+  const graphControlRow = Array.from(document.querySelectorAll<HTMLTableRowElement>('tr')).find(
+    (row) => row.querySelector(`${GRAPH_RADIO_BUTTON_SELECTOR}[data-type="temp"]`) !== null,
   )
   return graphControlRow?.querySelector<HTMLElement>('td') ?? null
 }

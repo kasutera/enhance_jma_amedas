@@ -23,10 +23,6 @@ let activeNavigationRow: NavigationRow = 'format'
 let keyboardNavigationStarted = false
 let activeStop: (() => void) | undefined
 
-function normalizeText(value: string | null | undefined): string {
-  return value?.replaceAll(/\s+/g, '') ?? ''
-}
-
 function isFavoriteStation(value: unknown): value is FavoriteStation {
   if (typeof value !== 'object' || value === null) {
     return false
@@ -113,11 +109,7 @@ function getGraphObservationRow(): HTMLTableRowElement | null {
     getControllerRows().find(
       (row) =>
         isVisibleControllerRow(row) &&
-        normalizeText(row.querySelector('th')?.textContent) === '観測要素' &&
-        row.querySelector('.contents-radio-button') !== null &&
-        !FORMAT_TYPES.some(
-          (type) => row.querySelector(`.contents-radio-button[data-type="${type}"]`) !== null,
-        ),
+        row.querySelector('.contents-radio-button[data-type="temp"]') !== null,
     ) ?? null
   )
 }
