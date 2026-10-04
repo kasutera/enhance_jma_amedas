@@ -15,6 +15,9 @@ import {
 const GRAPH_CONTAINER_SELECTOR = '#amd-graph'
 const GRAPH_SELECTOR_ATTRIBUTE = 'data-enhanced-graph-key'
 const GRAPH_RADIO_BUTTON_SELECTOR = '.contents-radio-button'
+const GRAPH_OBSERVATION_BUTTON_SELECTOR =
+  `${GRAPH_RADIO_BUTTON_SELECTOR}[data-type]` +
+  ':not([data-type="table1h"]):not([data-type="table10min"]):not([data-type="graph"])'
 const STANDARD_PRESSURE = 1013.25
 const TEN_MINUTES_MILLISECONDS = 10 * 60 * 1000
 
@@ -95,7 +98,7 @@ function createGraphSelectorItem(container: HTMLElement, key: EnhancedObservatio
 
 function getGraphControlContainer(): HTMLElement | null {
   const graphControlRow = Array.from(document.querySelectorAll<HTMLTableRowElement>('tr')).find(
-    (row) => row.querySelector(`${GRAPH_RADIO_BUTTON_SELECTOR}[data-type="temp"]`) !== null,
+    (row) => row.querySelector(GRAPH_OBSERVATION_BUTTON_SELECTOR) !== null,
   )
   return graphControlRow?.querySelector<HTMLElement>('td') ?? null
 }
