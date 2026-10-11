@@ -1,4 +1,4 @@
-import { getSeriestableObservationTime } from './observation_time'
+import { getSeriestableObservationTime } from './series_observation_time'
 
 function createTable(day: string, time: string): HTMLElement {
   const root = document.createElement('div')

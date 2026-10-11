@@ -1,9 +1,5 @@
 import { DERIVED_OBSERVATION_DEFINITIONS } from './derived_observations'
-import {
-  ensureEnhancedObservationSelector,
-  isEnhancedObservationEnabled,
-  setEnhancedObservationEnabled,
-} from './enhanced_observation_selector'
+import { initializeEnhancedObservationSelector } from './enhanced_observation_selector'
 
 function createTestTable(): void {
   document.body.innerHTML = `
@@ -45,10 +41,24 @@ function createTestTable(): void {
 
 describe('派生観測要素セレクター', () => {
   beforeEach(() => {
+    window.location.hash = ''
+    document.body.innerHTML = `
+      <div>
+        <div id="amd-selector-div-block-items"></div>
+        <div class="amd-selector-div-block-bulkbuttons">
+          <div class="amd-selector-div-button">すべて選択</div>
+        </div>
+      </div>
+    `
+    const feature = initializeEnhancedObservationSelector()
+    try {
+      document
+        .querySelector('.amd-selector-div-button')
+        ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    } finally {
+      feature.dispose()
+    }
     document.body.innerHTML = ''
-    DERIVED_OBSERVATION_DEFINITIONS.forEach(({ key }) => {
-      setEnhancedObservationEnabled(key, true)
-    })
   })
 
   test('JMAの地点別チェック状態を変更せず、派生要素だけを追加する', () => {
@@ -59,80 +69,139 @@ describe('派生観測要素セレクター', () => {
       </div>
     `
 
-    ensureEnhancedObservationSelector()
-    ensureEnhancedObservationSelector()
-
-    expect((document.querySelector('#table-elem-temp') as HTMLInputElement).checked).toBe(false)
-    expect((document.querySelector('#table-elem-humidity') as HTMLInputElement).checked).toBe(true)
+    const feature = initializeEnhancedObservationSelector()
+    try {
+      feature.refresh()
+      expect((document.querySelector('#table-elem-temp') as HTMLInputElement).checked).toBe(false)
+      expect((document.querySelector('#table-elem-humidity') as HTMLInputElement).checked).toBe(
+        true,
+      )
+      expect(document.querySelectorAll('input[data-enhanced-observation-key]')).toHaveLength(
+        DERIVED_OBSERVATION_DEFINITIONS.length,
+      )
+    } finally {
+      feature.dispose()
+    }
   })
 
   test('派生要素のチェック状態に応じて表の列と幅セルを切り替える', () => {
     createTestTable()
-    ensureEnhancedObservationSelector()
+    const feature = initializeEnhancedObservationSelector()
+    try {
+      const dewPointInput = document.querySelector<HTMLInputElement>(
+        'input[data-enhanced-observation-key="dewPoint"]',
+      )
+      if (dewPointInput === null) {
+        throw new Error('露点温度チェックボックスが生成されていません')
+      }
+      dewPointInput.checked = false
+      dewPointInput.dispatchEvent(new Event('change', { bubbles: true }))
 
-    const dewPointInput = document.querySelector<HTMLInputElement>(
-      'input[data-enhanced-observation-key="dewPoint"]',
-    )
-    if (dewPointInput === null) {
-      throw new Error('露点温度チェックボックスが生成されていません')
+      expect(
+        Array.from(document.querySelectorAll<HTMLElement>('.td-dew-point')).every(
+          (element) => element.hidden,
+        ),
+      ).toBe(true)
+      expect(document.querySelector('.simple-table-hidden-tr')?.children[3]).toHaveProperty(
+        'hidden',
+        true,
+      )
+      expect((document.querySelector('.td-volumetric-humidity') as HTMLElement).hidden).toBe(false)
+    } finally {
+      feature.dispose()
     }
-    dewPointInput.checked = false
-    dewPointInput.dispatchEvent(new Event('change', { bubbles: true }))
-
-    expect(
-      Array.from(document.querySelectorAll<HTMLElement>('.td-dew-point')).every(
-        (element) => element.hidden,
-      ),
-    ).toBe(true)
-    expect(document.querySelector('.simple-table-hidden-tr')?.children[3]).toHaveProperty(
-      'hidden',
-      true,
-    )
-    expect((document.querySelector('.td-volumetric-humidity') as HTMLElement).hidden).toBe(false)
   })
 
   test('JMA UIの再生成後も派生要素の選択状態を保持する', () => {
     createTestTable()
-    setEnhancedObservationEnabled('temperatureHumidityIndex', false)
-    ensureEnhancedObservationSelector()
+    const feature = initializeEnhancedObservationSelector()
+    try {
+      const oldBlock = document.querySelector<HTMLElement>('#amd-selector-div-block-items')
+      const oldInput = oldBlock?.querySelector<HTMLInputElement>(
+        'input[data-enhanced-observation-key="temperatureHumidityIndex"]',
+      )
+      if (oldBlock === null || oldInput === null || oldInput === undefined) {
+        throw new Error('不快指数チェックボックスが生成されていません')
+      }
+      oldInput.checked = false
+      oldInput.dispatchEvent(new Event('change', { bubbles: true }))
+      expect(oldInput.checked).toBe(false)
 
-    const oldBlock = document.querySelector<HTMLElement>('#amd-selector-div-block-items')
-    if (oldBlock === null) {
-      throw new Error('派生要素セレクターが生成されていません')
+      oldBlock.replaceWith(document.createElement('div'))
+      const newBlock = document.createElement('div')
+      newBlock.id = 'amd-selector-div-block-items'
+      document.body.prepend(newBlock)
+      feature.refresh()
+
+      const newInput = newBlock.querySelector<HTMLInputElement>(
+        'input[data-enhanced-observation-key="temperatureHumidityIndex"]',
+      )
+      expect(newInput?.checked).toBe(false)
+    } finally {
+      feature.dispose()
     }
-    const oldInput = oldBlock.querySelector<HTMLInputElement>(
-      'input[data-enhanced-observation-key="temperatureHumidityIndex"]',
-    )
-    if (oldInput === null) {
-      throw new Error('不快指数チェックボックスが生成されていません')
-    }
-    expect(oldInput.checked).toBe(false)
-
-    oldBlock.replaceWith(document.createElement('div'))
-    const newBlock = document.createElement('div')
-    newBlock.id = 'amd-selector-div-block-items'
-    document.body.prepend(newBlock)
-    ensureEnhancedObservationSelector()
-
-    const newInput = newBlock.querySelector<HTMLInputElement>(
-      'input[data-enhanced-observation-key="temperatureHumidityIndex"]',
-    )
-    expect(newInput?.checked).toBe(false)
-    expect(isEnhancedObservationEnabled('temperatureHumidityIndex')).toBe(false)
   })
 
   test('JMAの一括操作と派生要素の表示状態を連動できる', () => {
     createTestTable()
-    ensureEnhancedObservationSelector()
+    const feature = initializeEnhancedObservationSelector()
+    try {
+      const deselectAll = Array.from(document.querySelectorAll('.amd-selector-div-button')).find(
+        (element) => element.textContent === 'すべて解除',
+      )
+      deselectAll?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
 
-    const deselectAll = Array.from(document.querySelectorAll('.amd-selector-div-button')).find(
-      (element) => element.textContent === 'すべて解除',
+      expect(
+        Array.from(
+          document.querySelectorAll<HTMLInputElement>('input[data-enhanced-observation-key]'),
+        ).every((input) => !input.checked),
+      ).toBe(true)
+      expect((document.querySelector('.td-volumetric-humidity') as HTMLElement).hidden).toBe(true)
+    } finally {
+      feature.dispose()
+    }
+  })
+
+  test('解除後は委譲操作が停止し、再マウントで状態を引き継ぐ', () => {
+    createTestTable()
+    const firstFeature = initializeEnhancedObservationSelector()
+    const detachedInput = document.querySelector<HTMLInputElement>(
+      'input[data-enhanced-observation-key="dewPoint"]',
     )
-    deselectAll?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    const selectAll = Array.from(document.querySelectorAll('.amd-selector-div-button')).find(
+      (element) => element.textContent === 'すべて選択',
+    )
+    if (detachedInput === null || selectAll === undefined) {
+      throw new Error('派生要素または一括選択ボタンがありません')
+    }
+    detachedInput.checked = false
+    detachedInput.dispatchEvent(new Event('change', { bubbles: true }))
+    firstFeature.dispose()
 
-    DERIVED_OBSERVATION_DEFINITIONS.forEach(({ key }) => {
-      expect(isEnhancedObservationEnabled(key)).toBe(false)
-    })
-    expect((document.querySelector('.td-volumetric-humidity') as HTMLElement).hidden).toBe(true)
+    selectAll.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    expect(document.querySelector('input[data-enhanced-observation-key="dewPoint"]')).toBeNull()
+    expect((document.querySelector('.td-dew-point') as HTMLElement).hidden).toBe(true)
+    detachedInput.checked = true
+    detachedInput.dispatchEvent(new Event('change', { bubbles: true }))
+    expect((document.querySelector('.td-dew-point') as HTMLElement).hidden).toBe(true)
+
+    const remountedFeature = initializeEnhancedObservationSelector()
+    try {
+      const remountedInput = document.querySelector<HTMLInputElement>(
+        'input[data-enhanced-observation-key="dewPoint"]',
+      )
+      expect(remountedInput?.checked).toBe(false)
+      expect(
+        document.querySelectorAll('input[data-enhanced-observation-key="dewPoint"]'),
+      ).toHaveLength(1)
+      if (remountedInput === null) {
+        throw new Error('露点温度チェックボックスが生成されていません')
+      }
+      remountedInput.checked = true
+      remountedInput.dispatchEvent(new Event('change', { bubbles: true }))
+      expect((document.querySelector('.td-dew-point') as HTMLElement).hidden).toBe(false)
+    } finally {
+      remountedFeature.dispose()
+    }
   })
 })

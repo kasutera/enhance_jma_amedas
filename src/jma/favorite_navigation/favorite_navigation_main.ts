@@ -1,3 +1,12 @@
+import type { Feature } from '../feature'
+import {
+  getFormatRow,
+  getGraphObservationRow,
+  JMA_CLASSES,
+  JMA_SELECTORS,
+} from '../integration/dom'
+import { getJmaRoute, navigateToStation } from '../integration/route'
+
 const FAVORITES_STORAGE_KEY = 'enhance-jma-amedas-favorite-stations-v1'
 const FAVORITES_ROW_ID = 'enhanced-favorite-stations-row'
 const FAVORITES_LIST_ID = 'enhanced-favorite-stations'
@@ -8,11 +17,6 @@ const FAVORITES_STATE_ATTRIBUTE = 'data-enhanced-favorites-state'
 const ACTIVE_ROW_ATTRIBUTE = 'data-enhanced-keyboard-active'
 const STYLE_ID = 'enhanced-favorite-navigation-style'
 
-const FORMAT_TYPES = ['table1h', 'table10min', 'graph'] as const
-const GRAPH_OBSERVATION_BUTTON_SELECTOR =
-  '.contents-radio-button[data-type]' +
-  ':not([data-type="table1h"]):not([data-type="table10min"]):not([data-type="graph"])'
-
 type NavigationRow = 'favorites' | 'format' | 'observation'
 
 interface FavoriteStation {
@@ -22,9 +26,11 @@ interface FavoriteStation {
   areaCode?: string
 }
 
-let activeNavigationRow: NavigationRow = 'format'
-let keyboardNavigationStarted = false
-let activeStop: (() => void) | undefined
+interface NavigationState {
+  activeRow: NavigationRow
+  keyboardStarted: boolean
+  disposed: boolean
+}
 
 function isFavoriteStation(value: unknown): value is FavoriteStation {
   if (typeof value !== 'object' || value === null) {
@@ -66,9 +72,9 @@ function saveFavoriteStations(stations: FavoriteStation[]): boolean {
 }
 
 function getCurrentStation(): FavoriteStation | null {
-  const parameters = new URLSearchParams(window.location.hash.slice(1))
-  const amdno = parameters.get('amdno')
-  const nameElement = document.querySelector<HTMLElement>('.contents-title .amd-content-amdname')
+  const route = getJmaRoute()
+  const amdno = route.stationId
+  const nameElement = document.querySelector<HTMLElement>(JMA_SELECTORS.stationName)
   if (amdno === null || nameElement === null) {
     return null
   }
@@ -77,53 +83,14 @@ function getCurrentStation(): FavoriteStation | null {
   return {
     amdno,
     name,
-    areaType: parameters.get('area_type') ?? undefined,
-    areaCode: parameters.get('area_code') ?? undefined,
+    areaType: route.areaType ?? undefined,
+    areaCode: route.areaCode ?? undefined,
   }
-}
-
-function getControllerRows(): HTMLTableRowElement[] {
-  return Array.from(document.querySelectorAll<HTMLTableRowElement>('tr')).filter(
-    (row) => row.querySelector('.amd-content-controller-item-head') !== null,
-  )
-}
-
-function isVisibleControllerRow(row: HTMLTableRowElement): boolean {
-  return !row.hidden && window.getComputedStyle(row).display !== 'none'
-}
-
-function getFormatRow(): HTMLTableRowElement | null {
-  return (
-    getControllerRows().find(
-      (row) =>
-        isVisibleControllerRow(row) &&
-        FORMAT_TYPES.every(
-          (type) => row.querySelector(`.contents-radio-button[data-type="${type}"]`) !== null,
-        ),
-    ) ?? null
-  )
-}
-
-function getGraphObservationRow(): HTMLTableRowElement | null {
-  if (new URLSearchParams(window.location.hash.slice(1)).get('format') !== 'graph') {
-    return null
-  }
-  return (
-    getControllerRows().find(
-      (row) =>
-        isVisibleControllerRow(row) &&
-        row.querySelector(GRAPH_OBSERVATION_BUTTON_SELECTOR) !== null,
-    ) ?? null
-  )
 }
 
 function createRadioButton(label: string): HTMLDivElement {
   const button = document.createElement('div')
-  button.classList.add(
-    'contents-radio-button',
-    'contents-radio-button-enabled',
-    'contents-radio-button-off',
-  )
+  button.classList.add(JMA_CLASSES.radioButton, JMA_CLASSES.radioEnabled, JMA_CLASSES.radioOff)
   button.role = 'button'
   button.tabIndex = 0
   button.title = label
@@ -131,34 +98,14 @@ function createRadioButton(label: string): HTMLDivElement {
   return button
 }
 
-function installKeyboardActivation(button: HTMLElement, activate: () => void): void {
-  button.addEventListener('click', activate)
-  button.addEventListener('keydown', (event) => {
-    if (event.key !== 'Enter' && event.key !== ' ') {
-      return
-    }
-    event.preventDefault()
-    activate()
-  })
-}
-
-function navigateToFavorite(station: FavoriteStation): void {
-  const parameters = new URLSearchParams(window.location.hash.slice(1))
-  parameters.set('amdno', station.amdno)
-  if (station.areaType !== undefined) {
-    parameters.set('area_type', station.areaType)
-  } else {
-    parameters.delete('area_type')
+function updateCurrentFavorite(
+  current: FavoriteStation,
+  isFavorite: boolean,
+  state: NavigationState,
+): void {
+  if (state.disposed) {
+    return
   }
-  if (station.areaCode !== undefined) {
-    parameters.set('area_code', station.areaCode)
-  } else {
-    parameters.delete('area_code')
-  }
-  window.location.hash = parameters.toString()
-}
-
-function updateCurrentFavorite(current: FavoriteStation, isFavorite: boolean): void {
   const favorites = loadFavoriteStations()
   const updated = isFavorite
     ? favorites.filter(({ amdno }) => amdno !== current.amdno)
@@ -166,14 +113,12 @@ function updateCurrentFavorite(current: FavoriteStation, isFavorite: boolean): v
   if (saveFavoriteStations(updated)) {
     renderFavoriteToggle(current, updated)
     renderFavoriteRow(getFormatRow(), current, updated)
-    synchronizeNavigationHighlight()
+    synchronizeNavigationHighlight(state)
   }
 }
 
 function renderFavoriteToggle(current: FavoriteStation, favorites: FavoriteStation[]): void {
-  const titleCell = document
-    .querySelector<HTMLElement>('.contents-title .amd-content-amdname')
-    ?.closest('th')
+  const titleCell = document.querySelector<HTMLElement>(JMA_SELECTORS.stationName)?.closest('th')
   if (!(titleCell instanceof HTMLTableCellElement)) {
     return
   }
@@ -184,7 +129,8 @@ function renderFavoriteToggle(current: FavoriteStation, favorites: FavoriteStati
   if (!(layout instanceof HTMLElement)) {
     const content = Array.from(titleCell.children).find(
       (child) =>
-        child instanceof HTMLElement && child.querySelector('.amd-content-amdname') !== null,
+        child instanceof HTMLElement &&
+        child.querySelector(JMA_SELECTORS.stationNameContent) !== null,
     )
     if (!(content instanceof HTMLElement)) {
       return
@@ -216,7 +162,6 @@ function renderFavoriteToggle(current: FavoriteStation, favorites: FavoriteStati
   if (toggle.getAttribute('aria-pressed') !== `${isFavorite}`) {
     toggle.setAttribute('aria-pressed', `${isFavorite}`)
   }
-  toggle.onclick = () => updateCurrentFavorite(current, isFavorite)
 }
 
 function renderFavoriteRow(
@@ -241,15 +186,15 @@ function renderFavoriteRow(
   }
 
   // ハッシュ変更直後はJMA側の地点名DOMがまだ旧地点のことがある。
-  // current全体を比較対象にし、地点名の再描画後にイベントハンドラーも更新する。
-  const state = JSON.stringify({ current, favorites })
-  if (row.getAttribute(FAVORITES_STATE_ATTRIBUTE) === state) {
+  // current全体を比較対象にし、地点名の再描画後もお気に入り状態を同期する。
+  const favoritesState = JSON.stringify({ current, favorites })
+  if (row.getAttribute(FAVORITES_STATE_ATTRIBUTE) === favoritesState) {
     return
   }
-  row.setAttribute(FAVORITES_STATE_ATTRIBUTE, state)
+  row.setAttribute(FAVORITES_STATE_ATTRIBUTE, favoritesState)
 
   const heading = document.createElement('th')
-  heading.classList.add('amd-content-controller-item-head')
+  heading.classList.add(JMA_CLASSES.controllerHeading)
   heading.scope = 'row'
   heading.textContent = 'お気に入り'
 
@@ -261,10 +206,10 @@ function renderFavoriteRow(
     const button = createRadioButton(station.name)
     button.setAttribute(FAVORITE_AMDNO_ATTRIBUTE, station.amdno)
     const selected = station.amdno === current.amdno
-    button.classList.toggle('contents-radio-button-on', selected)
-    button.classList.toggle('contents-radio-button-off', !selected)
+    button.classList.toggle(JMA_CLASSES.radioOn, selected)
+    button.classList.toggle(JMA_CLASSES.radioOff, !selected)
     button.setAttribute('aria-pressed', `${selected}`)
-    installKeyboardActivation(button, () => navigateToFavorite(station))
+
     list.append(button)
   })
 
@@ -301,7 +246,7 @@ function installStyle(): void {
       align-items: center;
       gap: 0.25rem;
     }
-    #${FAVORITES_LIST_ID} .contents-radio-button {
+    #${FAVORITES_LIST_ID} .${JMA_CLASSES.radioButton} {
       margin: 0;
     }
     .${FAVORITE_TITLE_LAYOUT_CLASS} {
@@ -354,7 +299,10 @@ function installStyle(): void {
   document.head.append(style)
 }
 
-function ensureFavoriteNavigationUi(): void {
+function ensureFavoriteNavigationUi(state: NavigationState): void {
+  if (state.disposed) {
+    return
+  }
   const current = getCurrentStation()
   if (current === null) {
     removeFavoriteToggle()
@@ -363,8 +311,8 @@ function ensureFavoriteNavigationUi(): void {
     document.querySelectorAll<HTMLTableRowElement>(`tr[${ACTIVE_ROW_ATTRIBUTE}]`).forEach((row) => {
       row.removeAttribute(ACTIVE_ROW_ATTRIBUTE)
     })
-    activeNavigationRow = 'format'
-    keyboardNavigationStarted = false
+    state.activeRow = 'format'
+    state.keyboardStarted = false
     return
   }
   const formatRow = getFormatRow()
@@ -375,7 +323,7 @@ function ensureFavoriteNavigationUi(): void {
   const favorites = loadFavoriteStations()
   renderFavoriteToggle(current, favorites)
   renderFavoriteRow(formatRow, current, favorites)
-  synchronizeNavigationHighlight()
+  synchronizeNavigationHighlight(state)
 }
 
 function getNavigationRows(): Array<{ name: NavigationRow; row: HTMLTableRowElement }> {
@@ -395,69 +343,71 @@ function getNavigationRows(): Array<{ name: NavigationRow; row: HTMLTableRowElem
   return rows
 }
 
-function synchronizeNavigationHighlight(): void {
+function synchronizeNavigationHighlight(state: NavigationState): void {
   document.querySelectorAll<HTMLTableRowElement>(`tr[${ACTIVE_ROW_ATTRIBUTE}]`).forEach((row) => {
     row.removeAttribute(ACTIVE_ROW_ATTRIBUTE)
   })
-  if (!keyboardNavigationStarted) {
+  if (!state.keyboardStarted) {
     return
   }
   const rows = getNavigationRows()
-  const active = rows.find(({ name }) => name === activeNavigationRow)
+  const active = rows.find(({ name }) => name === state.activeRow)
   const fallback = rows.find(({ name }) => name === 'format') ?? rows[0]
   const target = active ?? fallback
   if (target !== undefined) {
-    activeNavigationRow = target.name
+    state.activeRow = target.name
     target.row.setAttribute(ACTIVE_ROW_ATTRIBUTE, 'true')
   }
 }
 
-function moveBetweenRows(direction: -1 | 1): void {
+function moveBetweenRows(direction: -1 | 1, state: NavigationState): void {
   const rows = getNavigationRows()
   if (rows.length === 0) {
     return
   }
-  const currentIndex = rows.findIndex(({ name }) => name === activeNavigationRow)
+  const currentIndex = rows.findIndex(({ name }) => name === state.activeRow)
   const defaultIndex = Math.max(
     0,
     rows.findIndex(({ name }) => name === 'format'),
   )
   const index = currentIndex < 0 ? defaultIndex : currentIndex
   const nextIndex = Math.min(rows.length - 1, Math.max(0, index + direction))
-  activeNavigationRow = rows[nextIndex]?.name ?? activeNavigationRow
-  synchronizeNavigationHighlight()
+  state.activeRow = rows[nextIndex]?.name ?? state.activeRow
+  synchronizeNavigationHighlight(state)
 }
 
-function getButtonsForActiveRow(): HTMLElement[] {
-  if (activeNavigationRow === 'favorites') {
+function getButtonsForActiveRow(state: NavigationState): HTMLElement[] {
+  if (state.activeRow === 'favorites') {
     return Array.from(
       document.querySelectorAll<HTMLElement>(`#${FAVORITES_ROW_ID} [${FAVORITE_AMDNO_ATTRIBUTE}]`),
     )
   }
-  if (activeNavigationRow === 'format') {
+  if (state.activeRow === 'format') {
     const row = getFormatRow()
     return row === null
       ? []
-      : Array.from(row.querySelectorAll<HTMLElement>('.contents-radio-button[data-type]'))
+      : Array.from(row.querySelectorAll<HTMLElement>(JMA_SELECTORS.typedRadioButton))
   }
   const row = getGraphObservationRow()
-  return row === null ? [] : Array.from(row.querySelectorAll<HTMLElement>('.contents-radio-button'))
+  return row === null
+    ? []
+    : Array.from(row.querySelectorAll<HTMLElement>(JMA_SELECTORS.radioButton))
 }
 
-function getSelectedButtonIndex(buttons: HTMLElement[]): number {
-  if (activeNavigationRow === 'favorites') {
-    const amdno = new URLSearchParams(window.location.hash.slice(1)).get('amdno')
+function getSelectedButtonIndex(buttons: HTMLElement[], state: NavigationState): number {
+  if (state.activeRow === 'favorites') {
+    const amdno = getJmaRoute().stationId
     return buttons.findIndex((button) => button.getAttribute(FAVORITE_AMDNO_ATTRIBUTE) === amdno)
   }
-  return buttons.findIndex((button) => button.classList.contains('contents-radio-button-on'))
+  return buttons.findIndex((button) => button.classList.contains(JMA_CLASSES.radioOn))
 }
 
-function moveWithinRow(direction: -1 | 1): void {
-  const buttons = getButtonsForActiveRow()
+function moveWithinRow(direction: -1 | 1, state: NavigationState): void {
+  const buttons = getButtonsForActiveRow(state)
   if (buttons.length === 0) {
     return
   }
-  const selectedIndex = getSelectedButtonIndex(buttons)
+  const selectedIndex = getSelectedButtonIndex(buttons, state)
   const nextIndex =
     selectedIndex < 0
       ? direction > 0
@@ -476,7 +426,46 @@ function isEditableTarget(target: EventTarget | null): boolean {
   )
 }
 
-function handleKeyboardNavigation(event: KeyboardEvent): void {
+function handleFavoriteClick(state: NavigationState, event: MouseEvent): void {
+  if (state.disposed || !(event.target instanceof Element)) {
+    return
+  }
+  const toggle = event.target.closest(`#${FAVORITE_TOGGLE_ID}`)
+  if (toggle instanceof HTMLButtonElement) {
+    const current = getCurrentStation()
+    if (current !== null) {
+      const isFavorite = loadFavoriteStations().some(({ amdno }) => amdno === current.amdno)
+      updateCurrentFavorite(current, isFavorite, state)
+    }
+    return
+  }
+  const button = event.target.closest(`#${FAVORITES_ROW_ID} [${FAVORITE_AMDNO_ATTRIBUTE}]`)
+  if (!(button instanceof HTMLElement)) {
+    return
+  }
+  const amdno = button.getAttribute(FAVORITE_AMDNO_ATTRIBUTE)
+  const station = loadFavoriteStations().find((favorite) => favorite.amdno === amdno)
+  if (station !== undefined) {
+    navigateToStation(station)
+  }
+}
+
+function handleKeyboardNavigation(state: NavigationState, event: KeyboardEvent): void {
+  if (state.disposed) {
+    return
+  }
+  if ((event.key === 'Enter' || event.key === ' ') && event.target instanceof Element) {
+    const button = event.target.closest(`#${FAVORITES_ROW_ID} [${FAVORITE_AMDNO_ATTRIBUTE}]`)
+    if (button instanceof HTMLElement) {
+      const amdno = button.getAttribute(FAVORITE_AMDNO_ATTRIBUTE)
+      const station = loadFavoriteStations().find((favorite) => favorite.amdno === amdno)
+      if (station !== undefined) {
+        event.preventDefault()
+        navigateToStation(station)
+      }
+      return
+    }
+  }
   if (
     event.defaultPrevented ||
     event.ctrlKey ||
@@ -489,53 +478,56 @@ function handleKeyboardNavigation(event: KeyboardEvent): void {
     return
   }
   event.preventDefault()
-  keyboardNavigationStarted = true
+  state.keyboardStarted = true
   if (event.key === 'ArrowUp') {
-    moveBetweenRows(-1)
+    moveBetweenRows(-1, state)
   } else if (event.key === 'ArrowDown') {
-    moveBetweenRows(1)
+    moveBetweenRows(1, state)
   } else {
-    synchronizeNavigationHighlight()
-    moveWithinRow(event.key === 'ArrowLeft' ? -1 : 1)
+    synchronizeNavigationHighlight(state)
+    moveWithinRow(event.key === 'ArrowLeft' ? -1 : 1, state)
   }
 }
 
 /** お気に入り地点と、上下左右キーによる表示切り替えを管理する。 */
-export function favorite_navigation_main(): () => void {
-  activeStop?.()
-  activeNavigationRow = 'format'
-  keyboardNavigationStarted = false
-  ensureFavoriteNavigationUi()
-
-  const observer = new MutationObserver(() => ensureFavoriteNavigationUi())
-  observer.observe(document.body, {
-    attributeFilter: ['hidden', 'style'],
-    attributes: true,
-    childList: true,
-    subtree: true,
-  })
-  const handleHashChange = () => ensureFavoriteNavigationUi()
+export function favorite_navigation_main(): Feature {
+  const state: NavigationState = {
+    activeRow: 'format',
+    keyboardStarted: false,
+    disposed: false,
+  }
+  const refresh = () => ensureFavoriteNavigationUi(state)
   const handleStorage = (event: StorageEvent) => {
-    if (event.key === FAVORITES_STORAGE_KEY) {
-      ensureFavoriteNavigationUi()
+    if (!state.disposed && event.key === FAVORITES_STORAGE_KEY) {
+      refresh()
     }
   }
-  window.addEventListener('hashchange', handleHashChange)
-  window.addEventListener('storage', handleStorage)
-  document.addEventListener('keydown', handleKeyboardNavigation)
+  const handleClick = (event: MouseEvent) => handleFavoriteClick(state, event)
+  const handleKeydown = (event: KeyboardEvent) => handleKeyboardNavigation(state, event)
 
-  const stop = () => {
-    observer.disconnect()
-    window.removeEventListener('hashchange', handleHashChange)
-    window.removeEventListener('storage', handleStorage)
-    document.removeEventListener('keydown', handleKeyboardNavigation)
-    removeFavoriteToggle()
-    document.querySelector(`#${FAVORITES_ROW_ID}`)?.remove()
-    document.querySelector(`#${STYLE_ID}`)?.remove()
-    if (activeStop === stop) {
-      activeStop = undefined
-    }
+  window.addEventListener('storage', handleStorage)
+  document.addEventListener('click', handleClick)
+  document.addEventListener('keydown', handleKeydown)
+  refresh()
+
+  return {
+    refresh,
+    dispose() {
+      if (state.disposed) {
+        return
+      }
+      state.disposed = true
+      window.removeEventListener('storage', handleStorage)
+      document.removeEventListener('click', handleClick)
+      document.removeEventListener('keydown', handleKeydown)
+      removeFavoriteToggle()
+      document.querySelector(`#${FAVORITES_ROW_ID}`)?.remove()
+      document.querySelector(`#${STYLE_ID}`)?.remove()
+      document
+        .querySelectorAll<HTMLTableRowElement>(`tr[${ACTIVE_ROW_ATTRIBUTE}]`)
+        .forEach((row) => {
+          row.removeAttribute(ACTIVE_ROW_ATTRIBUTE)
+        })
+    },
   }
-  activeStop = stop
-  return stop
 }

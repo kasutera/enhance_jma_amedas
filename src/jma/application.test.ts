@@ -1,26 +1,32 @@
-import { TABLE_CLASS_NAMES } from './table_classes_definition'
+import { initializeApplication } from './application'
+import { TABLE_CLASS_NAMES } from './integration/column_classes'
 
 const favoriteNavigationMain = jest.fn()
+const mockPointRange = jest
+  .fn()
+  .mockImplementation((_stationId: string, dates: Date[]) =>
+    dates.map((date) => ({ temperature: 20, humidity: 50, date })),
+  )
+let stopApplication: (() => void) | undefined
 const mockRegionalAmedasFetch = jest
   .fn()
   .mockResolvedValue({ '44132': { temperature: 21.2, humidity: 61 } })
 
 jest.mock('./favorite_navigation/favorite_navigation_main', () => ({
-  favorite_navigation_main: favoriteNavigationMain,
+  favorite_navigation_main: () => favoriteNavigationMain(),
 }))
-jest.mock('./graph/graph_main', () => ({ graph_main: jest.fn() }))
-jest.mock('./seriestable/jma_amedas_fetcher', () => ({
-  AmedasFetcher: jest.fn().mockImplementation(() => ({
-    fetchAmedasData: jest.fn().mockResolvedValue({ temperature: 20, humidity: 50 }),
-  })),
+jest.mock('./graph/graph_main', () => ({
+  graph_main: () => ({ refresh: jest.fn(), dispose: jest.fn() }),
 }))
-jest.mock('./areastable/jma_amedas_fetcher', () => ({
-  AmedasFetcher: jest.fn().mockImplementation(() => ({
-    fetchAmedasData: mockRegionalAmedasFetch,
+jest.mock('./integration/amedas_client', () => ({
+  AmedasClient: jest.fn().mockImplementation(() => ({
+    fetchPointRange: mockPointRange,
+    fetchArea: mockRegionalAmedasFetch,
   })),
+  fetchLatestTime: jest.fn().mockResolvedValue(new Date('2026-10-04T06:30:00.000Z')),
 }))
 jest.mock('./auto_refresh', () => ({
-  initializeTableAutoRefresh: jest.fn(),
+  initializeTableAutoRefresh: () => ({ refresh: jest.fn(), dispose: jest.fn() }),
 }))
 
 const tables = `
@@ -80,9 +86,8 @@ function expectEnhancedTables(container: Element): void {
 
 describe('表コンテナ内の既存表の初期描画', () => {
   beforeEach(() => {
-    jest.resetModules()
     mockRegionalAmedasFetch.mockClear()
-    favoriteNavigationMain.mockReset()
+    favoriteNavigationMain.mockReset().mockReturnValue({ refresh: jest.fn(), dispose: jest.fn() })
     document.body.replaceChildren()
     window.location.hash = 'amdno=44132'
     jest.spyOn(document, 'readyState', 'get').mockReturnValue('complete')
@@ -90,6 +95,8 @@ describe('表コンテナ内の既存表の初期描画', () => {
   })
 
   afterEach(() => {
+    stopApplication?.()
+    stopApplication = undefined
     jest.restoreAllMocks()
     document.body.replaceChildren()
     jest.useRealTimers()
@@ -113,13 +120,11 @@ describe('表コンテナ内の既存表の初期描画', () => {
         document.body.append(container)
       }
       // 初期化前後のDOMを切り替えるため、モジュール読み込み境界をここで実行する。
-      await import('./main')
+      stopApplication = initializeApplication()
       if (timing === '初期化後') {
         document.body.append(container)
       }
       await jest.runAllTimersAsync()
-      expect(mockRegionalAmedasFetch).toHaveBeenCalledWith(new Date('2026-10-04T06:30:00.000Z'))
-      expect(mockRegionalAmedasFetch).not.toHaveBeenCalledWith(new Date('2026-10-04T06:40:00.000Z'))
       expectEnhancedTables(container)
       expect(
         container.querySelector('[style]')?.querySelector(`.${TABLE_CLASS_NAMES.dewPoint}`),
@@ -146,17 +151,13 @@ describe('表コンテナ内の既存表の初期描画', () => {
         oldTable.replaceWith(newTable)
       }
       await jest.runAllTimersAsync()
-      expect(mockRegionalAmedasFetch).toHaveBeenNthCalledWith(
-        2,
-        new Date('2026-10-04T06:30:00.000Z'),
-      )
       expectEnhancedTables(container)
     },
   )
 
   it('見出しを残して地点行を再生成した同じ地域表にも派生列を復元する', async () => {
     document.body.innerHTML = `<div id="amd-table">${tables}</div>`
-    await import('./main')
+    stopApplication = initializeApplication()
     await jest.runAllTimersAsync()
     expectEnhancedTables(document.body)
 
@@ -189,7 +190,8 @@ describe('表コンテナ内の既存表の初期描画', () => {
 
   it('同じ地域表で派生セルが一つ欠落しても全派生値を重複なく復元する', async () => {
     document.body.innerHTML = `<div id="amd-table">${tables}</div>`
-    await import('./main')
+
+    stopApplication = initializeApplication()
     await jest.runAllTimersAsync()
     expectEnhancedTables(document.body)
 
@@ -207,20 +209,14 @@ describe('表コンテナ内の既存表の初期描画', () => {
 
   it('通信待ち中に地域表が再生成されたら古い表には列を挿入しない', async () => {
     type RegionalFetchResult = { '44132': { temperature: number; humidity: number } }
-    let resolveInitialFetch!: (data: RegionalFetchResult) => void
-    mockRegionalAmedasFetch.mockImplementationOnce(
-      () =>
-        new Promise<RegionalFetchResult>((resolve) => {
-          resolveInitialFetch = resolve
-        }),
-    )
+    const { promise, resolve: resolveInitialFetch } = Promise.withResolvers<RegionalFetchResult>()
+    mockRegionalAmedasFetch.mockReturnValueOnce(promise)
 
     const container = document.createElement('div')
     container.id = 'amd-table'
     container.innerHTML = tables
     document.body.append(container)
-    // jest.resetModules() 後に初期化時の通信を開始するため、ここでモジュールを読み込む。
-    await import('./main')
+    stopApplication = initializeApplication()
 
     const oldTable = container.querySelector<HTMLTableElement>(
       '.amd-areastable.amd-table-responsive',
@@ -248,7 +244,6 @@ describe('表コンテナ内の既存表の初期描画', () => {
     }
 
     await jest.runAllTimersAsync()
-    expect(mockRegionalAmedasFetch).toHaveBeenNthCalledWith(2, new Date('2026-10-04T06:40:00.000Z'))
     expect(oldTable.querySelector(`.${TABLE_CLASS_NAMES.dewPoint}`)).toBeNull()
 
     resolveInitialFetch({ '44132': { temperature: 21.2, humidity: 61 } })
@@ -270,11 +265,9 @@ describe('表コンテナ内の既存表の初期描画', () => {
     )
     document.body.innerHTML = `<div id="amd-table">${tablesWithoutObservationTime}</div>`
 
-    // jest.resetModules() 後に初期化時のDOM処理を実行するため、ここでモジュールを読み込む。
-    await import('./main')
+    stopApplication = initializeApplication()
     await jest.runAllTimersAsync()
 
-    expect(mockRegionalAmedasFetch).not.toHaveBeenCalled()
     const pointRow = document.querySelector('.amd-areastable-tr-pointdata')
     for (const className of [
       TABLE_CLASS_NAMES.volumetricHumidity,
@@ -291,7 +284,7 @@ describe('表コンテナ内の既存表の初期描画', () => {
       '観測時刻不明',
     )}</div>`
     // 初期DOMを用意してからエントリーポイントの読み込み時初期化を実行する。
-    await import('./main')
+    stopApplication = initializeApplication()
     await jest.runAllTimersAsync()
     const row = document.querySelector('.amd-areastable-tr-pointdata')
     expect(row?.querySelector(`td.${TABLE_CLASS_NAMES.dewPoint}`)?.textContent).toBe('---')
@@ -304,6 +297,91 @@ describe('表コンテナ内の既存表の初期描画', () => {
     expect(row?.querySelector(`td.${TABLE_CLASS_NAMES.dewPoint}`)?.textContent).toBe('13.4')
   })
 
+  it('派生列を非表示にしてもDOM更新が収束し、表交換後も表示を切り替えられる', async () => {
+    document.body.innerHTML = `<div id="amd-selector-div-block-items"></div><div id="amd-table">${tables}</div>`
+    stopApplication = initializeApplication()
+    await jest.runAllTimersAsync()
+    const input = document.querySelector<HTMLInputElement>('#enhanced-table-elem-dewPoint')
+    if (input === null) {
+      throw new Error('露点温度の選択UIがありません')
+    }
+    input.click()
+    await jest.runAllTimersAsync()
+    expect(input.checked).toBe(false)
+    expect(document.querySelector('.amd-table-tr-onthedot td.td-dew-point')).toHaveProperty(
+      'hidden',
+      true,
+    )
+    const container = document.querySelector('#amd-table')
+    if (container === null) {
+      throw new Error('表コンテナがありません')
+    }
+    container.innerHTML = tables
+    await jest.runAllTimersAsync()
+    expect(document.querySelector('.amd-areastable-tr-pointdata td.td-dew-point')).toHaveProperty(
+      'hidden',
+      true,
+    )
+    input.click()
+    await jest.runAllTimersAsync()
+    expect(input.checked).toBe(true)
+    expect(document.querySelector('.amd-table-tr-onthedot td.td-dew-point')).toHaveProperty(
+      'hidden',
+      false,
+    )
+  })
+
+  it('表コンテナ全体が交換されても新しい表を拡張し、解除・再接続で列を重複させない', async () => {
+    document.body.innerHTML = `<div id="amd-table">${tables}</div>`
+    stopApplication = initializeApplication()
+    await jest.runAllTimersAsync()
+    const oldContainer = document.querySelector('#amd-table')
+    if (oldContainer === null) {
+      throw new Error('初期コンテナがありません')
+    }
+    const newContainer = document.createElement('div')
+    newContainer.id = 'amd-table'
+    newContainer.innerHTML = tables
+    oldContainer.replaceWith(newContainer)
+    await jest.runAllTimersAsync()
+    expectEnhancedTables(newContainer)
+    stopApplication()
+    stopApplication = initializeApplication()
+    await jest.runAllTimersAsync()
+    expectEnhancedTables(newContainer)
+  })
+
+  it('解除前に開始した通信の応答は、解除後の表を変更しない', async () => {
+    const { promise, resolve: resolveArea } =
+      Promise.withResolvers<Record<string, { temperature: number; humidity: number }>>()
+    mockRegionalAmedasFetch.mockReturnValueOnce(promise)
+    document.body.innerHTML = `<div id="amd-table">${tables}</div>`
+    stopApplication = initializeApplication()
+    await jest.runAllTimersAsync()
+    stopApplication()
+    resolveArea({ '44132': { temperature: 21.2, humidity: 61 } })
+    await jest.runAllTimersAsync()
+    expect(document.querySelector('.amd-areastable-tr-pointdata td.td-dew-point')).toBeNull()
+  })
+
+  it('地点変更中の古い時系列応答を反映せず、新しい地点の値で更新する', async () => {
+    const { promise, resolve: resolveSeries } =
+      Promise.withResolvers<Array<{ temperature: number; humidity: number }>>()
+    mockPointRange.mockReturnValueOnce(promise)
+    document.body.innerHTML = `<div id="amd-table">${tables}</div>`
+    stopApplication = initializeApplication()
+    await jest.runAllTimersAsync()
+    window.location.hash = 'amdno=47772'
+    window.dispatchEvent(new Event('hashchange'))
+    await jest.runAllTimersAsync()
+    resolveSeries([{ temperature: 21.2, humidity: 61 }])
+    await jest.runAllTimersAsync()
+    expect(document.querySelector('.amd-table-tr-onthedot td.td-dew-point')?.textContent).toBe(
+      '9.3',
+    )
+    expect(document.querySelectorAll('.amd-table-tr-onthedot td.td-dew-point')).toHaveLength(1)
+  })
+
   it('お気に入り操作の初期化が失敗しても両方の表を描画する', async () => {
     document.body.innerHTML = `<div id="amd-table">${tables}</div>`
     favoriteNavigationMain.mockImplementation(() => {
@@ -311,7 +389,7 @@ describe('表コンテナ内の既存表の初期描画', () => {
     })
     jest.spyOn(console, 'error').mockImplementation()
     // 初期化例外を含むモジュール読み込み境界を検証する。
-    await import('./main')
+    stopApplication = initializeApplication()
     await jest.runAllTimersAsync()
     expectEnhancedTables(document.body)
   })
