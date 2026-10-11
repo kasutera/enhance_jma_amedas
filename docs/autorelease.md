@@ -7,7 +7,7 @@
 このプロジェクトでは、以下の技術を組み合わせて自動リリース機能を実装しています：
 
 - **GitHub Actions**: CI/CDパイプラインによる自動リリース
-- **Rollup + @rollup/plugin-replace**: ビルド時の動的バージョン管理
+- **Vite + vite-plugin-monkey**: ユーザースクリプトのビルドと動的バージョン管理
 - **GitHub Releases**: userscriptの配布とアセット管理
 
 ## システム全体の流れ
@@ -19,7 +19,7 @@
     ↓
 3. GitHub ActionsがタグプッシュをトリガーとしてCI/CDを実行
     ↓
-4. Rollupがuserscriptをビルド（VERSION環境変数からバージョン設定）
+4. Viteがuserscriptをビルド（VERSION環境変数からバージョン設定）
     ↓
 5. GitHub Releaseが自動作成され、userscriptがアセットとして添付
     ↓
@@ -79,55 +79,21 @@ jobs:
 2. **環境変数**: `${{ github.ref_name }}` でタグ名をVERSION環境変数に設定
 3. **自動リリースノート**: `generate_release_notes: true` で変更履歴を自動生成
 
-## 2. Rollupによる動的バージョン管理
+## 2. Viteによる動的バージョン管理
 
-### ファイル: `rollup.config.ts`
+### ファイル: `vite.config.mts`
 
-#### バージョンチェック機能
+`npm run build` は `tsc --noEmit` による型チェックを行い、Vite + vite-plugin-monkeyで `src/jma/main.ts` を単一の `dist/jma.user.js` にまとめます。UIのDOM/SVG実装はそのまま使用します。
 
-```typescript
-const getVersion = (): string => {
-  const version = process.env.VERSION
-  
-  if (!version) {
-    console.error('ERROR: VERSION environment variable is required for building userscript')
-    console.error('Please run: VERSION=YYYYMMDD npm run build')
-    process.exit(1)
-  }
-  
-  return version
-}
+ビルド時はVERSION環境変数を必須とし、未設定なら設定の読み込み時点でエラーにします。`src/jma/manifest.json` を読み込み、その `version` をVERSIONの値で上書きして、Monkeyプラグインがユーザースクリプトのヘッダーを生成します。
+
+```bash
+VERSION=20261011 npm run build
 ```
 
-#### manifest.jsonの動的処理
+出力はES2022をターゲットとするIIFE形式です。開発用サーバーやCDNへの依存を追加せず、既存の更新URL・ダウンロードURL・`@grant none` を保持します。従来のRollup設定と、ローカルファイルを `@require` する開発用スクリプトは使用しません。
 
-```typescript
-const readMetadata = (path: string): Metadata => {
-  const content = readFileSync(path, 'utf8')
-  const version = getVersion()
-  return JSON.parse(content.replace('__VERSION__', version))
-}
-```
-
-#### プラグイン設定
-
-```typescript
-plugins: [
-  replace({
-    __VERSION__: getVersion(),  // ソースコード内の__VERSION__を置換
-    preventAssignment: true
-  }),
-  typescript(),
-  cleanup(),
-  watch()
-]
-```
-
-### 重要なポイント
-
-1. **環境変数必須**: VERSION未設定時は明確なエラーメッセージと共にビルド停止
-2. **プレースホルダー置換**: `__VERSION__` を実際のバージョン番号に置換
-3. **二重チェック**: manifest.jsonとソースコード両方でバージョン管理
+開発時は `npm run dev` でViteサーバーを起動します。VERSIONは省略可能で、省略時の開発版バージョンは `0.0.0` です。開発版は `[dev] Enhance JMA Amedas` という別名で、リリース用の更新URLを持ちません。注入手順とCSP・ローカルアクセスの制約は [READMEのローカル開発手順](../README.md#技術構成とローカル開発) を参照してください。
 
 ## 3. manifest.jsonの設定
 
@@ -146,7 +112,7 @@ plugins: [
 
 ### 重要なポイント
 
-1. **プレースホルダー**: `"version": "__VERSION__"` がビルド時に置換される
+1. **バージョン指定**: manifest.jsonの `"version": "__VERSION__"` を、Vite設定でVERSIONの値に上書きする
 2. **固定URL**: `/releases/latest/download/` で常に最新版を指す
 3. **自動更新**: userscriptマネージャーがupdateURLから更新を検知
 
@@ -184,10 +150,10 @@ plugins: [
 ### 日常的な開発
 
 ```bash
-# 開発用ビルド（VERSION環境変数なしではエラーになる）
-VERSION=dev npm run build
+# 本番形式のローカルビルド（VERSION必須）
+VERSION=20261011 npm run build
 
-# または開発モード
+# Vite開発サーバー（VERSION不要）
 npm run dev
 ```
 
@@ -203,8 +169,7 @@ npm run release
 #### VERSION環境変数エラー
 
 ```
-ERROR: VERSION environment variable is required for building userscript
-Please run: VERSION=YYYYMMDD npm run build
+Error: VERSION is required for building userscript. Run: VERSION=YYYYMMDD npm run build
 ```
 
 **解決方法**: 明示的にVERSION環境変数を設定する
@@ -224,8 +189,8 @@ VERSION=20250814 npm run build
 ### 環境変数の管理
 
 - **本番環境**: GitHub Actionsが自動的にVERSIONを設定
-- **開発環境**: 明示的にVERSIONを指定する必要がある
-- **検証**: VERSION未設定時は必ずエラーで停止
+- **開発サーバー**: VERSIONは省略可能。省略時は `0.0.0`
+- **本番ビルド**: VERSION未設定時は必ずエラーで停止
 
 ### アセット配布
 

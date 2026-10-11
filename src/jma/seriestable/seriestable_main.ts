@@ -1,81 +1,107 @@
-// 1. 最新のアメダスデータ https://www.jma.go.jp/bosai/amedas/data/point/{code}/{yyyymmdd}_{hh}.json を取得する
-// 2. 取得したデータから、絶対湿度 (enhance-abs-humidity), 露点温度 (enhance-dew-point) を算出する
-// 3. 算出したデータを、DOM操作によってテーブルに挿入する
-
 import { globalColorScaleManager } from '../color_scale/color_scale_global'
+import { DERIVED_OBSERVATION_DEFINITIONS } from '../derived_observations'
 import {
   applyEnhancedObservationVisibility,
   ensureEnhancedObservationSelector,
 } from '../enhanced_observation_selector'
-import { getAmdnoFromUrl } from '../jma_urls'
-import { appendColumnToSeriestable, getTimeSeries } from './dom_handler'
-import { type AmedasData, AmedasFetcher } from './jma_amedas_fetcher'
+import type { Feature } from '../feature'
+import { AmedasClient, fetchLatestTime } from '../integration/amedas_client'
+import { getTableContainer, isVisibleTable, JMA_SELECTORS } from '../integration/dom'
+import { getJmaRoute, getStationId } from '../integration/route'
+import {
+  getSeriesTimeSignature,
+  getTimeSeries,
+  hasCompleteDerivedColumns,
+  renderDerivedColumns,
+} from '../integration/table_dom'
 import { convertAmedasDataToSeriestableColumns } from './presentation'
 
-export function seriestable_main() {
-  const fetcher = new AmedasFetcher()
-  ensureEnhancedObservationSelector()
+/** 同じ表への重複描画と、地点・日時・DOM変更後の古い応答の反映を防ぐ。 */
+export function seriestable_main(): Feature {
+  const renderingTables = new WeakSet<HTMLTableElement>()
+  const pendingTables = new WeakSet<HTMLTableElement>()
+  const renderedInputs = new WeakMap<HTMLTableElement, string>()
+  const columnClasses = DERIVED_OBSERVATION_DEFINITIONS.map(({ className }) => className)
+  let disposed = false
 
-  // dom が更新された時に以下を実行する
-  async function render(seriestable: HTMLTableElement): Promise<void> {
-    // JMAの表再生成時にも派生要素の選択UIを復元する。
-    // JMA側の地点別ビットマスクには触れない。
-    ensureEnhancedObservationSelector()
-
-    const code = getAmdnoFromUrl(window.location.href)
-    const timeseries = getTimeSeries(seriestable)
-    const amedasDatas: AmedasData[] = []
-    for (const date of timeseries) {
-      const data = await fetcher.fetchAmedasData(code, date)
-      amedasDatas.push(data)
+  async function render(table: HTMLTableElement): Promise<void> {
+    const container = getTableContainer()
+    if (disposed || container === null || !container.contains(table) || !isVisibleTable(table)) {
+      return
     }
-    const columns = convertAmedasDataToSeriestableColumns(amedasDatas)
-    for (const column of columns) {
-      appendColumnToSeriestable(seriestable, column)
+    if (renderingTables.has(table)) {
+      pendingTables.add(table)
+      return
     }
-
-    // カラースケールを適用（全ての対象列）
-    for (const column of columns) {
-      globalColorScaleManager.applyColorScaleToColumn(seriestable, column.class)
-    }
-
-    applyEnhancedObservationVisibility(seriestable)
-  }
-
-  const observationTarget = document.querySelector('#amd-table')
-  if (observationTarget === null) {
-    throw new Error('amd-table not found')
-  }
-
-  const observer = new MutationObserver((mutationList: MutationRecord[]) => {
-    void (async () => {
-      for (const mutation of mutationList) {
-        for (const addedNode of mutation.addedNodes) {
-          if (
-            addedNode instanceof HTMLElement &&
-            addedNode.classList.contains('amd-table-seriestable')
-          ) {
-            if (addedNode.parentElement?.style.display === 'none') {
-              // 親要素である contents-wide-table-* が非表示の場合は skip
-              continue
-            }
-            observer.disconnect()
-            await render(addedNode as HTMLTableElement)
-            observer.observe(observationTarget, observeOptions)
-          }
-        }
+    renderingTables.add(table)
+    try {
+      const route = getJmaRoute()
+      const rowSignature = getSeriesTimeSignature(table)
+      const input = `${route.signature}\u0000${rowSignature}`
+      if (
+        renderedInputs.get(table) === input &&
+        hasCompleteDerivedColumns(table, 'series', columnClasses)
+      ) {
+        return
       }
-    })()
-  })
-  const observeOptions = { attributes: true, childList: true, subtree: true }
-  observer.observe(observationTarget, observeOptions)
-
-  // コンテナと表が一括挿入された場合、監視開始前の表も描画する。
-  for (const table of observationTarget.querySelectorAll<HTMLTableElement>(
-    '.amd-table-seriestable',
-  )) {
-    if (table.parentElement?.style.display !== 'none') {
-      void render(table)
+      const stationId = getStationId()
+      if (route.historical && route.observationTime === null) {
+        throw new Error('指定された過去日時を読み取れません。')
+      }
+      const reference = route.observationTime ?? (await fetchLatestTime())
+      if (
+        disposed ||
+        getTableContainer() !== container ||
+        !container.contains(table) ||
+        !isVisibleTable(table) ||
+        getJmaRoute().signature !== route.signature ||
+        getSeriesTimeSignature(table) !== rowSignature
+      ) {
+        return
+      }
+      const dates = getTimeSeries(table, reference)
+      const observations = await new AmedasClient().fetchPointRange(stationId, dates)
+      if (
+        disposed ||
+        getTableContainer() !== container ||
+        !container.contains(table) ||
+        !isVisibleTable(table) ||
+        getJmaRoute().signature !== route.signature ||
+        getSeriesTimeSignature(table) !== rowSignature
+      ) {
+        return
+      }
+      const columns = convertAmedasDataToSeriestableColumns(observations)
+      renderDerivedColumns(table, 'series', columns)
+      for (const column of columns) {
+        globalColorScaleManager.applyColorScaleToColumn(table, column.class)
+      }
+      applyEnhancedObservationVisibility(table)
+      renderedInputs.set(table, input)
+    } catch (error) {
+      console.error('時系列表の派生観測値を描画できませんでした:', error)
+    } finally {
+      renderingTables.delete(table)
+      if (pendingTables.delete(table) && !disposed) {
+        void render(table)
+      }
     }
+  }
+
+  return {
+    refresh() {
+      if (disposed) {
+        return
+      }
+      ensureEnhancedObservationSelector()
+      for (const table of getTableContainer()?.querySelectorAll<HTMLTableElement>(
+        JMA_SELECTORS.seriesTable,
+      ) ?? []) {
+        void render(table)
+      }
+    },
+    dispose() {
+      disposed = true
+    },
   }
 }

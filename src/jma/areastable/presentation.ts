@@ -1,22 +1,22 @@
 import {
   type DerivedObservationColumns,
+  type ObservationInput,
   toDerivedObservationColumns,
 } from '../derived_observations'
-import type { AmedasData, Ameid } from './jma_amedas_fetcher'
 
 function* observationsForStations(
-  amdnos: readonly Ameid[],
-  amedasDatas: Readonly<Record<Ameid, AmedasData>>,
-): Generator<AmedasData | undefined> {
-  for (const amdno of amdnos) {
-    yield amedasDatas[amdno]
+  stationIds: readonly string[],
+  observations: Readonly<Record<string, ObservationInput | undefined>>,
+): Generator<ObservationInput | undefined> {
+  for (const stationId of stationIds) {
+    yield observations[stationId]
   }
 }
 
 /** 地点行の順序で派生観測値の3列を生成する。 */
 export function convertAmedasDataToAreastableColumns(
-  amdnos: readonly Ameid[],
-  amedasDatas: Readonly<Record<Ameid, AmedasData>>,
+  stationIds: readonly string[],
+  observations: Readonly<Record<string, ObservationInput | undefined>>,
 ): DerivedObservationColumns {
-  return toDerivedObservationColumns(observationsForStations(amdnos, amedasDatas))
+  return toDerivedObservationColumns(observationsForStations(stationIds, observations))
 }

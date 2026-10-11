@@ -2,7 +2,7 @@
  * カラースケール管理クラス（気象庁公式カラースケール・シンプル版）
  */
 
-import { TABLE_CLASS_NAMES } from '../table_classes_definition'
+import { TABLE_CLASS_NAMES } from '../integration/column_classes'
 import { calculateColorFromScale, parseNumericValue } from './color_scale_calculator'
 import { DERIVED_COLOR_SCALES, JMA_OFFICIAL_COLOR_SCALES } from './jma_official_colors'
 

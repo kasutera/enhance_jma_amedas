@@ -1,4 +1,4 @@
-import { getAreastableObservationTime } from './observation_time'
+import { getAreastableObservationTime } from './area_observation_time'
 
 describe('getAreastableObservationTime', () => {
   test.each([

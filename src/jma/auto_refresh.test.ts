@@ -1,22 +1,12 @@
 import { initializeTableAutoRefresh } from './auto_refresh'
+import type { Feature } from './feature'
+
+let stop: Feature | undefined
 
 const DISPLAYED_TIME = '2026年10月04日15時30分 現在'
 const SAME_LATEST_TIME = '2026-10-04T15:30:00+09:00'
 const NEW_LATEST_TIME = '2026-10-04T15:40:00+09:00'
 const CHECK_INTERVAL = 2 * 60 * 1000
-
-interface Deferred<T> {
-  promise: Promise<T>
-  resolve: (value: T) => void
-}
-
-function deferred<T>(): Deferred<T> {
-  let resolve!: (value: T) => void
-  const promise = new Promise<T>((resolvePromise) => {
-    resolve = resolvePromise
-  })
-  return { promise, resolve }
-}
 
 function makeResponse(text: string, ok = true): Response {
   return {
@@ -45,6 +35,7 @@ function createPage(includeObservationTime = true): void {
 function setRoute(route: string): void {
   window.location.hash = route
   window.dispatchEvent(new Event('hashchange'))
+  stop?.refresh()
 }
 
 function createSeriesPage(day = '04日', time = '15:30'): void {
@@ -59,13 +50,13 @@ function createSeriesPage(day = '04日', time = '15:30'): void {
 }
 
 async function flushAsyncWork(): Promise<void> {
+  stop?.refresh()
   await Promise.resolve()
   await Promise.resolve()
   await Promise.resolve()
 }
 
 describe('initializeTableAutoRefresh', () => {
-  let stop: (() => void) | undefined
   let fetchMock: jest.MockedFunction<typeof fetch>
   let reload: jest.Mock<void, []>
   let originalFetch: typeof fetch
@@ -86,7 +77,7 @@ describe('initializeTableAutoRefresh', () => {
   })
 
   afterEach(() => {
-    stop?.()
+    stop?.dispose()
     stop = undefined
     jest.restoreAllMocks()
     globalThis.fetch = originalFetch
@@ -174,9 +165,9 @@ describe('initializeTableAutoRefresh', () => {
   })
 
   it('queues the latest region during a request and ignores its result after moving to a station', async () => {
-    const responses: Deferred<Response>[] = []
+    const responses: PromiseWithResolvers<Response>[] = []
     fetchMock.mockImplementation(() => {
-      const response = deferred<Response>()
+      const response = Promise.withResolvers<Response>()
       responses.push(response)
       return response.promise
     })
@@ -212,7 +203,7 @@ describe('initializeTableAutoRefresh', () => {
   })
 
   it('does not reload a hidden page from an in-flight response', async () => {
-    const response = deferred<Response>()
+    const response = Promise.withResolvers<Response>()
     fetchMock.mockReturnValueOnce(response.promise)
     stop = initializeTableAutoRefresh({ reload })
     Object.defineProperty(document, 'hidden', { configurable: true, value: true })
@@ -229,16 +220,17 @@ describe('initializeTableAutoRefresh', () => {
   })
 
   it('invalidates the previous instance and stops checks after cleanup', async () => {
-    const response = deferred<Response>()
+    const response = Promise.withResolvers<Response>()
     fetchMock.mockReturnValueOnce(response.promise)
     stop = initializeTableAutoRefresh({ reload })
+    stop.dispose()
     stop = initializeTableAutoRefresh({ reload })
     await flushAsyncWork()
     response.resolve(makeResponse(NEW_LATEST_TIME))
     await flushAsyncWork()
     expect(reload).not.toHaveBeenCalled()
 
-    stop()
+    stop.dispose()
     stop = undefined
     fetchMock.mockClear()
     setRoute('area_type=offices&area_code=140000')
@@ -302,9 +294,9 @@ describe('initializeTableAutoRefresh', () => {
   it('checks the newly selected station without applying the previous station response', async () => {
     createSeriesPage()
     setRoute('amdno=44132&format=table10min')
-    const responses: Deferred<Response>[] = []
+    const responses: PromiseWithResolvers<Response>[] = []
     fetchMock.mockImplementation(() => {
-      const response = deferred<Response>()
+      const response = Promise.withResolvers<Response>()
       responses.push(response)
       return response.promise
     })
