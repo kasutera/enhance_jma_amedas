@@ -85,7 +85,7 @@ jobs:
 
 `npm run build` は `tsc --noEmit` による型チェックを行い、Vite + vite-plugin-monkeyで `src/jma/main.ts` を単一の `dist/jma.user.js` にまとめます。UIのDOM/SVG実装はそのまま使用します。
 
-ビルド時はVERSION環境変数を必須とし、未設定なら設定の読み込み時点でエラーにします。`src/jma/manifest.json` を読み込み、その `version` をVERSIONの値で上書きして、Monkeyプラグインがユーザースクリプトのヘッダーを生成します。
+本番ビルド時はVERSION環境変数を必須とし、未設定なら設定の読み込み時点でエラーにします。`src/jma/manifest.json` を読み込み、その `version` をVERSIONの値で上書きして、Monkeyプラグインがユーザースクリプトのヘッダーを生成します。
 
 ```bash
 VERSION=20261011 npm run build
@@ -93,7 +93,7 @@ VERSION=20261011 npm run build
 
 出力はES2022をターゲットとするIIFE形式です。開発用サーバーやCDNへの依存を追加せず、既存の更新URL・ダウンロードURL・`@grant none` を保持します。従来のRollup設定と、ローカルファイルを `@require` する開発用スクリプトは使用しません。
 
-開発時は `npm run dev` でViteサーバーを起動します。VERSIONは省略可能で、省略時の開発版バージョンは `0.0.0` です。開発版は `[dev] Enhance JMA Amedas` という別名で、リリース用の更新URLを持ちません。注入手順とCSP・ローカルアクセスの制約は [READMEのローカル開発手順](../README.md#技術構成とローカル開発) を参照してください。
+開発時の `npm run dev` は、本体入りの単一userscriptを監視ビルドします。`http://127.0.0.1:5173/` を開くと、その `.user.js` へ直接転送されます。出力は `.dev/jma.dev.user.js` で、本番の `dist/` と分離します。VERSIONの指定は不要です。開発版は `[dev] Enhance JMA Amedas`、バージョン `0.0.0` で、本番の更新URLを持ちません。変更後は同じURLを再度開いて再インストールし、JMAページを再読み込みします。ローカルESモジュールの注入とCSP解除は使用しません。詳しくは [READMEのローカル開発手順](../README.md#技術構成とローカル開発) を参照してください。
 
 ## 3. manifest.jsonの設定
 
