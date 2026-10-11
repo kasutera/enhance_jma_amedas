@@ -57,12 +57,8 @@ describe('お気に入り地点とキーボードナビゲーション', () => {
     try {
       const titleCell = document.querySelector('.contents-title th')
       const toggle = document.querySelector<HTMLButtonElement>('#enhanced-favorite-toggle')
-      const style = document.querySelector<HTMLStyleElement>('#enhanced-favorite-navigation-style')
       expect(titleCell?.querySelector('#enhanced-favorite-toggle')).toBe(toggle)
-      expect(style?.textContent).toContain('border: 2px solid #ffd700')
-      expect(style?.textContent).toContain('background: rgba(0, 0, 0, 0.28)')
       expect(toggle?.textContent).toBe('☆')
-      expect(toggle?.textContent).not.toContain('現在地')
       expect(toggle?.getAttribute('aria-pressed')).toBe('false')
       expect(document.querySelector('#enhanced-favorite-stations-row')).toBeNull()
 
@@ -86,7 +82,7 @@ describe('お気に入り地点とキーボードナビゲーション', () => {
       expect(toggle?.textContent).toBe('☆')
       expect(document.querySelector('#enhanced-favorite-stations-row')).toBeNull()
     } finally {
-      stop()
+      stop.dispose()
     }
   })
 
@@ -108,7 +104,7 @@ describe('お気に入り地点とキーボードナビゲーション', () => {
       expect(parameters.get('format')).toBe('graph')
       expect(parameters.get('elem')).toBe('temp')
     } finally {
-      stop()
+      stop.dispose()
     }
   })
 
@@ -125,7 +121,32 @@ describe('お気に入り地点とキーボードナビゲーション', () => {
       expect(parameters.get('format')).toBe('graph')
       expect(parameters.get('elem')).toBe('temp')
     } finally {
-      stop()
+      stop.dispose()
+    }
+  })
+
+  test('お気に入り地点をEnterキーでも選択できる', () => {
+    localStorage.setItem(
+      FAVORITES_STORAGE_KEY,
+      JSON.stringify([{ amdno: '47772', name: '大阪', areaType: 'offices', areaCode: '270000' }]),
+    )
+    const feature = favorite_navigation_main()
+    try {
+      const favorite = document.querySelector<HTMLElement>('[data-enhanced-favorite-amdno="47772"]')
+      if (favorite === null) {
+        throw new Error('お気に入り地点ボタンがありません')
+      }
+      const event = new KeyboardEvent('keydown', {
+        key: 'Enter',
+        bubbles: true,
+        cancelable: true,
+      })
+      favorite.dispatchEvent(event)
+
+      expect(event.defaultPrevented).toBe(true)
+      expect(new URLSearchParams(window.location.hash.slice(1)).get('amdno')).toBe('47772')
+    } finally {
+      feature.dispose()
     }
   })
 
@@ -162,6 +183,12 @@ describe('お気に入り地点とキーボードナビゲーション', () => {
             .querySelector('[data-testid="graph-observation-row"]')
             ?.getAttribute('data-enhanced-keyboard-active'),
         ).toBe('true')
+        stop.refresh()
+        expect(
+          document
+            .querySelector('[data-testid="graph-observation-row"]')
+            ?.getAttribute('data-enhanced-keyboard-active'),
+        ).toBe('true')
 
         pressArrow('ArrowRight')
         expect(humidity?.classList.contains('contents-radio-button-on')).toBe(true)
@@ -178,7 +205,7 @@ describe('お気に入り地点とキーボードナビゲーション', () => {
         pressArrow('ArrowRight')
         expect(new URLSearchParams(window.location.hash.slice(1)).get('amdno')).toBe('47772')
       } finally {
-        stop()
+        stop.dispose()
       }
     },
   )
@@ -233,7 +260,7 @@ describe('お気に入り地点とキーボードナビゲーション', () => {
             ?.getAttribute('data-enhanced-keyboard-active'),
         ).toBe('true')
       } finally {
-        stop()
+        stop.dispose()
       }
     },
   )
@@ -254,11 +281,11 @@ describe('お気に入り地点とキーボードナビゲーション', () => {
       expect(table1hClick).toHaveBeenCalledTimes(1)
       expect(observationClick).not.toHaveBeenCalled()
     } finally {
-      stop()
+      stop.dispose()
     }
   })
 
-  test('履歴APIで地点一覧へ戻るとお気に入り行を除去し、非表示の表示形式を操作しない', async () => {
+  test('履歴APIで地点一覧へ戻るとお気に入り行を除去し、非表示の表示形式を操作しない', () => {
     localStorage.setItem(
       FAVORITES_STORAGE_KEY,
       JSON.stringify([{ amdno: '44132', name: '東京', areaType: 'offices', areaCode: '130000' }]),
@@ -276,19 +303,19 @@ describe('お気に入り地点とキーボードナビゲーション', () => {
       if (formatRow !== null) {
         formatRow.style.display = 'none'
       }
-      await new Promise((resolve) => setTimeout(resolve, 0))
+      stop.refresh()
 
       expect(document.querySelector('#enhanced-favorite-stations-row')).toBeNull()
-      expect(document.querySelector('#enhanced-favorite-navigation-style')).toBeNull()
+      expect(document.querySelector('#enhanced-favorite-toggle')).toBeNull()
       const event = pressArrow('ArrowRight')
       expect(event.defaultPrevented).toBe(false)
       expect(table1hClick).not.toHaveBeenCalled()
     } finally {
-      stop()
+      stop.dispose()
     }
   })
 
-  test('別タブのお気に入り変更を反映し、停止後は監視しない', () => {
+  test('別タブのお気に入り変更を反映し、解除後は反映しない', () => {
     localStorage.setItem(
       FAVORITES_STORAGE_KEY,
       JSON.stringify([{ amdno: '44132', name: '東京', areaType: 'offices', areaCode: '130000' }]),
@@ -311,14 +338,32 @@ describe('お気に入り地点とキーボードナビゲーション', () => {
       expect(document.querySelector('[data-enhanced-favorite-amdno="44132"]')).toBeNull()
       expect(document.querySelector('[data-enhanced-favorite-amdno="62078"]')).not.toBeNull()
 
-      stop()
+      stop.dispose()
+      expect(pressArrow('ArrowRight').defaultPrevented).toBe(false)
       localStorage.setItem(FAVORITES_STORAGE_KEY, '[]')
       window.dispatchEvent(
         new StorageEvent('storage', { key: FAVORITES_STORAGE_KEY, newValue: '[]' }),
       )
       expect(document.querySelector('#enhanced-favorite-stations-row')).toBeNull()
     } finally {
-      stop()
+      stop.dispose()
+    }
+  })
+
+  test('再マウント後にキーボード操作を重複処理しない', () => {
+    const humidity = document.querySelector<HTMLElement>('[data-type="humidity"]')
+    const humidityClick = jest.fn()
+    humidity?.addEventListener('click', humidityClick)
+
+    const firstFeature = favorite_navigation_main()
+    firstFeature.dispose()
+    const secondFeature = favorite_navigation_main()
+    try {
+      pressArrow('ArrowDown')
+      pressArrow('ArrowRight')
+      expect(humidityClick).toHaveBeenCalledTimes(1)
+    } finally {
+      secondFeature.dispose()
     }
   })
 
@@ -336,7 +381,7 @@ describe('お気に入り地点とキーボードナビゲーション', () => {
       expect(event.defaultPrevented).toBe(false)
       expect(document.querySelector('[data-enhanced-keyboard-active]')).toBeNull()
     } finally {
-      stop()
+      stop.dispose()
     }
   })
 })

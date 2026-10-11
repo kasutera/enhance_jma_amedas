@@ -1,21 +1,21 @@
 # seriestable ディレクトリ概要
 
-このディレクトリは、気象庁アメダスデータの「時系列表（seriestable）」の DOM 生成・操作・データ変換を担うモジュール群です。
+このディレクトリは、時系列表（seriestable）の派生値生成・更新を調整する機能です。HTTPとJMA DOMの詳細は `../integration/` に置きます。
 
 ## 主なファイルと役割
 
 - `seriestable_main.ts`  
-  初期化時にすでに存在する表示中の時系列表へ派生列を追加し、その後の表の再生成も監視します。`#amd-table` と内部の表が一括挿入された場合にも初期描画を行います。
-- `observation_time.ts`  
-  日本語・英語の時系列表の最新行をJSTとして読み取ります。年・月は最新公開時刻を基準に補い、月・年またぎや前日24:00の表記にも対応します。
+  表示中の時系列表へ派生列を追加し、アプリケーションからの更新通知で表の再生成に追従します。`#amd-table` と内部の表が一括挿入された場合にも初期描画を行います。
+- `../integration/series_observation_time.ts`  
+  日本語・英語の時系列表の観測時刻をJSTの実時刻として読み取ります。年・月は過去日時または最新公開時刻を基準に補い、月・年またぎや前日24:00の表記にも対応します。
 - `../auto_refresh.ts`  
   地域表と共通の自動更新処理です。表示形式に応じた新しい観測データが公開されたときにページ全体を再読み込みします。
-- `dom_generators.ts`  
-  表の各種 DOM 要素生成関数を提供します（DOM の直接操作はしません）。
-- `dom_handler.ts`  
-  seriestable の DOM 検索・列追加など、DOM 操作のロジックをまとめています。日本語・英語の日付セルから時系列を取得し、`dom_generators.ts` の関数で列を追加します。
-- `jma_amedas_fetcher.ts`  
-  アメダスデータの URL 生成・データ変換・取得ロジックを提供します。
+- `../integration/dom.ts` と `../integration/route.ts`  
+  気象庁ページの DOM セレクター、表示状態、URL ルートの読み取りを提供します。
+- `../integration/table_dom.ts`  
+  行ごとの観測時刻の取得、派生列の描画、表 DOM の共有処理を提供します。観測所 ID は `../integration/route.ts` から取得します。
+- `../integration/amedas_client.ts` と `../observation.ts`  
+  地域表・時系列表で共有する HTTP/JSON 境界と、JSTの実時刻・観測値・品質・単位を持つ観測モデルです。
 - `presentation.ts`  
   時系列の行順を保ち、`../derived_observations.ts` の共通処理で派生値の3列を生成します。地域表と同じ欠損判定、小数1桁の表示、指標定義を使用します。
 
@@ -26,30 +26,9 @@
 - 過去日時を指定した画面は更新対象外です。非表示のタブでは確認を停止し、再表示時に確認を再開します。
 - 最新時刻が同じ場合や取得に失敗した場合は、現在の表を維持します。
 
----
+## ライフサイクル
 
-## 依存関係図（Mermaid）
-
-```mermaid
-graph TD
-  subgraph seriestable
-    dom_generators["dom_generators.ts"]
-    dom_handler["dom_handler.ts"]
-    jma_amedas_fetcher["jma_amedas_fetcher.ts"]
-    presentation["presentation.ts"]
-  end
-
-  dom_handler --> dom_generators
-  presentation --> derived_observations["../derived_observations.ts"]
-  presentation --> jma_amedas_fetcher
-  dom_handler --> derived_observations
-  derived_observations --> math["../math"]
-```
-
----
-
-### 補足
-
-- `presentation.ts` は共有の列型（DerivedObservationColumns）と `jma_amedas_fetcher.ts` の観測データ型（AmedasData）を参照します。`dom_handler.ts` も共有の列型（DerivedObservationColumn）を受け取ります。
-- `dom_handler.ts` は `dom_generators.ts` の DOM 生成関数を利用します。
-- `jma_amedas_fetcher.ts` はデータ取得・変換のロジックを提供し、`presentation.ts` で利用されます。
+- `../application.ts` が画面遷移とDOM再生成を監視し、機能の `refresh()` を呼び出します。機能内に独立したDOM監視はありません。
+- 通信完了時にルート、対象の表、時刻行の内容を再確認し、古い応答を別の地点や再生成された表へ反映しません。
+- 表が更新されたときは新しい取得クライアントを使い、公開途中の現在の3時間ファイルを以前のキャッシュで代用しません。
+- 再実行しても列・幅調整セルを重複させず、観測要素の表示選択を維持します。`dispose()` 後は通信結果をDOMへ反映しません。

@@ -1,24 +1,18 @@
 import { DERIVED_OBSERVATION_DEFINITIONS, type DerivedObservationKey } from './derived_observations'
+import type { Feature } from './feature'
+import { JMA_CLASSES, JMA_SELECTORS } from './integration/dom'
+import { isGraphFormat } from './integration/route'
 
 // JMAは地点ごとのビットマスクで標準要素を管理する。
 // 派生要素は独立した状態と name="enhanced-table-elem" で扱う。
 
 const ENHANCED_SELECTOR_KEY_ATTRIBUTE = 'data-enhanced-observation-key'
 const ENHANCED_SELECTOR_NAME = 'enhanced-table-elem'
-const ENHANCED_SELECTOR_BLOCK_SELECTOR = '#amd-selector-div-block-items'
-const ENHANCED_TABLE_SELECTOR = '.amd-table-seriestable, .amd-areastable'
-const ENHANCED_DATA_ROW_SELECTOR =
-  '.amd-table-tr-onthedot, .amd-table-tr-notonthedot, .amd-areastable-tr-pointdata'
-const BULK_HANDLER_ATTRIBUTE = 'data-enhanced-bulk-handler-installed'
 
 // 現在のuserscriptの挙動（派生3列を表示）を初期状態とする。
 const selectedEnhancedObservationKeys = new Set<DerivedObservationKey>(
   DERIVED_OBSERVATION_DEFINITIONS.map(({ key }) => key),
 )
-
-function isGraphFormat(): boolean {
-  return new URLSearchParams(window.location.hash.slice(1)).get('format') === 'graph'
-}
 
 function isEnhancedObservationKey(value: string | null): value is DerivedObservationKey {
   return DERIVED_OBSERVATION_DEFINITIONS.some(({ key }) => key === value)
@@ -34,7 +28,7 @@ function getEnhancedObservationDefinition(
   return definition
 }
 
-export function isEnhancedObservationEnabled(key: DerivedObservationKey): boolean {
+function isEnhancedObservationEnabled(key: DerivedObservationKey): boolean {
   return selectedEnhancedObservationKeys.has(key)
 }
 
@@ -60,13 +54,24 @@ function setAllEnhancedObservationEnabled(enabled: boolean): void {
   })
 }
 
-function handleBulkButtonClick(selectorContainer: HTMLElement, event: Event): void {
+function handleBulkButtonClick(event: Event): void {
   if (!(event.target instanceof Element)) {
     return
   }
 
-  const button = event.target.closest('.amd-selector-div-button')
-  if (!(button instanceof HTMLElement) || !selectorContainer.contains(button)) {
+  const button = event.target.closest(JMA_SELECTORS.selectorBulkButton)
+  if (!(button instanceof HTMLElement)) {
+    return
+  }
+  let container = button.parentElement
+  while (
+    container !== null &&
+    container.querySelector<HTMLElement>(JMA_SELECTORS.selectorBlock) === null
+  ) {
+    container = container.parentElement
+  }
+  const block = container?.querySelector<HTMLElement>(JMA_SELECTORS.selectorBlock)
+  if (block === null || block === undefined) {
     return
   }
 
@@ -81,32 +86,31 @@ function handleBulkButtonClick(selectorContainer: HTMLElement, event: Event): vo
     return
   }
 
-  const block = selectorContainer.querySelector<HTMLElement>(ENHANCED_SELECTOR_BLOCK_SELECTOR)
-  if (block !== null) {
-    synchronizeEnhancedSelectorInputs(block)
-  }
+  synchronizeEnhancedSelectorInputs(block)
   applyEnhancedObservationVisibilityToAllTables()
 }
 
-function installBulkButtonHandler(block: HTMLElement): void {
-  const selectorContainer = block.parentElement ?? block
-  if (selectorContainer.getAttribute(BULK_HANDLER_ATTRIBUTE) === 'true') {
+function handleEnhancedSelectorChange(event: Event): void {
+  if (!(event.target instanceof HTMLInputElement)) {
     return
   }
-
-  // JMA側の一括操作より先にuserscript側の状態を更新する。
-  selectorContainer.addEventListener(
-    'click',
-    (event) => handleBulkButtonClick(selectorContainer, event),
-    true,
-  )
-  selectorContainer.setAttribute(BULK_HANDLER_ATTRIBUTE, 'true')
+  const input = event.target
+  const key = input.getAttribute(ENHANCED_SELECTOR_KEY_ATTRIBUTE)
+  if (!isEnhancedObservationKey(key) || input.closest(JMA_SELECTORS.selectorBlock) === null) {
+    return
+  }
+  if (input.checked) {
+    selectedEnhancedObservationKeys.add(key)
+  } else {
+    selectedEnhancedObservationKeys.delete(key)
+  }
+  applyEnhancedObservationVisibilityToAllTables()
 }
 
 function createEnhancedSelectorItem(block: HTMLElement, key: DerivedObservationKey): void {
   const definition = getEnhancedObservationDefinition(key)
   const item = document.createElement('div')
-  item.classList.add('amd-selector-div-block-item')
+  item.classList.add(JMA_CLASSES.selectorItem)
   item.setAttribute(ENHANCED_SELECTOR_KEY_ATTRIBUTE, key)
 
   const input = document.createElement('input')
@@ -114,21 +118,13 @@ function createEnhancedSelectorItem(block: HTMLElement, key: DerivedObservationK
   input.id = `enhanced-table-elem-${key}`
   input.name = ENHANCED_SELECTOR_NAME
   input.value = key
-  input.classList.add('amd-selector-input-button')
+  input.classList.add(JMA_CLASSES.selectorInput)
   input.setAttribute(ENHANCED_SELECTOR_KEY_ATTRIBUTE, key)
   input.checked = isEnhancedObservationEnabled(key)
-  input.addEventListener('change', () => {
-    if (input.checked) {
-      selectedEnhancedObservationKeys.add(key)
-    } else {
-      selectedEnhancedObservationKeys.delete(key)
-    }
-    applyEnhancedObservationVisibilityToAllTables()
-  })
 
   const label = document.createElement('label')
   label.htmlFor = input.id
-  label.classList.add('amd-selector-label-button')
+  label.classList.add(JMA_CLASSES.selectorLabel)
   label.textContent = definition.label
 
   item.append(input, label)
@@ -144,7 +140,7 @@ export function ensureEnhancedObservationSelector(): void {
   if (isGraphFormat()) {
     return
   }
-  const block = document.querySelector<HTMLElement>(ENHANCED_SELECTOR_BLOCK_SELECTOR)
+  const block = document.querySelector<HTMLElement>(JMA_SELECTORS.selectorBlock)
   if (block === null) {
     return
   }
@@ -157,14 +153,13 @@ export function ensureEnhancedObservationSelector(): void {
   })
 
   synchronizeEnhancedSelectorInputs(block)
-  installBulkButtonHandler(block)
 }
 
 function getEnhancedDataCell(
   table: HTMLTableElement,
   className: string,
 ): HTMLTableCellElement | null {
-  const rows = table.querySelectorAll<HTMLTableRowElement>(ENHANCED_DATA_ROW_SELECTOR)
+  const rows = table.querySelectorAll<HTMLTableRowElement>(JMA_SELECTORS.dataRow)
   for (const row of rows) {
     const dataCell = row.querySelector<HTMLTableCellElement>(`.${className}`)
     if (dataCell !== null) {
@@ -179,17 +174,20 @@ function setEnhancedColumnVisibility(
   className: string,
   visible: boolean,
 ): void {
+  const hidden = !visible
   table.querySelectorAll<HTMLElement>(`.${className}`).forEach((cell) => {
-    cell.hidden = !visible
+    if (cell.hidden !== hidden) {
+      cell.hidden = hidden
+    }
   })
 
-  // simple-table-hidden-trにも同じ列の幅セルがあるため、非表示状態を同期する。
+  // 幅調整用の非表示行にも同じ列の幅セルがあるため、非表示状態を同期する。
   const dataCell = getEnhancedDataCell(table, className)
-  const hiddenRow = table.querySelector<HTMLTableRowElement>('.simple-table-hidden-tr')
+  const hiddenRow = table.querySelector<HTMLTableRowElement>(JMA_SELECTORS.widthRow)
   if (dataCell !== null && hiddenRow !== null) {
     const widthCell = hiddenRow.cells[dataCell.cellIndex]
-    if (widthCell !== undefined) {
-      widthCell.hidden = !visible
+    if (widthCell !== undefined && widthCell.hidden !== hidden) {
+      widthCell.hidden = hidden
     }
   }
 }
@@ -200,17 +198,53 @@ export function applyEnhancedObservationVisibility(table: HTMLTableElement): voi
   })
 }
 
-export function applyEnhancedObservationVisibilityToAllTables(): void {
-  document.querySelectorAll<HTMLTableElement>(ENHANCED_TABLE_SELECTOR).forEach((table) => {
+function applyEnhancedObservationVisibilityToAllTables(): void {
+  document.querySelectorAll<HTMLTableElement>(JMA_SELECTORS.observationTable).forEach((table) => {
     applyEnhancedObservationVisibility(table)
   })
 }
 
-export function setEnhancedObservationEnabled(key: DerivedObservationKey, enabled: boolean): void {
-  if (enabled) {
-    selectedEnhancedObservationKeys.add(key)
-  } else {
-    selectedEnhancedObservationKeys.delete(key)
+/** アプリケーションが所有する派生観測要素UIと委譲イベントのライフサイクル。 */
+export function initializeEnhancedObservationSelector(): Feature {
+  let disposed = false
+  const handleChange = (event: Event) => {
+    if (!disposed) {
+      handleEnhancedSelectorChange(event)
+    }
   }
-  applyEnhancedObservationVisibilityToAllTables()
+  const handleBulkClick = (event: Event) => {
+    if (!disposed) {
+      handleBulkButtonClick(event)
+    }
+  }
+  const refresh = () => {
+    if (disposed) {
+      return
+    }
+    ensureEnhancedObservationSelector()
+    applyEnhancedObservationVisibilityToAllTables()
+  }
+
+  document.addEventListener('change', handleChange)
+  document.addEventListener('click', handleBulkClick, true)
+  refresh()
+
+  return {
+    refresh,
+    dispose() {
+      if (disposed) {
+        return
+      }
+      disposed = true
+      document.removeEventListener('change', handleChange)
+      document.removeEventListener('click', handleBulkClick, true)
+      document
+        .querySelectorAll<HTMLElement>(
+          `${JMA_SELECTORS.selectorBlock} > .${JMA_CLASSES.selectorItem}[${ENHANCED_SELECTOR_KEY_ATTRIBUTE}]`,
+        )
+        .forEach((item) => {
+          item.remove()
+        })
+    },
+  }
 }

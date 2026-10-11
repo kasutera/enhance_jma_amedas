@@ -1,141 +1,97 @@
-// areastable 用の監視・編集処理
-
 import { globalColorScaleManager } from '../color_scale/color_scale_global'
 import { DERIVED_OBSERVATION_DEFINITIONS } from '../derived_observations'
 import {
   applyEnhancedObservationVisibility,
   ensureEnhancedObservationSelector,
 } from '../enhanced_observation_selector'
-import { _getAmdnos, appendColumnToAreastable } from './dom_handler'
-import { AmedasFetcher } from './jma_amedas_fetcher'
-import { getAreastableObservationTime } from './observation_time'
+import type { Feature } from '../feature'
+import { AmedasClient } from '../integration/amedas_client'
+import { getAreastableObservationTime } from '../integration/area_observation_time'
+import { getTableContainer, isVisibleTable, JMA_SELECTORS } from '../integration/dom'
+import { getJmaRoute } from '../integration/route'
+import {
+  getAreaStationIds,
+  hasCompleteDerivedColumns,
+  renderDerivedColumns,
+} from '../integration/table_dom'
 import { convertAmedasDataToAreastableColumns } from './presentation'
 
-export function areastable_main() {
-  const fetcher = new AmedasFetcher()
-  ensureEnhancedObservationSelector()
-
-  const tableContainer = document.querySelector('#amd-table')
-  if (tableContainer === null) {
-    return
-  }
-  const observationTarget = tableContainer
-
+/** 監視はアプリケーションが所有する。ここでは地域表の更新と非同期描画の寿命だけを管理する。 */
+export function areastable_main(): Feature {
+  const client = new AmedasClient()
   const renderingTables = new WeakSet<HTMLTableElement>()
-  const renderedObservationTimes = new WeakMap<HTMLTableElement, number | null>()
+  const pendingTables = new WeakSet<HTMLTableElement>()
+  const renderedInputs = new WeakMap<HTMLTableElement, string>()
+  const columnClasses = DERIVED_OBSERVATION_DEFINITIONS.map(({ className }) => className)
+  let disposed = false
 
-  function isCurrentTable(areastable: HTMLTableElement): boolean {
-    return (
-      document.querySelector('#amd-table') === observationTarget &&
-      observationTarget.isConnected &&
-      observationTarget.contains(areastable) &&
-      areastable.parentElement?.style.display !== 'none'
-    )
-  }
-
-  function hasCompleteDerivedColumns(areastable: HTMLTableElement): boolean {
-    const rows = areastable.querySelectorAll('.contents-header, .amd-areastable-tr-pointdata')
-    if (rows.length === 0) {
-      return false
-    }
-    for (const row of rows) {
-      for (const { className } of DERIVED_OBSERVATION_DEFINITIONS) {
-        if (row.querySelector(`.${className}`) === null) {
-          return false
-        }
-      }
-    }
-    return true
-  }
-
-  async function renderAreastable(areastable: HTMLTableElement): Promise<void> {
-    if (!isCurrentTable(areastable) || renderingTables.has(areastable)) {
+  async function render(table: HTMLTableElement): Promise<void> {
+    const container = getTableContainer()
+    if (disposed || container === null || !container.contains(table) || !isVisibleTable(table)) {
       return
     }
-
-    renderingTables.add(areastable)
-    let requestedObservationTime: number | null | undefined
+    if (renderingTables.has(table)) {
+      pendingTables.add(table)
+      return
+    }
+    renderingTables.add(table)
     try {
-      // JMAの表再生成時にも派生要素の選択UIを復元する。
-      // JMA側の地点別ビットマスクには触れない。
-      ensureEnhancedObservationSelector()
-
-      const observationTime = getAreastableObservationTime(observationTarget)
-      const observationTimeValue = observationTime?.getTime() ?? null
-      requestedObservationTime = observationTimeValue
+      const route = getJmaRoute().signature
+      const observationTime = getAreastableObservationTime(container)
+      const stationIds = getAreaStationIds(table)
+      const input = `${route}\u0000${observationTime?.getTime() ?? ''}\u0000${stationIds.join(',')}`
       if (
-        renderedObservationTimes.get(areastable) === observationTimeValue &&
-        hasCompleteDerivedColumns(areastable)
+        renderedInputs.get(table) === input &&
+        hasCompleteDerivedColumns(table, 'area', columnClasses)
       ) {
         return
       }
-
-      // 地点リンクは表示中のデータ表から取得する。地域変更時に古い表の地点を使わない。
-      const amdnos = Array.from(
-        areastable.querySelectorAll<HTMLAnchorElement>('.amd-areastable-a-pointlink'),
-      ).map(_getAmdnos)
-      const fetched = observationTime === null ? {} : await fetcher.fetchAmedasData(observationTime)
-
-      const currentObservationTime = getAreastableObservationTime(observationTarget)
+      const observations = observationTime === null ? {} : await client.fetchArea(observationTime)
       if (
-        !isCurrentTable(areastable) ||
-        (currentObservationTime?.getTime() ?? null) !== observationTimeValue
+        disposed ||
+        getTableContainer() !== container ||
+        !container.contains(table) ||
+        !isVisibleTable(table) ||
+        getJmaRoute().signature !== route ||
+        getAreastableObservationTime(container)?.getTime() !== observationTime?.getTime()
       ) {
         return
       }
-
-      // 同じDOM表で見出し時刻だけが更新された場合、以前の値を残さず再描画する。
-      for (const { className } of DERIVED_OBSERVATION_DEFINITIONS) {
-        for (const oldCell of areastable.querySelectorAll(`.${className}`)) {
-          oldCell.remove()
-        }
+      const currentStationIds = getAreaStationIds(table)
+      if (currentStationIds.join(',') !== stationIds.join(',')) {
+        return
       }
-
-      const columns = convertAmedasDataToAreastableColumns(amdnos, fetched)
+      const columns = convertAmedasDataToAreastableColumns(stationIds, observations)
+      renderDerivedColumns(table, 'area', columns)
       for (const column of columns) {
-        appendColumnToAreastable(areastable, column)
+        globalColorScaleManager.applyColorScaleToColumn(table, column.class)
       }
-      renderedObservationTimes.set(areastable, observationTimeValue)
-
-      // カラースケールを適用（全ての対象列）
-      for (const column of columns) {
-        globalColorScaleManager.applyColorScaleToColumn(areastable, column.class)
-      }
-
-      applyEnhancedObservationVisibility(areastable)
+      applyEnhancedObservationVisibility(table)
+      renderedInputs.set(table, input)
+    } catch (error) {
+      console.error('地域表の派生観測値を描画できませんでした:', error)
     } finally {
-      renderingTables.delete(areastable)
-      if (
-        isCurrentTable(areastable) &&
-        requestedObservationTime !== undefined &&
-        (getAreastableObservationTime(observationTarget)?.getTime() ?? null) !==
-          requestedObservationTime
-      ) {
-        void renderAreastable(areastable)
+      renderingTables.delete(table)
+      if (pendingTables.delete(table) && !disposed) {
+        void render(table)
       }
     }
   }
 
-  const observer = new MutationObserver(() => {
-    for (const table of observationTarget.querySelectorAll<HTMLTableElement>(
-      '.amd-areastable.amd-table-responsive',
-    )) {
-      void renderAreastable(table)
-    }
-  })
-  observer.observe(observationTarget, {
-    attributes: true,
-    childList: true,
-    subtree: true,
-    characterData: true,
-  })
-
-  // コンテナと表が一括挿入された場合、監視開始前の表も描画する。
-  for (const table of observationTarget.querySelectorAll<HTMLTableElement>(
-    '.amd-areastable.amd-table-responsive',
-  )) {
-    if (table.parentElement?.style.display !== 'none') {
-      void renderAreastable(table)
-    }
+  return {
+    refresh() {
+      if (disposed) {
+        return
+      }
+      ensureEnhancedObservationSelector()
+      for (const table of getTableContainer()?.querySelectorAll<HTMLTableElement>(
+        JMA_SELECTORS.areaDataTable,
+      ) ?? []) {
+        void render(table)
+      }
+    },
+    dispose() {
+      disposed = true
+    },
   }
 }

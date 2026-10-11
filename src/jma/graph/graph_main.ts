@@ -1,211 +1,185 @@
-import { AmedasFetcher } from '../amedas_point_fetcher'
 import {
   DERIVED_OBSERVATION_DEFINITIONS,
   type DerivedObservationKey,
   getDerivedObservationValue,
 } from '../derived_observations'
-import { getAmdnoFromUrl } from '../jma_urls'
-import { fetchLatestTime } from '../latest_amedas_date'
+import type { Feature } from '../feature'
+import { AmedasClient, fetchLatestTime } from '../integration/amedas_client'
+import { getGraphControlContainer, JMA_CLASSES, JMA_SELECTORS } from '../integration/dom'
+import { getJmaRoute, getStationId, isGraphFormat } from '../integration/route'
 import {
   type GraphDataPoint,
   renderEnhancedGraph,
   renderEnhancedGraphError,
 } from './graph_renderer'
 
-const GRAPH_CONTAINER_SELECTOR = '#amd-graph'
 const GRAPH_SELECTOR_ATTRIBUTE = 'data-enhanced-graph-key'
-const GRAPH_RADIO_BUTTON_SELECTOR = '.contents-radio-button'
-const GRAPH_OBSERVATION_BUTTON_SELECTOR =
-  `${GRAPH_RADIO_BUTTON_SELECTOR}[data-type]` +
-  ':not([data-type="table1h"]):not([data-type="table10min"]):not([data-type="graph"])'
 const TEN_MINUTES_MILLISECONDS = 10 * 60 * 1000
 
-let activeGraphKey: DerivedObservationKey | undefined
-let graphIsRendering = false
-let graphRenderVersion = 0
-let graphMainIsActive = false
-
-function isGraphFormat(): boolean {
-  return new URLSearchParams(window.location.hash.slice(1)).get('format') === 'graph'
-}
-
 function getGraphDates(end: Date): Date[] {
-  const roundedEnd = new Date(
-    Math.floor(end.getTime() / TEN_MINUTES_MILLISECONDS) * TEN_MINUTES_MILLISECONDS,
-  )
+  const roundedEnd = Math.floor(end.getTime() / TEN_MINUTES_MILLISECONDS) * TEN_MINUTES_MILLISECONDS
   const dates: Date[] = []
   for (let offset = 48 * 6; offset >= 0; offset--) {
-    dates.push(new Date(roundedEnd.getTime() - offset * TEN_MINUTES_MILLISECONDS))
+    dates.push(new Date(roundedEnd - offset * TEN_MINUTES_MILLISECONDS))
   }
   return dates
 }
 
-function synchronizeGraphButtons(container: HTMLElement): void {
-  container.querySelectorAll<HTMLElement>(GRAPH_RADIO_BUTTON_SELECTOR).forEach((button) => {
-    const key = button.getAttribute(GRAPH_SELECTOR_ATTRIBUTE)
-    if (key === null && activeGraphKey === undefined) {
-      // 派生グラフが未選択なら、JMA標準ボタンの選択状態を保持する。
+/** グラフの選択状態・イベント・非同期描画を一つの機能の寿命に閉じ込める。 */
+export function graph_main(): Feature {
+  let activeKey: DerivedObservationKey | undefined
+  let disposed = false
+  let rendering = false
+  let revision = 0
+  let lastRoute = getJmaRoute().signature
+  let lastContainer: HTMLElement | null = null
+
+  function synchronizeButtons(container: HTMLElement): void {
+    for (const button of container.querySelectorAll<HTMLElement>(JMA_SELECTORS.radioButton)) {
+      const key = button.getAttribute(GRAPH_SELECTOR_ATTRIBUTE)
+      if (key === null && activeKey === undefined) {
+        continue
+      }
+      button.classList.toggle(JMA_CLASSES.radioOn, key === activeKey)
+      button.classList.toggle(JMA_CLASSES.radioOff, key !== activeKey)
+    }
+  }
+
+  function ensureSelector(): void {
+    const controls = getGraphControlContainer()
+    if (controls === null) {
       return
     }
-    const selected = key === activeGraphKey
-    button.classList.toggle('contents-radio-button-on', selected)
-    button.classList.toggle('contents-radio-button-off', !selected)
-  })
-}
-
-function createGraphSelectorItem(container: HTMLElement, key: DerivedObservationKey): void {
-  const definition = DERIVED_OBSERVATION_DEFINITIONS.find((element) => element.key === key)
-  if (definition === undefined) {
-    return
-  }
-  const item = document.createElement('div')
-  item.classList.add(
-    'contents-radio-button',
-    'contents-radio-button-enabled',
-    'contents-radio-button-off',
-  )
-  item.setAttribute(GRAPH_SELECTOR_ATTRIBUTE, key)
-  item.title = definition.label
-  item.textContent = definition.label
-  item.addEventListener('click', () => {
-    activeGraphKey = key
-    graphRenderVersion++
-    document.querySelector(GRAPH_CONTAINER_SELECTOR)?.replaceChildren()
-    synchronizeGraphButtons(container)
-    void renderSelectedGraph()
-  })
-  container.append(item)
-}
-
-function getGraphControlContainer(): HTMLElement | null {
-  const graphControlRow = Array.from(document.querySelectorAll<HTMLTableRowElement>('tr')).find(
-    (row) => row.querySelector(GRAPH_OBSERVATION_BUTTON_SELECTOR) !== null,
-  )
-  return graphControlRow?.querySelector<HTMLElement>('td') ?? null
-}
-
-function ensureEnhancedGraphSelector(): void {
-  if (!isGraphFormat()) {
-    return
-  }
-  const container = getGraphControlContainer()
-  if (container === null) {
-    return
-  }
-  DERIVED_OBSERVATION_DEFINITIONS.forEach(({ key }) => {
-    if (container.querySelector(`[${GRAPH_SELECTOR_ATTRIBUTE}="${key}"]`) === null) {
-      createGraphSelectorItem(container, key)
+    for (const definition of DERIVED_OBSERVATION_DEFINITIONS) {
+      if (controls.querySelector(`[${GRAPH_SELECTOR_ATTRIBUTE}="${definition.key}"]`) !== null) {
+        continue
+      }
+      const button = document.createElement('div')
+      button.classList.add(JMA_CLASSES.radioButton, JMA_CLASSES.radioEnabled, JMA_CLASSES.radioOff)
+      button.setAttribute(GRAPH_SELECTOR_ATTRIBUTE, definition.key)
+      button.title = definition.label
+      button.textContent = definition.label
+      controls.append(button)
     }
-  })
-  synchronizeGraphButtons(container)
-}
+    synchronizeButtons(controls)
+  }
 
-async function renderSelectedGraph(): Promise<void> {
-  const key = activeGraphKey
-  const container = document.querySelector<HTMLElement>(GRAPH_CONTAINER_SELECTOR)
-  if (!graphMainIsActive || key === undefined || container === null || graphIsRendering) {
-    return
-  }
-  if (container.querySelector('#enhanced-amd-graph, #enhanced-amd-graph-error') !== null) {
-    return
-  }
-  graphIsRendering = true
-  const renderVersion = graphRenderVersion
-  const renderHash = location.hash
-  try {
-    const [latestTime, code] = await Promise.all([
-      fetchLatestTime(),
-      Promise.resolve(getAmdnoFromUrl(location.href)),
-    ])
-    const dates = getGraphDates(latestTime)
-    const data = await new AmedasFetcher().fetchAmedasDataRange(code, dates)
+  async function renderSelectedGraph(): Promise<void> {
+    const key = activeKey
+    const container = document.querySelector<HTMLElement>(JMA_SELECTORS.graphContainer)
     if (
-      !graphMainIsActive ||
-      activeGraphKey !== key ||
-      graphRenderVersion !== renderVersion ||
-      location.hash !== renderHash ||
-      !isGraphFormat()
+      disposed ||
+      key === undefined ||
+      container === null ||
+      !isGraphFormat() ||
+      rendering ||
+      container.querySelector('#enhanced-amd-graph, #enhanced-amd-graph-error') !== null
     ) {
       return
     }
-    const definition = DERIVED_OBSERVATION_DEFINITIONS.find((element) => element.key === key)
-    const target = document.querySelector<HTMLElement>(GRAPH_CONTAINER_SELECTOR)
-    if (definition === undefined || target === null) {
-      return
-    }
-    const points: GraphDataPoint[] = data.map((point) => ({
-      date: point.date,
-      value: getDerivedObservationValue(point, definition),
-    }))
-    renderEnhancedGraph(target, definition.label, definition.unit, points)
-  } catch (error) {
-    console.error('派生観測要素のグラフ生成中にエラーが発生しました:', error)
-    if (
-      graphMainIsActive &&
-      activeGraphKey === key &&
-      graphRenderVersion === renderVersion &&
-      location.hash === renderHash &&
+    rendering = true
+    const renderRevision = revision
+    const route = getJmaRoute()
+    const isCurrentRequest = () =>
+      !disposed &&
+      activeKey === key &&
+      revision === renderRevision &&
+      getJmaRoute().signature === route.signature &&
+      document.querySelector(JMA_SELECTORS.graphContainer) === container &&
+      container.isConnected &&
       isGraphFormat()
-    ) {
-      const target = document.querySelector<HTMLElement>(GRAPH_CONTAINER_SELECTOR)
-      if (target !== null) {
-        renderEnhancedGraphError(target)
+    try {
+      const stationId = getStationId()
+      if (route.historical && route.observationTime === null) {
+        throw new Error('指定された過去日時を読み取れません。')
+      }
+      const end = route.observationTime ?? (await fetchLatestTime())
+      if (!isCurrentRequest()) {
+        return
+      }
+      const observations = await new AmedasClient().fetchPointRange(stationId, getGraphDates(end))
+      if (!isCurrentRequest()) {
+        return
+      }
+      const definition = DERIVED_OBSERVATION_DEFINITIONS.find((element) => element.key === key)
+      if (definition === undefined) {
+        return
+      }
+      const points: GraphDataPoint[] = observations.map((observation) => ({
+        date: observation.date,
+        value: getDerivedObservationValue(observation, definition),
+      }))
+      renderEnhancedGraph(container, definition.label, definition.unit, points)
+    } catch (error) {
+      console.error('派生観測要素のグラフ生成中にエラーが発生しました:', error)
+      if (isCurrentRequest()) {
+        renderEnhancedGraphError(container)
+      }
+    } finally {
+      rendering = false
+      if (
+        !disposed &&
+        activeKey !== undefined &&
+        isGraphFormat() &&
+        (revision !== renderRevision || getJmaRoute().signature !== route.signature)
+      ) {
+        void renderSelectedGraph()
       }
     }
-  } finally {
-    graphIsRendering = false
-    if (
-      graphMainIsActive &&
-      activeGraphKey !== undefined &&
-      isGraphFormat() &&
-      (activeGraphKey !== key ||
-        graphRenderVersion !== renderVersion ||
-        location.hash !== renderHash) &&
-      document.querySelector(GRAPH_CONTAINER_SELECTOR)?.querySelector('#enhanced-amd-graph') ===
-        null
-    ) {
-      void renderSelectedGraph()
-    }
   }
-}
 
-function handleOriginalGraphElement(event: Event): void {
-  const target = event.target
-  const container = getGraphControlContainer()
-  if (
-    !(target instanceof HTMLElement) ||
-    !target.classList.contains('contents-radio-button') ||
-    target.hasAttribute(GRAPH_SELECTOR_ATTRIBUTE) ||
-    container === null ||
-    !container.contains(target)
-  ) {
-    return
-  }
-  activeGraphKey = undefined
-  graphRenderVersion++
-  synchronizeGraphButtons(container)
-}
-
-/** グラフ表示時の観測要素リストと派生値グラフを管理する。 */
-export function graph_main(): () => void {
-  // 観測要素リストは #amd-table の外にあり、JMAの描画後に生成される。
-  // body全体を監視し、表示形式を切り替えた後にも選択肢を追加する。
-  graphMainIsActive = true
-  document.addEventListener('click', handleOriginalGraphElement, true)
-  const observer = new MutationObserver(() => {
-    if (!isGraphFormat()) {
+  function handleSelection(event: Event): void {
+    if (disposed || !(event.target instanceof Element)) {
       return
     }
-    ensureEnhancedGraphSelector()
+    const button = event.target.closest<HTMLElement>(JMA_SELECTORS.radioButton)
+    const controls = getGraphControlContainer()
+    if (button === null || controls === null || !controls.contains(button)) {
+      return
+    }
+    const key = button.getAttribute(GRAPH_SELECTOR_ATTRIBUTE)
+    const definition = DERIVED_OBSERVATION_DEFINITIONS.find((element) => element.key === key)
+    activeKey = definition?.key
+    revision += 1
+    if (activeKey !== undefined) {
+      document.querySelector(JMA_SELECTORS.graphContainer)?.replaceChildren()
+    }
+    synchronizeButtons(controls)
     void renderSelectedGraph()
-  })
-  observer.observe(document.body, { childList: true, subtree: true })
-  ensureEnhancedGraphSelector()
-  return () => {
-    graphMainIsActive = false
-    activeGraphKey = undefined
-    graphRenderVersion++
-    observer.disconnect()
-    document.removeEventListener('click', handleOriginalGraphElement, true)
+  }
+
+  document.addEventListener('click', handleSelection, true)
+  return {
+    refresh() {
+      if (disposed) {
+        return
+      }
+      const route = getJmaRoute().signature
+      const container = document.querySelector<HTMLElement>(JMA_SELECTORS.graphContainer)
+      if (route !== lastRoute || container !== lastContainer) {
+        lastRoute = route
+        lastContainer = container
+        revision += 1
+        if (container?.querySelector('#enhanced-amd-graph, #enhanced-amd-graph-error')) {
+          container.replaceChildren()
+        }
+      }
+      if (isGraphFormat()) {
+        ensureSelector()
+        void renderSelectedGraph()
+      }
+    },
+    dispose() {
+      disposed = true
+      revision += 1
+      document.removeEventListener('click', handleSelection, true)
+      const container = document.querySelector(JMA_SELECTORS.graphContainer)
+      if (container?.querySelector('#enhanced-amd-graph, #enhanced-amd-graph-error')) {
+        container.replaceChildren()
+      }
+      for (const button of document.querySelectorAll(`[${GRAPH_SELECTOR_ATTRIBUTE}]`)) {
+        button.remove()
+      }
+    },
   }
 }

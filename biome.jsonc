@@ -1,7 +1,14 @@
 {
   "$schema": "https://biomejs.dev/schemas/2.5.5/schema.json",
   "files": {
-    "includes": ["**/src/**", "!**/src/**/testcases", "**/tests/**", "scripts/**", "dist/**"]
+    "includes": [
+      "**/src/**",
+      "!**/src/**/testcases",
+      "**/tests/**",
+      "scripts/**",
+      "dist/**",
+      "vite.config.mts"
+    ]
   },
   "vcs": {
     "enabled": true,

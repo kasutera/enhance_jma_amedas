@@ -1,9 +1,11 @@
-import { getAreastableObservationTime } from './areastable/observation_time'
-import { latestTimeUrl } from './jma_urls'
+import type { Feature } from './feature'
+import { fetchLatestTime } from './integration/amedas_client'
+import { getAreastableObservationTime } from './integration/area_observation_time'
+import { getTableRefreshRoute, reloadJmaPage, type TableRefreshRoute } from './integration/route'
 import {
   getSeriestableObservationTime,
   hasSeriestableObservationTime,
-} from './seriestable/observation_time'
+} from './integration/series_observation_time'
 
 const CHECK_INTERVAL_MILLISECONDS = 2 * 60 * 1000
 
@@ -12,83 +14,10 @@ interface TableAutoRefreshOptions {
   reload?: () => void
 }
 
-interface TableRefreshRoute {
-  kind: 'area' | 'series-hourly' | 'series-ten-minute'
-  signature: string
-}
-
 interface CheckRequest {
   route: TableRefreshRoute
   routeRevision: number
   latestTime?: Date
-}
-
-let activeStop: (() => void) | undefined
-
-function getTableRoute(): TableRefreshRoute | null {
-  const parameters = new URLSearchParams(window.location.hash.replace(/^#/, ''))
-  const queryParameters = new URLSearchParams(window.location.search.replace(/^\?/, ''))
-  const format = parameters.get('format')
-  if (
-    parameters.has('datetime') ||
-    queryParameters.has('datetime') ||
-    (format !== null && format !== 'table1h' && format !== 'table10min')
-  ) {
-    return null
-  }
-  const amdno = parameters.get('amdno')
-  if (amdno !== null) {
-    if (amdno === '') {
-      return null
-    }
-    return {
-      kind: format === 'table10min' ? 'series-ten-minute' : 'series-hourly',
-      signature: `series\u0000${amdno}\u0000${format ?? 'table1h'}`,
-    }
-  }
-  const areaType = parameters.get('area_type')
-  const areaCode = parameters.get('area_code')
-  return areaType === null || areaCode === null
-    ? null
-    : { kind: 'area', signature: `area\u0000${areaType}\u0000${areaCode}` }
-}
-
-function parseLatestTime(text: string): Date | null {
-  const value = text.trim()
-  const matched = value.match(
-    /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:Z|[+-]\d{2}:\d{2})$/,
-  )
-  if (matched === null) {
-    return null
-  }
-  const [, year, month, day, hour, minute, second] = matched
-  if (
-    year === undefined ||
-    month === undefined ||
-    day === undefined ||
-    hour === undefined ||
-    minute === undefined ||
-    second === undefined
-  ) {
-    return null
-  }
-  const yearNumber = Number(year)
-  const monthNumber = Number(month)
-  const dayNumber = Number(day)
-  if (
-    monthNumber < 1 ||
-    monthNumber > 12 ||
-    dayNumber < 1 ||
-    dayNumber > new Date(Date.UTC(yearNumber, monthNumber, 0)).getUTCDate() ||
-    Number(hour) > 23 ||
-    Number(minute) > 59 ||
-    Number(minute) % 10 !== 0 ||
-    Number(second) !== 0
-  ) {
-    return null
-  }
-  const date = new Date(value)
-  return Number.isFinite(date.getTime()) ? date : null
 }
 
 function canReadObservationTime(route: TableRefreshRoute, latestTime?: Date): boolean {
@@ -101,20 +30,18 @@ function canReadObservationTime(route: TableRefreshRoute, latestTime?: Date): bo
 }
 
 /** 地域表・時系列表に新しい観測行が公開されていればページを再読み込みする。 */
-export function initializeTableAutoRefresh(options?: TableAutoRefreshOptions): () => void {
-  activeStop?.()
-
+export function initializeTableAutoRefresh(options?: TableAutoRefreshOptions): Feature {
   let stopped = false
   let reloading = false
-  let lastRouteSignature = getTableRoute()?.signature ?? null
+  let lastRouteSignature = getTableRefreshRoute()?.signature ?? null
   let routeRevision = 0
   let activeRequest: CheckRequest | null = null
   let pendingRequest: CheckRequest | null = null
   let deferredRequest: CheckRequest | null = null
-  const reload = options?.reload ?? (() => window.location.reload())
+  const reload = options?.reload ?? reloadJmaPage
 
   function isCurrentRequest(request: CheckRequest): boolean {
-    const currentRoute = getTableRoute()
+    const currentRoute = getTableRefreshRoute()
     return (
       !stopped &&
       !reloading &&
@@ -132,17 +59,8 @@ export function initializeTableAutoRefresh(options?: TableAutoRefreshOptions): (
     activeRequest = request
     void (async () => {
       try {
-        const response = await fetch(latestTimeUrl)
-        if (!response.ok) {
-          console.warn('表の最新時刻を取得できませんでした。', response.status)
-          return
-        }
-        const text = await response.text()
+        const latestTime = await fetchLatestTime()
         if (!isCurrentRequest(request)) {
-          return
-        }
-        const latestTime = parseLatestTime(text)
-        if (latestTime === null) {
           return
         }
         const displayedTime =
@@ -188,7 +106,7 @@ export function initializeTableAutoRefresh(options?: TableAutoRefreshOptions): (
   }
 
   function requestCheck(): void {
-    const route = getTableRoute()
+    const route = getTableRefreshRoute()
     if (route === null || stopped || reloading || document.hidden) {
       pendingRequest = null
       deferredRequest = null
@@ -234,7 +152,7 @@ export function initializeTableAutoRefresh(options?: TableAutoRefreshOptions): (
   }
 
   function synchronizeRoute(): void {
-    const nextRouteSignature = getTableRoute()?.signature ?? null
+    const nextRouteSignature = getTableRefreshRoute()?.signature ?? null
     if (nextRouteSignature === lastRouteSignature) {
       return
     }
@@ -262,21 +180,7 @@ export function initializeTableAutoRefresh(options?: TableAutoRefreshOptions): (
     requestCheck()
   }, CHECK_INTERVAL_MILLISECONDS)
 
-  window.addEventListener('hashchange', handleHashChange)
-  window.addEventListener('popstate', handleHashChange)
   document.addEventListener('visibilitychange', handleVisibilityChange)
-  const observer = new MutationObserver(() => {
-    synchronizeRoute()
-    resumeDeferredRequest()
-  })
-  const observationRoot = document.documentElement
-  if (observationRoot !== null) {
-    observer.observe(observationRoot, {
-      childList: true,
-      subtree: true,
-      characterData: true,
-    })
-  }
   requestCheck()
 
   const stop = () => {
@@ -285,16 +189,9 @@ export function initializeTableAutoRefresh(options?: TableAutoRefreshOptions): (
     }
     stopped = true
     window.clearInterval(interval)
-    window.removeEventListener('hashchange', handleHashChange)
-    window.removeEventListener('popstate', handleHashChange)
     document.removeEventListener('visibilitychange', handleVisibilityChange)
-    observer.disconnect()
     pendingRequest = null
     deferredRequest = null
-    if (activeStop === stop) {
-      activeStop = undefined
-    }
   }
-  activeStop = stop
-  return stop
+  return { refresh: handleHashChange, dispose: stop }
 }

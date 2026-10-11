@@ -1,12 +1,12 @@
 import {
   type DerivedObservationColumns,
+  type ObservationInput,
   toDerivedObservationColumns,
 } from '../derived_observations'
-import type { AmedasData } from './jma_amedas_fetcher'
 
 /** 時系列の行順で派生観測値の3列を生成する。 */
 export function convertAmedasDataToSeriestableColumns(
-  amedasDatas: readonly AmedasData[],
+  observations: readonly ObservationInput[],
 ): DerivedObservationColumns {
-  return toDerivedObservationColumns(amedasDatas)
+  return toDerivedObservationColumns(observations)
 }
