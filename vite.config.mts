@@ -2,9 +2,10 @@ import { defineConfig } from 'vite'
 import monkey from 'vite-plugin-monkey'
 import manifest from './src/jma/manifest.json' with { type: 'json' }
 
-export default defineConfig(({ command }) => {
+export default defineConfig(({ command, mode }) => {
+  const development = mode === 'development'
   const version = process.env.VERSION
-  if (command === 'build' && !version) {
+  if (command === 'build' && !development && !version) {
     throw new Error(
       'VERSION is required for building userscript. Run: VERSION=YYYYMMDD npm run build',
     )
@@ -15,13 +16,9 @@ export default defineConfig(({ command }) => {
   }
 
   return {
-    server: {
-      host: '127.0.0.1',
-      port: 5173,
-      strictPort: true,
-    },
     build: {
       target: 'es2022',
+      outDir: development ? '.dev' : 'dist',
       minify: false,
     },
     plugins: [
@@ -29,16 +26,13 @@ export default defineConfig(({ command }) => {
         entry: 'src/jma/main.ts',
         userscript: {
           ...manifest,
+          name: development ? `[dev] ${manifest.name}` : manifest.name,
           grant,
-          version: version ?? '0.0.0',
-          ...(command === 'serve' ? { updateURL: undefined, downloadURL: undefined } : {}),
-        },
-        server: {
-          open: false,
-          prefix: (name) => `[dev] ${name}`,
+          version: development ? '0.0.0' : (version ?? '0.0.0'),
+          ...(development ? { updateURL: undefined, downloadURL: undefined } : {}),
         },
         build: {
-          fileName: 'jma.user.js',
+          fileName: development ? 'jma.dev.user.js' : 'jma.user.js',
           autoGrant: false,
         },
       }),
