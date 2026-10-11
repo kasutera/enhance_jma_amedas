@@ -1,30 +1,24 @@
-import type { AmedasData, Ameid } from './jma_amedas_fetcher'
+import type { ObservationInput } from '../derived_observations'
 import { convertAmedasDataToAreastableColumns } from './presentation'
 
-describe('地域表の派生観測列', () => {
-  const testDate = new Date('2024-01-01T12:00:00Z')
+type PresentationObservation = ObservationInput
 
+describe('地域表の派生観測列', () => {
   describe('正常なデータでの処理', () => {
     test('不快指数列の値が正しく計算されることを確認', () => {
-      const amdnos: Ameid[] = ['44132', '44207', '44208']
-      const amedasDatas: Record<Ameid, AmedasData> = {
+      const amdnos: string[] = ['44132', '44207', '44208']
+      const amedasDatas: Record<string, PresentationObservation> = {
         '44132': {
           temperature: 25.0,
           humidity: 60.0,
-          pressure: 1013.25,
-          date: testDate,
         },
         '44207': {
           temperature: 30.0,
           humidity: 80.0,
-          pressure: 1000.0,
-          date: testDate,
         },
         '44208': {
           temperature: 15.0,
           humidity: 40.0,
-          pressure: 1013.25,
-          date: testDate,
         },
       }
 
@@ -42,10 +36,10 @@ describe('地域表の派生観測列', () => {
     })
 
     test('欠損地点の位置を残し、登録順ではなく表示地点順に並べる', () => {
-      const amedasDatas: Record<Ameid, AmedasData> = {
-        '44132': { date: testDate, temperature: 20, humidity: 57 },
-        '44208': { date: testDate, temperature: 0, humidity: 50 },
-        '44207': { date: testDate, temperature: -5, humidity: 70 },
+      const amedasDatas: Record<string, PresentationObservation> = {
+        '44132': { temperature: 20, humidity: 57 },
+        '44208': { temperature: 0, humidity: 50 },
+        '44207': { temperature: -5, humidity: 70 },
       }
       const columns = convertAmedasDataToAreastableColumns(
         ['44207', 'missing', '44208', '44132'],
@@ -62,13 +56,11 @@ describe('地域表の派生観測列', () => {
 
   describe('欠損データでの処理', () => {
     test('気温欠損時の"---"表示テスト', () => {
-      const amdnos: Ameid[] = ['44132', '44207']
-      const amedasDatas: Record<Ameid, AmedasData> = {
+      const amdnos: string[] = ['44132', '44207']
+      const amedasDatas: Record<string, PresentationObservation> = {
         '44132': {
           temperature: 25.0,
           humidity: 60.0,
-          pressure: 1013.25,
-          date: testDate,
         },
         // 44207は気温が欠損（temperatureプロパティなし）
       }
@@ -78,9 +70,7 @@ describe('地域表の派生観測列', () => {
         ...amedasDatas,
         '44207': {
           humidity: 80.0,
-          pressure: 1000.0,
-          date: testDate,
-        } as any, // temperatureが欠損
+        }, // temperatureが欠損
       }
 
       const result = convertAmedasDataToAreastableColumns(amdnos, amedasDataWithMissingTemp)
@@ -95,13 +85,11 @@ describe('地域表の派生観測列', () => {
     })
 
     test('湿度欠損時の"---"表示テスト', () => {
-      const amdnos: Ameid[] = ['44132', '44207']
-      const amedasDatas: Record<Ameid, AmedasData> = {
+      const amdnos: string[] = ['44132', '44207']
+      const amedasDatas: Record<string, PresentationObservation> = {
         '44132': {
           temperature: 25.0,
           humidity: 60.0,
-          pressure: 1013.25,
-          date: testDate,
         },
         // 44207は湿度が欠損
       }
@@ -110,9 +98,7 @@ describe('地域表の派生観測列', () => {
         ...amedasDatas,
         '44207': {
           temperature: 30.0,
-          pressure: 1000.0,
-          date: testDate,
-        } as any, // humidityが欠損
+        }, // humidityが欠損
       }
 
       const result = convertAmedasDataToAreastableColumns(amdnos, amedasDataWithMissingHumidity)
@@ -127,13 +113,11 @@ describe('地域表の派生観測列', () => {
     })
 
     test('観測所データ自体が欠損時の"---"表示テスト', () => {
-      const amdnos: Ameid[] = ['44132', '44207']
-      const amedasDatas: Record<Ameid, AmedasData> = {
+      const amdnos: string[] = ['44132', '44207']
+      const amedasDatas: Record<string, PresentationObservation> = {
         '44132': {
           temperature: 25.0,
           humidity: 60.0,
-          pressure: 1013.25,
-          date: testDate,
         },
         // 44207のデータが完全に欠損（undefinedになる）
       }
@@ -152,19 +136,15 @@ describe('地域表の派生観測列', () => {
 
   describe('負の値での処理', () => {
     test('負の気温での正常計算テスト', () => {
-      const amdnos: Ameid[] = ['44132', '44207']
-      const amedasDatas: Record<Ameid, AmedasData> = {
+      const amdnos: string[] = ['44132', '44207']
+      const amedasDatas: Record<string, PresentationObservation> = {
         '44132': {
           temperature: -5.0,
           humidity: 70.0,
-          pressure: 1013.25,
-          date: testDate,
         },
         '44207': {
           temperature: -10.0,
           humidity: 80.0,
-          pressure: 1000.0,
-          date: testDate,
         },
       }
 
@@ -180,13 +160,11 @@ describe('地域表の派生観測列', () => {
 
   describe('小数点精度の確認', () => {
     test('小数点以下1桁での表示確認', () => {
-      const amdnos: Ameid[] = ['44132']
-      const amedasDatas: Record<Ameid, AmedasData> = {
+      const amdnos: string[] = ['44132']
+      const amedasDatas: Record<string, PresentationObservation> = {
         '44132': {
           temperature: 23.7,
           humidity: 65.3,
-          pressure: 1013.25,
-          date: testDate,
         },
       }
 

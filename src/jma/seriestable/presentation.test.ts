@@ -1,29 +1,23 @@
-import type { AmedasData } from './jma_amedas_fetcher'
+import type { ObservationInput } from '../derived_observations'
 import { convertAmedasDataToSeriestableColumns } from './presentation'
 
-describe('時系列表の派生観測列', () => {
-  const testDate = new Date('2024-01-01T12:00:00Z')
+type PresentationObservation = ObservationInput
 
+describe('時系列表の派生観測列', () => {
   describe('正常なデータでの処理', () => {
     test('不快指数行の値が正しく計算されることを確認', () => {
-      const amedasDatas: AmedasData[] = [
+      const amedasDatas: PresentationObservation[] = [
         {
           temperature: 25.0,
           humidity: 60.0,
-          pressure: 1013.25,
-          date: testDate,
         },
         {
           temperature: 30.0,
           humidity: 80.0,
-          pressure: 1000.0,
-          date: testDate,
         },
         {
           temperature: 15.0,
           humidity: 40.0,
-          pressure: 1013.25,
-          date: testDate,
         },
       ]
 
@@ -43,19 +37,15 @@ describe('時系列表の派生観測列', () => {
 
   describe('欠損データでの処理', () => {
     test('気温欠損時の"---"表示テスト', () => {
-      const amedasDatas: AmedasData[] = [
+      const amedasDatas: PresentationObservation[] = [
         {
           temperature: 25.0,
           humidity: 60.0,
-          pressure: 1013.25,
-          date: testDate,
         },
         {
           // temperatureが欠損
           humidity: 80.0,
-          pressure: 1000.0,
-          date: testDate,
-        } as any,
+        },
       ]
 
       const result = convertAmedasDataToSeriestableColumns(amedasDatas)
@@ -70,19 +60,15 @@ describe('時系列表の派生観測列', () => {
     })
 
     test('湿度欠損時の"---"表示テスト', () => {
-      const amedasDatas: AmedasData[] = [
+      const amedasDatas: PresentationObservation[] = [
         {
           temperature: 25.0,
           humidity: 60.0,
-          pressure: 1013.25,
-          date: testDate,
         },
         {
           temperature: 30.0,
           // humidityが欠損
-          pressure: 1000.0,
-          date: testDate,
-        } as any,
+        },
       ]
 
       const result = convertAmedasDataToSeriestableColumns(amedasDatas)
@@ -99,18 +85,14 @@ describe('時系列表の派生観測列', () => {
 
   describe('負の値での処理', () => {
     test('負の気温での正常計算テスト', () => {
-      const amedasDatas: AmedasData[] = [
+      const amedasDatas: PresentationObservation[] = [
         {
           temperature: -5.0,
           humidity: 70.0,
-          pressure: 1013.25,
-          date: testDate,
         },
         {
           temperature: -10.0,
           humidity: 80.0,
-          pressure: 1000.0,
-          date: testDate,
         },
       ]
 
@@ -126,12 +108,10 @@ describe('時系列表の派生観測列', () => {
 
   describe('小数点精度の確認', () => {
     test('小数点以下1桁での表示確認', () => {
-      const amedasDatas: AmedasData[] = [
+      const amedasDatas: PresentationObservation[] = [
         {
           temperature: 23.7,
           humidity: 65.3,
-          pressure: 1013.25,
-          date: testDate,
         },
       ]
 

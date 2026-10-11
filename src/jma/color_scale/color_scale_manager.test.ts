@@ -2,7 +2,7 @@
  * ColorScaleManager のテスト
  */
 
-import { TABLE_CLASS_NAMES } from '../table_classes_definition'
+import { TABLE_CLASS_NAMES } from '../integration/column_classes'
 import { ColorScaleManager, calculateTextColor, parseColorToRGB } from './color_scale_manager'
 
 describe('ColorScaleManager', () => {

@@ -1,7 +1,9 @@
 import type { Config } from 'jest'
 
 const config: Config = {
-  preset: 'ts-jest',
+  transform: {
+    '^.+\\.tsx?$': ['ts-jest', { tsconfig: 'tsconfig.test.json' }],
+  },
   testEnvironment: 'jsdom',
   collectCoverage: true,
   collectCoverageFrom: [

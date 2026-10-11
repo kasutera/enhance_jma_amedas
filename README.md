@@ -74,6 +74,51 @@ $$DI = 0.81 \times T + 0.01 \times RH \times (0.99 \times T - 14.3) + 46.3$$
 
 ## 開発
 
+### 技術構成とローカル開発
+
+- TypeScript（strict）と Vite + vite-plugin-monkey を使用し、UIは標準DOM APIとSVGで描画します。
+- ビルド設定は `vite.config.mts`、ユーザースクリプトのメタデータは `src/jma/manifest.json` で管理します。
+- Jest + jsdomによる既存の計算・DOMテストを継続します。
+
+```bash
+npm ci
+npm run dev
+```
+
+開発用HTTPサーバーは `http://127.0.0.1:5173/` で起動します。このURLをTampermonkey／Violentmonkeyのあるブラウザで開くと、本体入りの `.user.js` へ直接転送されます。マネージャーの確認画面で `[dev] Enhance JMA Amedas` をインストールしてください。本番版は無効にし、開発版だけを有効にします。Chromium系のマネージャーでは、拡張機能の「ユーザースクリプトを許可する」設定も必要です。
+
+開発版は本番と同じエントリーポイントからビルドした、機能本体を含む単一の `.user.js` です。生成先は `.dev/jma.dev.user.js` で、本番の `dist/` は上書きしません。JMAページからローカルのESモジュールを読み込まないため、CSPの解除は不要です。インストール後はローカルサーバーを停止しても実行できます。
+
+ソースを保存すると自動で再ビルドします。ただし、マネージャーにインストール済みのコピーは置き換わりません。同じURLを再度開いて再インストール・保存し、JMAページを再読み込みしてください。開発版のバージョンは `0.0.0` 固定で、本番の更新URLは付与しません。HMRや自動更新ではなく、明示的に内容を上書きする運用です。
+
+従来のVite開発ローダーを使っていた場合は、起動中の旧サーバーを `Ctrl+C` で停止してから `npm run dev` を起動し、開発版を再インストールしてください。5173番ポートを別の用途で使用中なら、例えば `PORT=5183 npm run dev` で起動できます。
+
+```bash
+# 本番形式の単一ファイルを生成（VERSIONは必須）
+VERSION=20261011 npm run build
+
+# 型チェック、静的チェック、既存テスト
+npm run typecheck
+npm run ci
+npm test
+```
+
+出力は `dist/jma.user.js` です。外部CDNや開発サーバーを必要としないIIFE形式で、既存の配布URLと `@grant none` を維持します。`npm run build` は型チェック後に出力ディレクトリを更新します。開発サーバー起動時はVERSIONの指定は不要です。
+
+### アーキテクチャの境界
+
+| 層 | 主なファイル | 責務 |
+| --- | --- | --- |
+| 純粋計算 | `math.ts`、`color_scale/color_scale_calculator.ts` | 気象計算と公式カラースケールの補間。HTTP・DOMに依存しません。 |
+| 観測モデル | `observation.ts` | 観測所ID、実時刻の`Date`、気温・湿度・気圧、品質情報、単位を共有します。欠測値は`undefined`で保持します。 |
+| JMAアダプター | `integration/` | HTTP/JSONの検証・変換、URL、画面判定、DOMセレクター、JSTの観測時刻解析、表の描画を集約します。 |
+| 機能 | 各機能の`*_main.ts`、`auto_refresh.ts`、`enhanced_observation_selector.ts` | アダプターと共有モデルを使い、派生列・SVGグラフ・操作UI・自動更新を提供します。 |
+| ライフサイクル | `application.ts`、`feature.ts` | 各機能を`refresh()` / `dispose()`で管理し、画面遷移とDOM再生成への追従・解除を統一します。 |
+
+`application.ts`だけがDOM監視と`hashchange` / `popstate`の監視を所有します。更新をマイクロタスクでまとめ、機能ごとの独立したDOM監視は行いません。解除時には機能のイベント、タイマー、追加した操作UIも取り除きます。
+
+表・グラフは通信完了時に現在のルートと対象DOMを確認します。地点変更、表の交換、機能解除前に開始した通信の古い結果を、新しい画面へ反映しません。地域表は見出しの観測時刻、時系列表・グラフは過去日時または最新公開時刻を基準にし、実行環境のタイムゾーンに依存しないJSTの実時刻でデータを取得します。
+
 ### 計算処理
 
 - [`src/jma/math.ts`](src/jma/math.ts) の純粋関数で、気温と相対湿度から派生値を計算します。これらの計算に気圧は使用しません。
