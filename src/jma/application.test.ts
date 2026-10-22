@@ -155,6 +155,77 @@ describe('表コンテナ内の既存表の初期描画', () => {
     },
   )
 
+  it('表外の無関係なスタイル・テキスト変更では更新せずhashchangeでは更新する', async () => {
+    const unrelated = document.createElement('div')
+    const unrelatedText = document.createTextNode('変更前')
+    unrelated.append(unrelatedText)
+    document.body.append(unrelated)
+    document.body.insertAdjacentHTML('beforeend', `<div id="amd-table">${tables}</div>`)
+    stopApplication = initializeApplication()
+    await jest.runAllTimersAsync()
+
+    const dewPoint = document.querySelector<HTMLElement>('.amd-table-tr-onthedot td.td-dew-point')
+    if (dewPoint === null) {
+      throw new Error('時系列表の露点温度セルがありません')
+    }
+    expect(dewPoint.textContent).toBe('9.3')
+    mockPointRange.mockImplementationOnce((_stationId: string, dates: Date[]) =>
+      dates.map((date) => ({ temperature: 30, humidity: 80, date })),
+    )
+    window.history.pushState({}, '', '#amdno=47772')
+    document.body.append(document.createElement('div'))
+    unrelated.style.color = 'red'
+    unrelatedText.data = '変更後'
+    await jest.runAllTimersAsync()
+    expect(document.querySelector('.amd-table-tr-onthedot td.td-dew-point')?.textContent).toBe(
+      '9.3',
+    )
+
+    window.dispatchEvent(new Event('hashchange'))
+    await jest.runAllTimersAsync()
+    expect(document.querySelector('.amd-table-tr-onthedot td.td-dew-point')?.textContent).toBe(
+      '26.2',
+    )
+  })
+
+  it('挿入・置換されたwrapper内の表と祖先の表示変更を反映する', async () => {
+    stopApplication = initializeApplication()
+    await jest.runAllTimersAsync()
+
+    const firstWrapper = document.createElement('div')
+    firstWrapper.innerHTML = `<div id="amd-table">${tables}</div>`
+    document.body.append(firstWrapper)
+    await jest.runAllTimersAsync()
+    expectEnhancedTables(firstWrapper)
+
+    const replacementWrapper = document.createElement('div')
+    replacementWrapper.innerHTML = `<div id="amd-table">${tables}</div>`
+    firstWrapper.replaceWith(replacementWrapper)
+    await jest.runAllTimersAsync()
+    expectEnhancedTables(replacementWrapper)
+
+    const scroll = replacementWrapper.querySelector<HTMLElement>('.contents-wide-table-scroll')
+    const dewPoint = replacementWrapper.querySelector<HTMLElement>(
+      '.amd-table-tr-onthedot td.td-dew-point',
+    )
+    if (scroll === null || dewPoint === null) {
+      throw new Error('表のスクロール領域または露点温度セルがありません')
+    }
+    mockPointRange.mockImplementationOnce((_stationId: string, dates: Date[]) =>
+      dates.map((date) => ({ temperature: 30, humidity: 80, date })),
+    )
+    window.history.pushState({}, '', '#amdno=47772')
+    scroll.style.display = 'none'
+    await jest.runAllTimersAsync()
+    expect(dewPoint.textContent).toBe('9.3')
+
+    scroll.style.display = ''
+    await jest.runAllTimersAsync()
+    expect(
+      replacementWrapper.querySelector('.amd-table-tr-onthedot td.td-dew-point')?.textContent,
+    ).toBe('26.2')
+  })
+
   it('見出しを残して地点行を再生成した同じ地域表にも派生列を復元する', async () => {
     document.body.innerHTML = `<div id="amd-table">${tables}</div>`
     stopApplication = initializeApplication()

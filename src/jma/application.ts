@@ -4,6 +4,7 @@ import { initializeEnhancedObservationSelector } from './enhanced_observation_se
 import { favorite_navigation_main } from './favorite_navigation/favorite_navigation_main'
 import type { Feature } from './feature'
 import { graph_main } from './graph/graph_main'
+import { hasRelevantJmaMutation } from './integration/dom'
 import { seriestable_main } from './seriestable/seriestable_main'
 
 /** DOM監視と画面遷移の購読はここだけで所有し、全機能を一括して解除する。 */
@@ -48,7 +49,11 @@ export function initializeApplication(): () => void {
     }
   }
 
-  const observer = new MutationObserver(scheduleRefresh)
+  const observer = new MutationObserver((records) => {
+    if (hasRelevantJmaMutation(records)) {
+      scheduleRefresh()
+    }
+  })
   observer.observe(document.documentElement, {
     childList: true,
     subtree: true,

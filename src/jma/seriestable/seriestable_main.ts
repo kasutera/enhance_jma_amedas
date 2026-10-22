@@ -1,9 +1,6 @@
 import { globalColorScaleManager } from '../color_scale/color_scale_global'
 import { DERIVED_OBSERVATION_DEFINITIONS } from '../derived_observations'
-import {
-  applyEnhancedObservationVisibility,
-  ensureEnhancedObservationSelector,
-} from '../enhanced_observation_selector'
+import { applyEnhancedObservationVisibility } from '../enhanced_observation_selector'
 import type { Feature } from '../feature'
 import { AmedasClient, fetchLatestTime } from '../integration/amedas_client'
 import { getTableContainer, isVisibleTable, JMA_SELECTORS } from '../integration/dom'
@@ -93,7 +90,6 @@ export function seriestable_main(): Feature {
       if (disposed) {
         return
       }
-      ensureEnhancedObservationSelector()
       for (const table of getTableContainer()?.querySelectorAll<HTMLTableElement>(
         JMA_SELECTORS.seriesTable,
       ) ?? []) {

@@ -1,5 +1,12 @@
-import { DERIVED_OBSERVATION_DEFINITIONS } from './derived_observations'
-import { initializeEnhancedObservationSelector } from './enhanced_observation_selector'
+import {
+  DERIVED_OBSERVATION_DEFINITIONS,
+  toDerivedObservationColumns,
+} from './derived_observations'
+import {
+  applyEnhancedObservationVisibility,
+  initializeEnhancedObservationSelector,
+} from './enhanced_observation_selector'
+import { renderDerivedColumns } from './integration/table_dom'
 
 function createTestTable(): void {
   document.body.innerHTML = `
@@ -128,6 +135,7 @@ describe('派生観測要素セレクター', () => {
       expect(oldInput.checked).toBe(false)
 
       oldBlock.replaceWith(document.createElement('div'))
+      feature.refresh()
       const newBlock = document.createElement('div')
       newBlock.id = 'amd-selector-div-block-items'
       document.body.prepend(newBlock)
@@ -137,6 +145,39 @@ describe('派生観測要素セレクター', () => {
         'input[data-enhanced-observation-key="temperatureHumidityIndex"]',
       )
       expect(newInput?.checked).toBe(false)
+    } finally {
+      feature.dispose()
+    }
+  })
+
+  test('表の再描画後も解除済み派生列と幅セルを非表示にする', () => {
+    createTestTable()
+    const feature = initializeEnhancedObservationSelector()
+    try {
+      const dewPointInput = document.querySelector<HTMLInputElement>(
+        'input[data-enhanced-observation-key="dewPoint"]',
+      )
+      const table = document.querySelector<HTMLTableElement>('.amd-table-seriestable')
+      if (dewPointInput === null || table === null) {
+        throw new Error('露点温度チェックボックスまたは時系列表がありません')
+      }
+      dewPointInput.checked = false
+      dewPointInput.dispatchEvent(new Event('change', { bubbles: true }))
+
+      renderDerivedColumns(
+        table,
+        'series',
+        toDerivedObservationColumns([{ temperature: 20, humidity: 50 }]),
+      )
+      applyEnhancedObservationVisibility(table)
+
+      const dewPointCells = table.querySelectorAll<HTMLElement>('.td-dew-point')
+      expect(dewPointCells).toHaveLength(3)
+      expect(Array.from(dewPointCells).every((cell) => cell.hidden)).toBe(true)
+      expect(
+        table.querySelector<HTMLTableRowElement>('.simple-table-hidden-tr')?.cells[3].hidden,
+      ).toBe(true)
+      expect(table.querySelector<HTMLElement>('.td-volumetric-humidity')?.hidden).toBe(false)
     } finally {
       feature.dispose()
     }
@@ -184,9 +225,25 @@ describe('派生観測要素セレクター', () => {
     detachedInput.checked = true
     detachedInput.dispatchEvent(new Event('change', { bubbles: true }))
     expect((document.querySelector('.td-dew-point') as HTMLElement).hidden).toBe(true)
+    document.querySelectorAll<HTMLElement>('.td-dew-point').forEach((cell) => {
+      cell.hidden = false
+    })
+    const dewPointWidthCell =
+      document.querySelector<HTMLTableRowElement>('.simple-table-hidden-tr')?.cells[3]
+    if (dewPointWidthCell !== undefined) {
+      dewPointWidthCell.hidden = false
+    }
 
     const remountedFeature = initializeEnhancedObservationSelector()
     try {
+      expect(
+        Array.from(document.querySelectorAll<HTMLElement>('.td-dew-point')).every(
+          (cell) => cell.hidden,
+        ),
+      ).toBe(true)
+      expect(
+        document.querySelector<HTMLTableRowElement>('.simple-table-hidden-tr')?.cells[3].hidden,
+      ).toBe(true)
       const remountedInput = document.querySelector<HTMLInputElement>(
         'input[data-enhanced-observation-key="dewPoint"]',
       )

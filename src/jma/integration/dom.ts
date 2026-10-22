@@ -18,6 +18,7 @@ export const JMA_SELECTORS = {
   widthRow: '.simple-table-hidden-tr',
   dayCell: 'td[rowspan]',
   timeCell: 'td:not([rowspan])',
+  titleContainer: '.contents-title',
   stationName: '.contents-title .amd-content-amdname',
   stationNameContent: '.amd-content-amdname',
   controllerHeading: '.amd-content-controller-item-head',
@@ -30,6 +31,58 @@ export const JMA_SELECTORS = {
   selectorBlock: '#amd-selector-div-block-items',
   selectorBulkButton: '.amd-selector-div-button',
 } as const
+
+const JMA_REFRESH_SELECTORS = [
+  JMA_SELECTORS.tableContainer,
+  JMA_SELECTORS.seriesTable,
+  JMA_SELECTORS.areaTable,
+  JMA_SELECTORS.titleContainer,
+  JMA_SELECTORS.stationNameContent,
+  JMA_SELECTORS.controllerHeading,
+  JMA_SELECTORS.radioButton,
+  JMA_SELECTORS.graphContainer,
+  JMA_SELECTORS.graphTitle,
+  JMA_SELECTORS.selectorBlock,
+  JMA_SELECTORS.selectorBulkButton,
+].join(', ')
+
+function isInsideJmaDom(element: Element): boolean {
+  return element.closest(JMA_REFRESH_SELECTORS) !== null
+}
+
+function containsJmaDom(element: Element): boolean {
+  return isInsideJmaDom(element) || element.querySelector(JMA_REFRESH_SELECTORS) !== null
+}
+
+function hasJmaDomInNodes(nodes: NodeList): boolean {
+  for (const node of nodes) {
+    if (node instanceof Element && containsJmaDom(node)) {
+      return true
+    }
+  }
+  return false
+}
+
+/** JMAの機能が依存するDOMに関係するMutationRecordだけを選ぶ。 */
+export function hasRelevantJmaMutation(records: MutationRecord[]): boolean {
+  return records.some((record) => {
+    if (record.type === 'childList') {
+      return (
+        (record.target instanceof Element && isInsideJmaDom(record.target)) ||
+        hasJmaDomInNodes(record.addedNodes) ||
+        hasJmaDomInNodes(record.removedNodes)
+      )
+    }
+    if (record.type === 'attributes') {
+      return record.target instanceof Element && containsJmaDom(record.target)
+    }
+    if (record.type === 'characterData') {
+      const parentElement = record.target.parentElement
+      return parentElement !== null && isInsideJmaDom(parentElement)
+    }
+    return false
+  })
+}
 
 export const JMA_CLASSES = {
   seriesTable: 'amd-table-seriestable',

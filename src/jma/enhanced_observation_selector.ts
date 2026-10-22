@@ -135,7 +135,7 @@ function createEnhancedSelectorItem(block: HTMLElement, key: DerivedObservationK
  * JMAが生成した観測要素リストへ派生要素を追加する。
  * JMAの地点別初期ビットマスクや既存チェック状態には触れない。
  */
-export function ensureEnhancedObservationSelector(): void {
+function ensureEnhancedObservationSelector(): void {
   // グラフ画面ではgraph_mainが専用の選択UIを生成する。
   if (isGraphFormat()) {
     return
@@ -222,12 +222,12 @@ export function initializeEnhancedObservationSelector(): Feature {
       return
     }
     ensureEnhancedObservationSelector()
-    applyEnhancedObservationVisibilityToAllTables()
   }
 
   document.addEventListener('change', handleChange)
   document.addEventListener('click', handleBulkClick, true)
   refresh()
+  applyEnhancedObservationVisibilityToAllTables()
 
   return {
     refresh,

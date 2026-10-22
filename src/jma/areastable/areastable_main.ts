@@ -1,9 +1,6 @@
 import { globalColorScaleManager } from '../color_scale/color_scale_global'
 import { DERIVED_OBSERVATION_DEFINITIONS } from '../derived_observations'
-import {
-  applyEnhancedObservationVisibility,
-  ensureEnhancedObservationSelector,
-} from '../enhanced_observation_selector'
+import { applyEnhancedObservationVisibility } from '../enhanced_observation_selector'
 import type { Feature } from '../feature'
 import { AmedasClient } from '../integration/amedas_client'
 import { getAreastableObservationTime } from '../integration/area_observation_time'
@@ -83,7 +80,7 @@ export function areastable_main(): Feature {
       if (disposed) {
         return
       }
-      ensureEnhancedObservationSelector()
+
       for (const table of getTableContainer()?.querySelectorAll<HTMLTableElement>(
         JMA_SELECTORS.areaDataTable,
       ) ?? []) {
