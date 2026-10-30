@@ -1,3 +1,4 @@
+import { TABLE_CLASS_NAMES } from './integration/column_classes'
 import {
   calculateDerivedObservations,
   calculateDewPoint,
@@ -5,7 +6,9 @@ import {
   calculateVolumetricHumidity,
   type DerivedObservations,
 } from './math'
-import { TABLE_CLASS_NAMES } from './table_classes_definition'
+import type { Observation } from './observation'
+
+export type ObservationInput = Pick<Observation, 'temperature' | 'humidity'>
 
 export type DerivedObservationKey = keyof DerivedObservations
 
@@ -42,11 +45,6 @@ export const DERIVED_OBSERVATION_DEFINITIONS = [
 
 export type DerivedObservationDefinition = (typeof DERIVED_OBSERVATION_DEFINITIONS)[number]
 
-interface HumidityObservation {
-  readonly temperature?: number
-  readonly humidity?: number
-}
-
 export interface DerivedObservationColumn {
   readonly class: string
   readonly headerValue: string
@@ -61,8 +59,8 @@ export type DerivedObservationColumns = readonly [
 ]
 
 function hasHumidityObservation(
-  observation: HumidityObservation | undefined,
-): observation is Required<HumidityObservation> {
+  observation: ObservationInput | undefined,
+): observation is Required<ObservationInput> {
   return (
     observation !== undefined &&
     observation.temperature !== undefined &&
@@ -72,7 +70,7 @@ function hasHumidityObservation(
 
 /** グラフ用の選択値を返す。気温または湿度が欠損している場合は null。 */
 export function getDerivedObservationValue(
-  observation: HumidityObservation | undefined,
+  observation: ObservationInput | undefined,
   definition: DerivedObservationDefinition,
 ): number | null {
   return hasHumidityObservation(observation)
@@ -91,7 +89,7 @@ function createDerivedColumn(definition: DerivedObservationDefinition) {
 
 /** 入力順を保ち、小数1桁・欠損値「---」の表用3列を生成する。 */
 export function toDerivedObservationColumns(
-  observations: Iterable<HumidityObservation | undefined>,
+  observations: Iterable<ObservationInput | undefined>,
 ): DerivedObservationColumns {
   const columns = [
     createDerivedColumn(DERIVED_OBSERVATION_DEFINITIONS[0]),

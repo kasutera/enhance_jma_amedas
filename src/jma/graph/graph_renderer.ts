@@ -1,3 +1,4 @@
+import { JMA_CLASSES, JMA_SELECTORS } from '../integration/dom'
 import { getJstDateParts } from '../jma_datetime'
 
 export interface GraphDataPoint {
@@ -75,7 +76,7 @@ export function renderEnhancedGraph(
   unit: string,
   data: GraphDataPoint[],
 ): void {
-  const titleElement = document.querySelector<HTMLElement>('.amd-content-graph-title')
+  const titleElement = document.querySelector<HTMLElement>(JMA_SELECTORS.graphTitle)
   if (titleElement !== null) {
     titleElement.textContent = `10分毎の${title}時系列図`
   }
@@ -106,7 +107,7 @@ export function renderEnhancedGraph(
     gridLine.setAttribute('x2', `${PLOT_WIDTH}`)
     gridLine.setAttribute('y1', `${tickY}`)
     gridLine.setAttribute('y2', `${tickY}`)
-    gridLine.setAttribute('class', 'amd-graph-line-gridline')
+    gridLine.setAttribute('class', JMA_CLASSES.graphGridline)
     plot.append(gridLine)
     appendText(plot, `${(maximum - ((maximum - minimum) * tick) / 5).toFixed(1)}`, -8, tickY + 4, {
       'text-anchor': 'end',
@@ -147,14 +148,14 @@ export function renderEnhancedGraph(
     pathData += `${pathData === '' || data[index - 1]?.value === null ? 'M' : 'L'}${x(index)},${y(value)}`
   })
   const path = createSvgElement('path')
-  path.setAttribute('class', 'amd-graph-path-data')
+  path.setAttribute('class', JMA_CLASSES.graphDataPath)
   path.setAttribute('d', pathData)
   plot.append(path)
 
   const legend = document.createElement('div')
-  legend.className = 'amd-graph-legend'
+  legend.className = JMA_CLASSES.graphLegend
   const legendLine = document.createElement('span')
-  legendLine.className = 'amd-graph-legend-line'
+  legendLine.className = JMA_CLASSES.graphLegendLine
   legend.append(legendLine, title)
   graphContainer.append(legend)
 }

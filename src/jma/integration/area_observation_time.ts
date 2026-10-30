@@ -1,5 +1,6 @@
+import { JMA_SELECTORS } from './dom'
+
 const JST_OFFSET_MILLISECONDS = 9 * 60 * 60 * 1000
-const OBSERVATION_TIME_SELECTOR = '.amd-areastable-span-obstime'
 const MONTHS: Record<string, number> = {
   jan: 1,
   january: 1,
@@ -121,7 +122,7 @@ function parseObservationTime(text: string): Date | null {
 
 /** JMA地域表見出しの先頭にある観測時刻を、端末タイムゾーン非依存の実時刻として返す。 */
 export function getAreastableObservationTime(root: ParentNode = document): Date | null {
-  const observationTimeElement = root.querySelector(OBSERVATION_TIME_SELECTOR)
+  const observationTimeElement = root.querySelector(JMA_SELECTORS.areaObservationTime)
   if (observationTimeElement === null) {
     return null
   }

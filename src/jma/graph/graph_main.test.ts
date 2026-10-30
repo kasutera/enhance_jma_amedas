@@ -48,6 +48,7 @@ describe('派生観測要素のグラフ選択', () => {
       }
       observationHead.textContent = heading
       const stop = graph_main()
+      stop.refresh()
       try {
         await flushPromises()
 
@@ -69,7 +70,7 @@ describe('派生観測要素のグラフ選択', () => {
         ).toBe(false)
         expect(document.querySelector('#enhanced-amd-graph')).not.toBeNull()
       } finally {
-        stop()
+        stop.dispose()
       }
     },
   )
@@ -114,6 +115,7 @@ describe('派生観測要素のグラフ選択', () => {
       }) as jest.Mock
 
       const stop = graph_main()
+      stop.refresh()
       try {
         expect(
           document.querySelectorAll(
@@ -139,13 +141,14 @@ describe('派生観測要素のグラフ選択', () => {
         expect(document.querySelector('#enhanced-amd-graph')).not.toBeNull()
         expect(document.querySelector('#enhanced-amd-graph .amd-graph-path-data')).toBeNull()
       } finally {
-        stop()
+        stop.dispose()
       }
     },
   )
 
   test('派生観測要素を連続して切り替えたとき、最後に選択した項目を表示する', async () => {
     const stop = graph_main()
+    stop.refresh()
     try {
       await flushPromises()
 
@@ -172,7 +175,7 @@ describe('派生観測要素のグラフ選択', () => {
           ?.classList.contains('contents-radio-button-on'),
       ).toBe(true)
     } finally {
-      stop()
+      stop.dispose()
     }
   })
 
@@ -188,6 +191,7 @@ describe('派生観測要素のグラフ選択', () => {
     })
 
     const stop = graph_main()
+    stop.refresh()
     try {
       await flushPromises()
       expect(standardButton.classList.contains('contents-radio-button-on')).toBe(true)
@@ -206,7 +210,7 @@ describe('派生観測要素のグラフ選択', () => {
       expect(standardButton.classList.contains('contents-radio-button-on')).toBe(true)
       expect(enhancedButton.classList.contains('contents-radio-button-off')).toBe(true)
     } finally {
-      stop()
+      stop.dispose()
     }
   })
 
@@ -217,6 +221,7 @@ describe('派生観測要素のグラフ選択', () => {
     document.body.prepend(unrelatedButton)
 
     const stop = graph_main()
+    stop.refresh()
     try {
       const enhancedButton = document.querySelector<HTMLElement>(
         '[data-enhanced-graph-key="dewPoint"]',
@@ -231,7 +236,7 @@ describe('派生観測要素のグラフ選択', () => {
       expect(enhancedButton.classList.contains('contents-radio-button-on')).toBe(true)
       expect(document.querySelector('#enhanced-amd-graph')).not.toBeNull()
     } finally {
-      stop()
+      stop.dispose()
     }
   })
 
@@ -254,6 +259,7 @@ describe('派生観測要素のグラフ選択', () => {
     `
 
     const stop = graph_main()
+    stop.refresh()
     try {
       await flushPromises()
 
@@ -264,7 +270,43 @@ describe('派生観測要素のグラフ選択', () => {
         document.querySelectorAll('[data-testid="graph-selector-row"] [data-enhanced-graph-key]'),
       ).toHaveLength(3)
     } finally {
-      stop()
+      stop.dispose()
+    }
+  })
+
+  test('解除したグラフの応答が再接続後の選択と描画を上書きしない', async () => {
+    const pending = Promise.withResolvers<Response>()
+    const fetchMock = global.fetch as jest.Mock
+    fetchMock.mockReturnValueOnce(pending.promise)
+    const oldFeature = graph_main()
+    oldFeature.refresh()
+    const oldButton = document.querySelector<HTMLElement>(
+      '[data-enhanced-graph-key="volumetricHumidity"]',
+    )
+    if (oldButton === null) {
+      throw new Error('容積絶対湿度の選択肢がありません')
+    }
+    oldButton.click()
+    oldFeature.dispose()
+    const currentFeature = graph_main()
+    currentFeature.refresh()
+    try {
+      document.querySelector<HTMLElement>('[data-enhanced-graph-key="dewPoint"]')?.click()
+      await flushPromises()
+      pending.resolve({ ok: true, text: async () => '2026-08-09T00:00:00+09:00' } as Response)
+      await flushPromises()
+      expect(document.querySelector('.amd-content-graph-title')?.textContent).toBe(
+        '10分毎の露点温度時系列図',
+      )
+      expect(document.querySelectorAll('[data-enhanced-graph-key]')).toHaveLength(3)
+      expect(
+        document
+          .querySelector('[data-enhanced-graph-key="dewPoint"]')
+          ?.classList.contains('contents-radio-button-on'),
+      ).toBe(true)
+      expect(document.querySelector('#enhanced-amd-graph .amd-graph-path-data')).not.toBeNull()
+    } finally {
+      currentFeature.dispose()
     }
   })
 
@@ -275,6 +317,7 @@ describe('派生観測要素のグラフ選択', () => {
     const consoleError = jest.spyOn(console, 'error').mockImplementation(() => undefined)
 
     const stop = graph_main()
+    stop.refresh()
     try {
       const button = document.querySelector<HTMLElement>('[data-enhanced-graph-key="dewPoint"]')
       if (button === null) {
@@ -287,7 +330,7 @@ describe('派生観測要素のグラフ選択', () => {
       expect(global.fetch).toHaveBeenCalledTimes(1)
       expect(document.querySelector('#enhanced-amd-graph-error')).not.toBeNull()
     } finally {
-      stop()
+      stop.dispose()
       consoleError.mockRestore()
     }
   })

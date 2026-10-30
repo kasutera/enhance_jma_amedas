@@ -7,13 +7,8 @@ const rootDir = process.cwd()
 const srcJmaDir = path.join(rootDir, 'src', 'jma')
 const errors = []
 
-const tableModuleFiles = [
-  'dom_handler.ts',
-  'dom_generators.ts',
-  'jma_amedas_fetcher.ts',
-  'presentation.ts',
-]
-const sharedFeatureModules = new Set(['color_scale'])
+const tableModuleFiles = ['presentation.ts']
+const sharedFeatureModules = new Set(['color_scale', 'integration'])
 const snakeCasePattern = /^[a-z][a-z0-9_]*$/
 const tsFilePattern = /^[a-z][a-z0-9_]*(\.test)?\.ts$/
 
@@ -185,6 +180,11 @@ for (const sourceFile of productionTsFiles) {
 
     const sourceFeature = getFeatureDir(sourceFile)
     const targetFeature = getFeatureDir(target)
+    if (sourceFeature === 'integration' && targetFeature && targetFeature !== 'integration') {
+      addError(
+        `${fromRoot(sourceFile)}: JMA接続層から機能モジュールへ依存できません (${specifier})`,
+      )
+    }
     if (
       sourceFeature &&
       targetFeature &&

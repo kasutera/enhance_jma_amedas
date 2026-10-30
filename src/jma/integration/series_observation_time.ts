@@ -1,8 +1,5 @@
 import { getJstDateParts } from '../jma_datetime'
-
-const LATEST_ROW_SELECTOR =
-  '.contents-wide-table-scroll .amd-table-seriestable .amd-table-tr-onthedot, ' +
-  '.contents-wide-table-scroll .amd-table-seriestable .amd-table-tr-notonthedot'
+import { JMA_SELECTORS } from './dom'
 
 interface ObservationTimeParts {
   month: number | undefined
@@ -11,10 +8,7 @@ interface ObservationTimeParts {
   minute: number
 }
 
-function getObservationTimeParts(root: ParentNode): ObservationTimeParts | null {
-  const row = root.querySelector(LATEST_ROW_SELECTOR)
-  const dayText = row?.querySelector('td[rowspan]')?.textContent?.trim() ?? ''
-  const timeText = row?.querySelector('td:not([rowspan])')?.textContent?.trim() ?? ''
+function getObservationTimeParts(dayText: string, timeText: string): ObservationTimeParts | null {
   const japaneseDay = dayText.match(/^(\d{1,2})日$/)
   const englishDay = dayText.match(/^(\d{1,2})\/(\d{1,2})$/)
   const time = timeText.match(/^(\d{2}):(\d{2})$/)
@@ -41,7 +35,13 @@ function getObservationTimeParts(root: ParentNode): ObservationTimeParts | null 
 
 /** 表の先頭にある最新行の日付・時刻が読み取れるまで更新確認を待つ。 */
 export function hasSeriestableObservationTime(root: ParentNode = document): boolean {
-  return getObservationTimeParts(root) !== null
+  const row = root.querySelector(JMA_SELECTORS.latestSeriesRow)
+  return (
+    getObservationTimeParts(
+      row?.querySelector(JMA_SELECTORS.dayCell)?.textContent?.trim() ?? '',
+      row?.querySelector(JMA_SELECTORS.timeCell)?.textContent?.trim() ?? '',
+    ) !== null
+  )
 }
 
 /** 日付の年・月は公開時刻を基準に補い、端末の時計やタイムゾーンには依存しない。 */
@@ -49,14 +49,28 @@ export function getSeriestableObservationTime(
   latestTime: Date,
   root: ParentNode = document,
 ): Date | null {
-  if (!Number.isFinite(latestTime.getTime())) {
+  const row = root.querySelector(JMA_SELECTORS.latestSeriesRow)
+  return parseSeriesObservationTime(
+    row?.querySelector(JMA_SELECTORS.dayCell)?.textContent?.trim() ?? '',
+    row?.querySelector(JMA_SELECTORS.timeCell)?.textContent?.trim() ?? '',
+    latestTime,
+  )
+}
+
+/** JMAの日付・時刻表示をJSTの実時刻へ変換する。表全行と最新行で同じ解釈を使う。 */
+export function parseSeriesObservationTime(
+  dayText: string,
+  timeText: string,
+  referenceTime: Date,
+): Date | null {
+  if (!Number.isFinite(referenceTime.getTime())) {
     return null
   }
-  const parts = getObservationTimeParts(root)
+  const parts = getObservationTimeParts(dayText, timeText)
   if (parts === null) {
     return null
   }
-  const reference = getJstDateParts(latestTime)
+  const reference = getJstDateParts(referenceTime)
   let year = reference.year
   let monthIndex = (parts.month ?? reference.month) - 1
   const referenceDay = Date.UTC(year, reference.month - 1, reference.day)
